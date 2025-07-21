@@ -16,6 +16,14 @@
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
-    "noFallthroughCasesInSwitch": false
+    "noFallthroughCasesInSwitch": false,
+    "paths": {
+      "@common/*": ["src/common/*"],
+      "@config/*": ["src/config/*"],
+      "@database": ["src/database/index"],
+      "@modules": ["src/modules/index"],
+      "@admin": ["src/modules/admin/index"],
+      "@entities": ["src/database/entities/index"],
+    }
   }
 }
