@@ -1,7 +1,10 @@
-import { Controller, Get, Post, Patch, Delete, Body } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, UseGuards } from '@nestjs/common';
 import { EmpresasService } from './empresas.service';
+import { Roles } from 'src/modules/auth/roles.decorator';
+import { RolesGuard } from 'src/modules/auth/roles.guard';
 
-
+@UseGuards(RolesGuard)
+@Roles('admin')
 @Controller('empresas')
 export class EmpresasController {
 
@@ -10,6 +13,7 @@ export class EmpresasController {
 
     @Get()
     async testProducto() {
-        return await this.servicio.getEmpresas(); 
+        console.log('lo logramos');
+        //return await this.servicio.getEmpresas(); 
     }
 }

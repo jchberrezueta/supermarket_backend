@@ -19,7 +19,6 @@ export class AuthService {
 
   async login(user: any) {
     const info = await this.usersService.getPerfilPermisos(user['IDE_CUEN']);
-    console.log(info);
     const permisosUsuario = info.map(p => ({
       ruta: p['RUTA_OPCI'],
       listar: p['LISTAR'] === 'SI',
