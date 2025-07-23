@@ -8,7 +8,7 @@ export class EmpresasService {
 
 
   async getEmpresas(){
-    return await this.db.ejecutarProcedimiento('listar_empresas(:v_cursor, :p_response)');
+    //return await this.db.ejecutarProcedimiento('listar_empresas(:v_cursor, :p_response)');
   }
 
   async findEmpresa(){

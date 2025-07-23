@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
 import {
     BodegaModule,
-    ProveedoresModule 
+    ProveedoresModule, 
+    SeguridadModule
 } from '@admin';
 
 
@@ -9,7 +10,8 @@ import {
 @Module({
     imports: [
         BodegaModule,
-        ProveedoresModule
+        ProveedoresModule,
+        SeguridadModule,
     ],
 })
 export class AdminModule {}
