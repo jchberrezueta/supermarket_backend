@@ -34,6 +34,12 @@ export class AuthService {
       perfil: info[0]['NOMBRE_PERF'],
       permisos: permisosUsuario,
     };    
+
+    
+
+
+
+
     return {
       access_token: this.jwtService.sign(payload),
         user: {

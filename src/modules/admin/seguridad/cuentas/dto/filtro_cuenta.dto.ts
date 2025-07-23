@@ -1,4 +1,4 @@
-import { IsOptional, IsInt, IsString, Min, Max, IsEnum } from 'class-validator';
+import { IsOptional, IsInt, IsString, Min, Max, IsEnum, IsNumber } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export enum EstadoCuenta {
@@ -16,11 +16,11 @@ export class FiltroCuentaDto {
   estado_cuen?: EstadoCuenta;
 
   @IsOptional()
-  @IsString()
-  ide_empl?: string; // para buscar por nombre, código, etc.
+  @IsNumber()
+  ide_empl?: string;
 
   @IsOptional()
-  @IsString()
+  @IsNumber()
   ide_perf?: string;
 }
 

@@ -105,12 +105,12 @@ export class CuentasService {
     };
 
     //Encriptacion de passwords :)
-    const saltRounds = 10;
+    /*const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(binds.p_password_cuen, saltRounds);
     const cuentaConHash = {
       ...binds,
       p_password_cuen: hashedPassword,
-    };
+    };*/
 
     const outBinds = await this.db.ejecutarProcedimiento('actualizar_cuenta', binds);
     return outBinds;

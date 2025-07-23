@@ -5,6 +5,7 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
 import { AuthController } from './auth.controller';
 import { CuentasModule } from '../admin/seguridad/cuentas/cuentas.module';
+import { accesosModule } from '../admin/seguridad/accesos/accesos.module'
 
 @Module({
     imports: [
@@ -14,6 +15,7 @@ import { CuentasModule } from '../admin/seguridad/cuentas/cuentas.module';
         }),
         PassportModule,
         CuentasModule, // módulo que maneja usuarios y roles
+        accesosModule,
     ],
     providers: [AuthService, JwtStrategy],
     controllers: [AuthController],
