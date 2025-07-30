@@ -20,8 +20,10 @@ export class AuthController {
     @Post('login')
     async login(@Body() body: { usuario: string; clave: string },  @Req() req: Request,) {
         const user = await this.authService.validateUser(body.usuario, body.clave);
-        if (!user) throw new UnauthorizedException('Credenciales inválidas');
-        
+
+        if (!user) {
+            throw new UnauthorizedException('Credenciales inválidas');
+        }
         // Registrar acceso
         await this.servicio.insertarAccesoUsuario({
             ide_cuen: user['IDE_CUEN'],

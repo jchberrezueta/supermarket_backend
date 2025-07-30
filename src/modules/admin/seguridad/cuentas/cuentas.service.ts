@@ -138,9 +138,9 @@ export class CuentasService {
         c.ELIMINAR,
         d.RUTA_OPCI
       FROM CUENTA a
-      JOIN PERFIL b ON (b.IDE_PERF = a.IDE_PERF)
-      JOIN PERFIL_OPCIONES c ON(c.IDE_PERF = b.IDE_PERF)
-      JOIN OPCIONES d ON(d.IDE_OPCI = c.IDE_OPCI)
+      LEFT JOIN PERFIL b ON (b.IDE_PERF = a.IDE_PERF)
+      LEFT JOIN PERFIL_OPCIONES c ON(c.IDE_PERF = b.IDE_PERF)
+      LEFT JOIN OPCIONES d ON(d.IDE_OPCI = c.IDE_OPCI)
       WHERE a.IDE_CUEN = ${idCuenta}
     `;
     const result = await this.db.ejecutarSQL(query);

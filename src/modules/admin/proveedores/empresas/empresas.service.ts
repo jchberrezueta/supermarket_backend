@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {DatabaseService} from '@database';
+import * as oracledb from 'oracledb';
 
 @Injectable()
 export class EmpresasService {
@@ -8,7 +9,11 @@ export class EmpresasService {
 
 
   async getEmpresas(){
-    //return await this.db.ejecutarProcedimiento('listar_empresas(:v_cursor, :p_response)');
+    const binds = {
+      p_result: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR },
+      p_response: { dir: oracledb.BIND_OUT, type: oracledb.CLOB },
+    };
+    return await this.db.ejecutarProcedimiento('listar_empresas', binds);
   }
 
   async findEmpresa(){

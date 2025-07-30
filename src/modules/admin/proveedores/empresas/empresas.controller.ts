@@ -4,7 +4,7 @@ import { Roles } from 'src/modules/auth/roles.decorator';
 import { RolesGuard } from 'src/modules/auth/roles.guard';
 
 @UseGuards(RolesGuard)
-@Roles('admin')
+@Roles('gerente')
 @Controller('empresas')
 export class EmpresasController {
 
@@ -13,7 +13,7 @@ export class EmpresasController {
 
     @Get()
     async testProducto() {
-        console.log('lo logramos');
-        //return await this.servicio.getEmpresas(); 
+        //console.log('lo logramos');
+        return await this.servicio.getEmpresas(); 
     }
 }
