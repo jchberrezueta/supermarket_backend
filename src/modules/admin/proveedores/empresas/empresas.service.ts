@@ -13,7 +13,7 @@ export class EmpresasService {
       p_result: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR },
       p_response: { dir: oracledb.BIND_OUT, type: oracledb.CLOB },
     };
-    return await this.db.ejecutarProcedimiento('listar_empresas', binds);
+    //return await this.db.ejecutarProcedimiento('listar_empresas', binds);
   }
 
   async findEmpresa(){

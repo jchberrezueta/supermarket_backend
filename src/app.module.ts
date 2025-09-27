@@ -1,19 +1,30 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { AdminModule, LandingModule, AuthModule } from '@modules';
-import { configOptions } from '@config/config_options'
+import { 
+  AdminModule, 
+  LandingModule, 
+  AuthModule 
+} from '@modules';
+import { TypeOrmConfigService } from '@database';
+import { configOptions } from '@config'
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { DatabaseModule } from './database/database.module';
 
 
 @Module({
   imports: [
     ConfigModule.forRoot(configOptions),
-    AdminModule,
-    LandingModule,
-    AuthModule,
+    TypeOrmModule.forRootAsync({
+      useClass: TypeOrmConfigService
+    }),
+    DatabaseModule
+    //AdminModule,
+    //LandingModule,
+    //AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -19,8 +19,8 @@ export class AccesosUsuariosService {
           p_response: { dir: oracledb.BIND_OUT, type: oracledb.CLOB },
         };
 
-        const outBinds = await this.db.ejecutarProcedimiento('listar_accesos_usuario', binds);
-        return outBinds;
+        /*const outBinds = await this.db.ejecutarProcedimiento('listar_accesos_usuario', binds);
+        return outBinds;*/
     }
 
 
@@ -34,8 +34,8 @@ export class AccesosUsuariosService {
             p_response: { dir: oracledb.BIND_OUT, type: oracledb.CLOB },
         };
 
-        const outBinds = await this.db.ejecutarProcedimiento('filtrar_accesos', binds);
-        return outBinds;
+        /*const outBinds = await this.db.ejecutarProcedimiento('filtrar_accesos', binds);
+        return outBinds;*/
     }
 
 
@@ -55,8 +55,8 @@ export class AccesosUsuariosService {
       p_response: { dir: oracledb.BIND_OUT, type: oracledb.CLOB },
     };
     console.log(binds);
-    const outBinds = await this.db.ejecutarProcedimiento('insertar_acceso_usuario', binds);
-    return outBinds;
+    /*const outBinds = await this.db.ejecutarProcedimiento('insertar_acceso_usuario', binds);
+    return outBinds;*/
   }
 
   

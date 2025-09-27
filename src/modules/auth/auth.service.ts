@@ -10,14 +10,14 @@ export class AuthService {
 
   async validateUser(usuario: string, clave: string): Promise<any> {
     const user = await this.usersService.buscarUsuario(usuario);
-    if (user && await bcrypt.compare(clave, user['PASSWORD_CUEN'])) {
+    /*if (user && await bcrypt.compare(clave, user['PASSWORD_CUEN'])) {
       const { password_cuen, ...result } = user;
       return result;
-    }
+    }*/
     return null;
   }
 
-  async login(user: any) {
+  /*async login(user: any) {
     const info = await this.usersService.getPerfilPermisos(user['IDE_CUEN']);
     const permisosUsuario = info.map(p => ({
       ruta: p['RUTA_OPCI'],
@@ -50,5 +50,5 @@ export class AuthService {
         permisos: payload.permisos,
       }
     };
-  }
+  }*/
 }

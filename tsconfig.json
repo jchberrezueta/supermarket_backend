@@ -19,7 +19,7 @@
     "noFallthroughCasesInSwitch": false,
     "paths": {
       "@common/*": ["src/common/*"],
-      "@config/*": ["src/config/*"],
+      "@config": ["src/config/index"],
       "@database": ["src/database/index"],
       "@modules": ["src/modules/index"],
       "@admin": ["src/modules/admin/index"],

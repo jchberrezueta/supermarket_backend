@@ -20,8 +20,8 @@ export class CuentasService {
           p_response: { dir: oracledb.BIND_OUT, type: oracledb.CLOB },
         };
 
-        const outBinds = await this.db.ejecutarProcedimiento('listar_cuentas', binds);
-        return outBinds;
+        /*const outBinds = await this.db.ejecutarProcedimiento('listar_cuentas', binds);
+        return outBinds;*/
     }
 
     /**
@@ -34,8 +34,8 @@ export class CuentasService {
             p_response: { dir: oracledb.BIND_OUT, type: oracledb.CLOB },
         };
 
-        const outBinds = await this.db.ejecutarProcedimiento('buscar_cuenta', binds);
-        return outBinds;
+        /*const outBinds = await this.db.ejecutarProcedimiento('buscar_cuenta', binds);
+        return outBinds;*/
     }
 
     async filtrarCuentas(filtros: FiltroCuentaDto) {
@@ -49,8 +49,8 @@ export class CuentasService {
             p_response: { dir: oracledb.BIND_OUT, type: oracledb.CLOB },
         };
 
-        const outBinds = await this.db.ejecutarProcedimiento('filtrar_cuentas', binds);
-        return outBinds;
+        /*const outBinds = await this.db.ejecutarProcedimiento('filtrar_cuentas', binds);
+        return outBinds;*/
     }
 
     async eliminarCuenta(id: number) {
@@ -60,8 +60,8 @@ export class CuentasService {
             p_response: { dir: oracledb.BIND_OUT, type: oracledb.CLOB },
         };
 
-        const outBinds = await this.db.ejecutarProcedimiento('eliminar_cuenta', binds);
-        return outBinds;
+        /*const outBinds = await this.db.ejecutarProcedimiento('eliminar_cuenta', binds);
+        return outBinds;*/
     }
 
 
@@ -86,8 +86,8 @@ export class CuentasService {
       ...binds,
       p_password_cuen: hashedPassword,
     };
-    const outBinds = await this.db.ejecutarProcedimiento('insertar_cuenta', cuentaConHash);
-    return outBinds;
+    /*const outBinds = await this.db.ejecutarProcedimiento('insertar_cuenta', cuentaConHash);
+    return outBinds;*/
   }
 
   async actualizarCuenta(id: number, data: UpdateCuentaDto) {
@@ -112,15 +112,15 @@ export class CuentasService {
       p_password_cuen: hashedPassword,
     };*/
 
-    const outBinds = await this.db.ejecutarProcedimiento('actualizar_cuenta', binds);
-    return outBinds;
+    /*const outBinds = await this.db.ejecutarProcedimiento('actualizar_cuenta', binds);
+    return outBinds;*/
   }
 
 
   async buscarUsuario(usuario: string){
     const query = `SELECT * FROM CUENTA WHERE usuario_cuen LIKE '${usuario}'`;
-    const result = await this.db.ejecutarSQL(query);
-    return result.rows[0];
+    /*const result = await this.db.ejecutarSQL(query);
+    return result.rows[0];*/
   }
 
   async getPerfilPermisos(idCuenta: string){
@@ -143,8 +143,8 @@ export class CuentasService {
       LEFT JOIN OPCIONES d ON(d.IDE_OPCI = c.IDE_OPCI)
       WHERE a.IDE_CUEN = ${idCuenta}
     `;
-    const result = await this.db.ejecutarSQL(query);
-    return result.rows;
+    /*const result = await this.db.ejecutarSQL(query);
+    return result.rows;*/
   }
 
   
