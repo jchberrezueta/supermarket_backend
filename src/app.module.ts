@@ -21,10 +21,10 @@ import { DatabaseModule } from './database/database.module';
     TypeOrmModule.forRootAsync({
       useClass: TypeOrmConfigService
     }),
-    DatabaseModule
-    //AdminModule,
-    //LandingModule,
-    //AuthModule,
+    DatabaseModule,
+    AdminModule,
+    LandingModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

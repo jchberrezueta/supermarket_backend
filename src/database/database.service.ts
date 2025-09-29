@@ -11,11 +11,40 @@ export class DatabaseService {
     return this.datasource.query(query);
   }
 
-  executeFunction(name: string, params:any[]=[]){
-    const placeholders = params.map((_,i) => (`$${i+1}`)).join(', ');
-    console.log(placeholders);
-    const result = this.datasource.query(`CALL ${name}(${placeholders})`, params);
+  async executeFunctionWrite(functionName:string, params:any[] = []) {
+    const indexs = params.map((_,i) => `$${i+1}`).join(', ');
+    const result = await this.datasource.query(
+      `SELECT * FROM ${functionName}(${indexs})`,
+      params,
+    );
     console.log(result);
-    return result;
+    return result[0]; 
+  }
+
+  async executeFunctionRead(functionName:string, params:any[]=[]) {
+    const indexs = params.map((_,i) => `$${i+1}`).join(', ');
+    const queryRunner = this.datasource.createQueryRunner();
+    await queryRunner.connect();
+
+    try {
+      await queryRunner.query('BEGIN');
+      const result = await queryRunner.query(`SELECT * FROM ${functionName}(${indexs})`, params);
+      console.log(result);
+      const cursorName = result[0].p_result;
+      const response = result[0].p_response;
+
+      const rows = await queryRunner.query(`FETCH ALL FROM "${cursorName}"`);
+      await queryRunner.query('COMMIT');
+
+      return { 
+        data: rows, 
+        response 
+      };
+    } catch (error) {
+      await queryRunner.query('ROLLBACK');
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 }

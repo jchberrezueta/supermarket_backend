@@ -5,8 +5,14 @@ import { Roles } from './roles.decorator';
 import { AuthService } from './auth.service';
 import { AccesosUsuariosService } from '../admin/seguridad/accesos/accesos.service';
 
+interface credencial {
+    usuario: string;
+    clave: string;
+}
+
 @Controller('auth')
 export class AuthController {
+
     constructor(private readonly authService: AuthService, private servicio:AccesosUsuariosService) {}
 
     @UseGuards(AuthGuard('jwt'), RolesGuard)
@@ -18,7 +24,7 @@ export class AuthController {
 
 
     @Post('login')
-    async login(@Body() body: { usuario: string; clave: string },  @Req() req: Request,) {
+    async login(@Body() body: credencial,  @Req() req: Request,) {
         const user = await this.authService.validateUser(body.usuario, body.clave);
 
         if (!user) {
@@ -26,7 +32,7 @@ export class AuthController {
         }
         // Registrar acceso
         await this.servicio.insertarAccesoUsuario({
-            ide_cuen: user['IDE_CUEN'],
+            ide_cuen: user.ide_cuen,
             fecha_acce: new Date(),
             num_intentos_acce: 1,
             ip_acce: req.headers['x-forwarded-for'] || '127.0.0.1',
@@ -34,7 +40,7 @@ export class AuthController {
             latitud_acce: null,
             longitud_acce: null,
         });
-        //return this.authService.login(user);
+        return this.authService.login(user);
     }
 
 

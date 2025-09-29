@@ -118,9 +118,8 @@ export class CuentasService {
 
 
   async buscarUsuario(usuario: string){
-    const query = `SELECT * FROM CUENTA WHERE usuario_cuen LIKE '${usuario}'`;
-    /*const result = await this.db.ejecutarSQL(query);
-    return result.rows[0];*/
+    const result = await this.db.executeQuery(`SELECT * FROM CUENTA WHERE usuario_cuen LIKE '${usuario}'`)
+    return result[0];
   }
 
   async getPerfilPermisos(idCuenta: string){
@@ -143,8 +142,9 @@ export class CuentasService {
       LEFT JOIN OPCIONES d ON(d.IDE_OPCI = c.IDE_OPCI)
       WHERE a.IDE_CUEN = ${idCuenta}
     `;
-    /*const result = await this.db.ejecutarSQL(query);
-    return result.rows;*/
+    const result = await this.db.executeQuery(query);
+    console.log(result);
+    return result.rows;
   }
 
   

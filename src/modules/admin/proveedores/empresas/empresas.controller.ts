@@ -10,10 +10,9 @@ export class EmpresasController {
 
     constructor(private servicio: EmpresasService) {}
 
-
     @Get()
-    async testProducto() {
-        //console.log('lo logramos');
-        return await this.servicio.getEmpresas(); 
+    async listarEmpresas() {
+        console.log('lo logramos :)');
+        return this.servicio.getEmpresas(); 
     }
 }

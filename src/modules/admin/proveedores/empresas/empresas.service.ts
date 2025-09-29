@@ -9,15 +9,15 @@ export class EmpresasService {
 
 
   async getEmpresas(){
-    const binds = {
-      p_result: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR },
-      p_response: { dir: oracledb.BIND_OUT, type: oracledb.CLOB },
-    };
-    //return await this.db.ejecutarProcedimiento('listar_empresas', binds);
+    return this.db.executeFunctionRead('listar_empresa');
   }
 
   async findEmpresa(){
     
+  }
+
+  async filterEmpresas(){
+
   }
 
   async insertEmpresa(){

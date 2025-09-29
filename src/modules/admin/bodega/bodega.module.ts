@@ -3,8 +3,10 @@ import {EntregasModule} from './entregas/entregas.module';
 import {PedidosModule} from './pedidos/pedidos.module';
 
 
-
 @Module({
-    imports: [EntregasModule, PedidosModule],
+    imports: [
+        EntregasModule, 
+        PedidosModule
+    ],
 })
 export class BodegaModule {}

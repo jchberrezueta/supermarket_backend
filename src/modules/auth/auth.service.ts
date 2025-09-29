@@ -6,39 +6,38 @@ import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
-  constructor(private usersService: CuentasService, private jwtService: JwtService) {}
+  constructor(private cuentasService: CuentasService, private jwtService: JwtService) {}
 
-  async validateUser(usuario: string, clave: string): Promise<any> {
-    const user = await this.usersService.buscarUsuario(usuario);
-    /*if (user && await bcrypt.compare(clave, user['PASSWORD_CUEN'])) {
-      const { password_cuen, ...result } = user;
-      return result;
-    }*/
-    return null;
+  async validateUser(usuario: string, clave: string) {
+    const user = await this.cuentasService.buscarUsuario(usuario);
+    let result = null;
+    if (user) {
+      const res = await bcrypt.compare(clave, user.password_cuen);
+      if(res){
+        const { password_cuen, ...dataUser } = user;
+        result = dataUser;
+      }
+    }
+    return result;
   }
 
-  /*async login(user: any) {
-    const info = await this.usersService.getPerfilPermisos(user['IDE_CUEN']);
+  async login(user: any) {
+    const info = await this.cuentasService.getPerfilPermisos(user.ide_cuen);
     const permisosUsuario = info.map(p => ({
-      ruta: p['RUTA_OPCI'],
-      listar: p['LISTAR'] === 'SI',
-      insertar: p['INSERTAR'] === 'SI',
-      modificar: p['MODIFICAR'] === 'SI',
-      eliminar: p['ELIMINAR'] === 'SI',
-      activo: p['ACTIVO_OPCI'] === 'SI',
+      ruta: p.ruta_opci,
+      listar: p.listar === 'SI',
+      insertar: p.insertar === 'SI',
+      modificar: p.modificar === 'SI',
+      eliminar: p.eliminar === 'SI',
+      activo: p.activo_opci === 'SI',
     }));
     const payload = {
-      sub: info[0]['IDE_CUEN'],
-      username: info[0]['USUARIO_CUEN'],
-      state: info[0]['ESTADO_CUEN'],
-      perfil: info[0]['NOMBRE_PERF'],
+      sub: info[0].ide_cuen,
+      username: info[0].usuario_cuen,
+      state: info[0].estado_cuen,
+      perfil: info[0].nombre_perf,
       permisos: permisosUsuario,
     };    
-
-    
-
-
-
 
     return {
       access_token: this.jwtService.sign(payload),
@@ -50,5 +49,5 @@ export class AuthService {
         permisos: payload.permisos,
       }
     };
-  }*/
+  }
 }

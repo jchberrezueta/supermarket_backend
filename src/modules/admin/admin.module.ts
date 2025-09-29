@@ -5,8 +5,6 @@ import {
     SeguridadModule
 } from '@admin';
 
-
-
 @Module({
     imports: [
         BodegaModule,
