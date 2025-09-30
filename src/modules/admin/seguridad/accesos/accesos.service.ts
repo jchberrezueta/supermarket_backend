@@ -41,7 +41,7 @@ export class AccesosUsuariosService {
 
 
    async insertarAccesoUsuario(data: CreateAccesoDto) {
-    const binds = {
+    const datosAcceso = {
       p_ide_cuen: data.ide_cuen,         
       p_fecha_acce: data.fecha_acce,          
       p_num_intentos_acce: data.num_intentos_acce,  
@@ -49,14 +49,9 @@ export class AccesosUsuariosService {
       p_navegador_acce: data.navegador_acce,    
       p_latitud_acce: data.latitud_acce,
       p_longitud_acce: data.longitud_acce, 
-
-      p_result: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
-      p_id: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
-      p_response: { dir: oracledb.BIND_OUT, type: oracledb.CLOB },
     };
-    console.log(binds);
-    /*const outBinds = await this.db.ejecutarProcedimiento('insertar_acceso_usuario', binds);
-    return outBinds;*/
+    console.log(datosAcceso);
+    //this.db.executeFunctionWrite('insertar_acceso', [datos]);
   }
 
   

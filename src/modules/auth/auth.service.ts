@@ -25,11 +25,11 @@ export class AuthService {
     const info = await this.cuentasService.getPerfilPermisos(user.ide_cuen);
     const permisosUsuario = info.map(p => ({
       ruta: p.ruta_opci,
-      listar: p.listar === 'SI',
-      insertar: p.insertar === 'SI',
-      modificar: p.modificar === 'SI',
-      eliminar: p.eliminar === 'SI',
-      activo: p.activo_opci === 'SI',
+      listar: p.listar === 'si',
+      insertar: p.insertar === 'si',
+      modificar: p.modificar === 'si',
+      eliminar: p.eliminar === 'si',
+      activo: p.activo_opci === 'si',
     }));
     const payload = {
       sub: info[0].ide_cuen,

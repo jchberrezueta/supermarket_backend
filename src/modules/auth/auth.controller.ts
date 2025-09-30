@@ -33,12 +33,12 @@ export class AuthController {
         // Registrar acceso
         await this.servicio.insertarAccesoUsuario({
             ide_cuen: user.ide_cuen,
-            fecha_acce: new Date(),
-            num_intentos_acce: 1,
-            ip_acce: req.headers['x-forwarded-for'] || '127.0.0.1',
+            fecha_acce: new Date(),  //?
+            num_intentos_acce: 1,   //?
+            ip_acce: req.headers['x-forwarded-for'] || '127.0.0.1', //?
             navegador_acce: req.headers['user-agent'] || '',
-            latitud_acce: null,
-            longitud_acce: null,
+            latitud_acce: null,  //?
+            longitud_acce: null,  //?
         });
         return this.authService.login(user);
     }

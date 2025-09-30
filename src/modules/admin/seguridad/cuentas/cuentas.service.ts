@@ -143,8 +143,7 @@ export class CuentasService {
       WHERE a.IDE_CUEN = ${idCuenta}
     `;
     const result = await this.db.executeQuery(query);
-    console.log(result);
-    return result.rows;
+    return result;
   }
 
   
