@@ -8,7 +8,7 @@ export class CreateAccesoDto {
 
   @IsOptional()
   @IsDate()
-  fecha_acce?: Date;
+  fecha_acce?: string;
 
   @IsOptional()
   @IsNumber()

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, UseGuards, UnauthorizedException, Req } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, UseGuards, UnauthorizedException, Req, Ip } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from './roles.guard';
 import { Roles } from './roles.decorator';
@@ -24,7 +24,7 @@ export class AuthController {
 
 
     @Post('login')
-    async login(@Body() body: credencial,  @Req() req: Request,) {
+    async login(@Body() body: credencial,  @Req() req: Request, @Ip() ip) {
         const user = await this.authService.validateUser(body.usuario, body.clave);
 
         if (!user) {
@@ -33,9 +33,9 @@ export class AuthController {
         // Registrar acceso
         await this.servicio.insertarAccesoUsuario({
             ide_cuen: user.ide_cuen,
-            fecha_acce: new Date(),  //?
+            fecha_acce: new Date().toLocaleString(),  //?
             num_intentos_acce: 1,   //?
-            ip_acce: req.headers['x-forwarded-for'] || '127.0.0.1', //?
+            ip_acce: ip || '999.999.999.999', //?
             navegador_acce: req.headers['user-agent'] || '',
             latitud_acce: null,  //?
             longitud_acce: null,  //?
