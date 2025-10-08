@@ -22,8 +22,7 @@ export class EmpresasService {
   }
 
   async insertarEmpresa(empresa:CreateEmpresaDTO){
-    console.log(Object.values(empresa));
-    return this.db.executeFunctionWrite('fn_insertar_empresa');
+    return this.db.executeFunctionWrite('fn_insertar_empresa', empresa.toArray());
   }
 
   async actualizarEmpresa(){

@@ -17,7 +17,6 @@ export class DatabaseService {
       `SELECT * FROM ${functionName}(${indexs})`,
       params,
     );
-    console.log(result);
     return result[0]; 
   }
 
@@ -29,7 +28,6 @@ export class DatabaseService {
     try {
       await queryRunner.query('BEGIN');
       const result = await queryRunner.query(`SELECT * FROM ${functionName}(${indexs})`, params);
-      console.log(result);
       const cursorName = result[0].p_result;
       const response = result[0].p_response;
 

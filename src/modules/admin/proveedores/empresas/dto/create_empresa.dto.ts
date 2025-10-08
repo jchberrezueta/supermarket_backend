@@ -5,10 +5,7 @@ import {
   IsOptional, 
   IsEnum, 
   MaxLength, 
-  Matches, 
-  IsNotEmpty,
-  IsNotEmptyObject,
-  IsTimeZone
+  Matches
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { Length } from 'class-validator';
@@ -56,9 +53,12 @@ export class CreateEmpresaDTO {
     @IsEnum(EstadoEmpresa)
     estado: string;
 
-    @IsOptional()
     @IsString()
     @Length(1, 250)
-    @Transform(({value}) => (value == null || typeof value !== 'string')? null : value.trim().toLowerCase())
-    descripcion?: string = null;
+    @Transform(({value}) => (value == null || typeof value !== 'string' || value.toString().trim() === '')? 'ninguna' : value.trim().toLowerCase())
+    descripcion: string;
+
+    toArray(): any[] {
+        return [this.nombre, this.responsable, this.fechaContrato, this.direccion, this.telefono, this.email, this.estado, this.descripcion];
+    }
 }
