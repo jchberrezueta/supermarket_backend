@@ -6,6 +6,7 @@ import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
+
   constructor(private cuentasService: CuentasService, private jwtService: JwtService) {}
 
   async validateUser(usuario: string, clave: string) {
@@ -23,6 +24,7 @@ export class AuthService {
 
   async login(user: any) {
     const info = await this.cuentasService.getPerfilPermisos(user.ide_cuen);
+    //console.log(info);
     const permisosUsuario = info.map(p => ({
       ruta: p.ruta_opci,
       listar: p.listar === 'si',

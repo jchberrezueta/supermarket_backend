@@ -10,11 +10,11 @@ import { accesosModule } from '../admin/seguridad/accesos/accesos.module'
 @Module({
     imports: [
         JwtModule.register({
-            secret: process.env.JWT_SECRET || 'haki', // usa variable de entorno
+            secret: process.env.JWT_SECRET || 'haki',
             signOptions: { expiresIn: '1h' },
         }),
         PassportModule,
-        CuentasModule, // módulo que maneja usuarios y roles
+        CuentasModule,
         accesosModule,
     ],
     providers: [AuthService, JwtStrategy],

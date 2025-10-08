@@ -11,9 +11,6 @@ export class CuentasService {
   
     constructor(private readonly db: DatabaseService){}
 
-    /**
-    * Listar
-    */
     async listarCuentas(){
         const binds = {
           p_result: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR },

@@ -1,26 +1,43 @@
-import { IsOptional, IsString, IsNumber, IsDate } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { IsOptional, IsString, IsNumber, IsDate, MinLength, IsInt, Min, IsPositive, MinDate, IsIn, IsEnum, IsNotEmpty, MaxLength } from 'class-validator';
+
+enum EstadoEntrega {
+    ACTIVO = 'activo',
+    INACTIVO = 'inactivo'
+}
 
 export class CreateEntregaDto {
 
-    @IsNumber()
+    @IsInt()
+    @Min(1)
     idPedido:number;
 
-    @IsNumber()
+    @IsInt()
+    @Min(1)
     idProveedor:number;
 
     @IsDate()
+    @Type(() => Date)
+    @MinDate(new Date())
     fechaEntrega:Date;
 
-    @IsNumber()
+    @IsInt()
+    @Min(1)
     cantidadTotal:number;
 
     @IsNumber()
     montoTotal:number;
 
     @IsString()
+    @IsNotEmpty()
+    @Transform(({value}) => value.trim())
+    @Transform(({value}) => value.toLowerCase())
+    @IsEnum(EstadoEntrega)
     estadoEntrega:string;
 
     @IsOptional()
     @IsString()
-    observacion:string;
+    @IsNotEmpty()
+    @MaxLength(250)
+    observacion?:string;
 }

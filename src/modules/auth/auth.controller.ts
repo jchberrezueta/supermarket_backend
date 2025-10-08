@@ -5,7 +5,7 @@ import { Roles } from './roles.decorator';
 import { AuthService } from './auth.service';
 import { AccesosUsuariosService } from '../admin/seguridad/accesos/accesos.service';
 
-interface credencial {
+interface ICredential {
     usuario: string;
     clave: string;
 }
@@ -24,7 +24,7 @@ export class AuthController {
 
 
     @Post('login')
-    async login(@Body() body: credencial,  @Req() req: Request, @Ip() ip) {
+    async login(@Body() body: ICredential,  @Req() req: Request, @Ip() ip) {
         const user = await this.authService.validateUser(body.usuario, body.clave);
 
         if (!user) {
