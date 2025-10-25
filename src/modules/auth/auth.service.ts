@@ -32,6 +32,9 @@ export class AuthService {
       modificar: p.modificar === 'si',
       eliminar: p.eliminar === 'si',
       activo: p.activo_opci === 'si',
+      nombre: p.nombre_opci,
+      nivel: p.nivel_opci,
+      padre: p.padre_opci
     }));
     const payload = {
       sub: info[0].ide_cuen,

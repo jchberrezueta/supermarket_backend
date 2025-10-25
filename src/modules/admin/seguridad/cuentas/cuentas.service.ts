@@ -132,7 +132,10 @@ export class CuentasService {
         c.INSERTAR,
         c.MODIFICAR,
         c.ELIMINAR,
-        d.RUTA_OPCI
+        d.RUTA_OPCI,
+        d.NOMBRE_OPCI,
+        d.NIVEL_OPCI,
+        d.PADRE_OPCI
       FROM CUENTA a
       LEFT JOIN PERFIL b ON (b.IDE_PERF = a.IDE_PERF)
       LEFT JOIN PERFIL_OPCIONES c ON(c.IDE_PERF = b.IDE_PERF)
