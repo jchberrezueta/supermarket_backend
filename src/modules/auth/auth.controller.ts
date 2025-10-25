@@ -8,6 +8,7 @@ import { AccesosUsuariosService } from '../admin/seguridad/accesos/accesos.servi
 interface ICredential {
     usuario: string;
     clave: string;
+    numIntentos: number;
 }
 
 @Controller('auth')
@@ -15,26 +16,30 @@ export class AuthController {
 
     constructor(private readonly authService: AuthService, private servicio:AccesosUsuariosService) {}
 
-    @UseGuards(AuthGuard('jwt'), RolesGuard)
+    /*@UseGuards(AuthGuard('jwt'), RolesGuard)
     @Roles('admin')
     @Get('admin/data')
     getAdminData() {
         return 'Este dato solo es para admins';
-    }
+    }*/
 
 
     @Post('login')
     async login(@Body() body: ICredential,  @Req() req: Request, @Ip() ip) {
+       
         const user = await this.authService.validateUser(body.usuario, body.clave);
 
         if (!user) {
             throw new UnauthorizedException('Credenciales inválidas');
         }
+        if (ip.startsWith('::ffff:')) {
+            ip = ip.split('::ffff:')[1]; // ahora tienes IPv4
+        }
         // Registrar acceso
         await this.servicio.insertarAccesoUsuario({
             ide_cuen: user.ide_cuen,
             fecha_acce: new Date().toLocaleString(),  //?
-            num_intentos_acce: 1,   //?
+            num_intentos_acce: body.numIntentos,   //?
             ip_acce: ip || '999.999.999.999', //?
             navegador_acce: req.headers['user-agent'] || '',
             latitud_acce: null,  //?

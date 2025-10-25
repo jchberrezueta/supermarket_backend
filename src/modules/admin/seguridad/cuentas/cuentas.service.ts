@@ -115,7 +115,7 @@ export class CuentasService {
 
 
   async buscarUsuario(usuario: string){
-    const result = await this.db.executeQuery(`SELECT * FROM CUENTA WHERE usuario_cuen LIKE '${usuario}'`)
+    const result = await this.db.executeQuery(`SELECT * FROM CUENTA WHERE usuario_cuen LIKE '${usuario}'`);
     return result[0];
   }
 
