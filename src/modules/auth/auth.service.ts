@@ -24,6 +24,7 @@ export class AuthService {
 
   async login(user: any) {
     const info = await this.cuentasService.getPerfilPermisos(user.ide_cuen);
+    const rutasSidebar = await this.cuentasService.getSidebarRutas(user.ide_cuen);
     //console.log(info);
     const permisosUsuario = info.map(p => ({
       ruta: p.ruta_opci,
@@ -52,7 +53,8 @@ export class AuthService {
         state: payload.state,
         perfil: payload.perfil,
         permisos: payload.permisos,
-      }
+        rutas_sidebar: rutasSidebar
+      },
     };
   }
 }

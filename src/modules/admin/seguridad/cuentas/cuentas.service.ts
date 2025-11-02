@@ -146,5 +146,23 @@ export class CuentasService {
     return result;
   }
 
+
+  async getSidebarRutas(idCuenta: string) {
+    const query = `
+      SELECT 
+        jsonb_agg(obtener_rutas_json(d.ide_opci, b.ide_perf)) AS menu
+      FROM CUENTA a
+      LEFT JOIN PERFIL b ON (b.IDE_PERF = a.IDE_PERF)
+      LEFT JOIN PERFIL_OPCIONES c ON(c.IDE_PERF = b.IDE_PERF)
+      LEFT JOIN OPCIONES d ON(d.IDE_OPCI = c.IDE_OPCI)
+      WHERE a.IDE_CUEN = ${idCuenta}
+        AND a.ESTADO_CUEN = 'activo'
+        AND d.PADRE_OPCI IS NULL
+        AND d.ACTIVO_OPCI = 'si'
+    `;
+    const result = await this.db.executeQuery(query);
+    return result[0].menu;
+  }
+
   
 }
