@@ -3,9 +3,11 @@ import { EmpresasService } from './empresas.service';
 import { Roles } from 'src/modules/auth/roles.decorator';
 import { RolesGuard } from 'src/modules/auth/roles.guard';
 import { CreateEmpresaDTO } from './dto/create_empresa.dto';
+import { AuthGuard } from '@nestjs/passport';
 
-@UseGuards(RolesGuard)
-@Roles('bodega')
+
+@UseGuards(AuthGuard('jwt'), RolesGuard)
+@Roles('padmin', 'pbodega')
 @Controller('empresas')
 export class EmpresasController {
 

@@ -7,16 +7,16 @@ import { Strategy, ExtractJwt } from 'passport-jwt';
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   
-  constructor(private configService: ConfigService) {
+  constructor(private readonly _configService: ConfigService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configService.get('JWT_SECRET'),
+      secretOrKey: process.env.JWT_SECRET || 'haki',
     });
   }
 
   async validate(payload: any) {
     // Aquí puedes devolver lo que quieras que esté disponible en req.user
-    return { userId: payload.sub, username: payload.username };
+    return payload;
   }
 }

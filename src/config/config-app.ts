@@ -6,6 +6,8 @@ export const configLoader = () => {
         environment: env.NODE_ENV,
         frontendDomain: env.FRONTEND_DOMAIN,
         backendDomain: env.BACKEND_DOMAIN ?? 'http://localhost:' + env.APP_PORT,
+        jwtSecret: env.JWT_SECRET,
+        jwtExpiration: env.JWT_EXPIRATION,
         db: {
             type: env.DB_TYPE,
             dbname: env.DB_NAME,

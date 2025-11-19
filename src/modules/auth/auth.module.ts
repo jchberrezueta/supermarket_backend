@@ -22,3 +22,5 @@ import { accesosModule } from '../admin/seguridad/accesos/accesos.module'
     exports: [AuthService]
 })
 export class AuthModule {}
+
+
