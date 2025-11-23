@@ -5,7 +5,6 @@ import { RolesGuard } from 'src/modules/auth/roles.guard';
 import { CreateEmpresaDTO } from './dto/create_empresa.dto';
 import { AuthGuard } from '@nestjs/passport';
 
-
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 @Roles('padmin', 'pbodega')
 @Controller('empresas')
@@ -35,12 +34,12 @@ export class EmpresasController {
     }
 
     @Put()
-    async actualizarEmpresa() {
-        return this.servicio.actualizarEmpresa(); 
+    async actualizarEmpresa(@Body() empresa: CreateEmpresaDTO) {
+        return this.servicio.actualizarEmpresa(empresa); 
     }
 
-    @Delete()
-    async eliminarEmpresa() {
-        return this.servicio.eliminarEmpresa(); 
+    @Delete('eliminar/:id')
+    async eliminarEmpresa(@Param() id:number) {
+        return this.servicio.eliminarEmpresa(id); 
     }
 }

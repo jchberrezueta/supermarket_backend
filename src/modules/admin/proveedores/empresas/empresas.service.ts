@@ -1,13 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import {DatabaseService} from '@database';
-import * as oracledb from 'oracledb';
 import { CreateEmpresaDTO } from './dto/create_empresa.dto';
+import { UpdateEmpresaDTO } from './dto/update_empresa.dto';
 
 @Injectable()
 export class EmpresasService {
   
   constructor(private readonly db: DatabaseService){}
-
 
   async listarEmpresas(){
     return this.db.executeFunctionRead('fn_listar_empresa');
@@ -25,12 +24,12 @@ export class EmpresasService {
     return this.db.executeFunctionWrite('fn_insertar_empresa', empresa.toArray());
   }
 
-  async actualizarEmpresa(){
-
+  async actualizarEmpresa(empresa:UpdateEmpresaDTO){
+    return this.db.executeFunctionWrite('fn_actualizar_empresa', empresa.toArray());
   }
 
-  async eliminarEmpresa(){
-
+  async eliminarEmpresa(idEmpresa:number){
+    return this.db.executeFunctionWrite('fn_eliminar_empresa', [idEmpresa]);
   }
   
 }

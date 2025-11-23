@@ -9,7 +9,6 @@ import {
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { Length } from 'class-validator';
-import { Timestamp } from 'typeorm';
 
 enum EstadoEmpresa {
     ACTIVO = 'activo',
