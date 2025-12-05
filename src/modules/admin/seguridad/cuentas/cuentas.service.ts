@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '@database';
 import * as oracledb from 'oracledb';
-import { FiltroCuentaDto } from './dto/filtro_cuenta.dto';
+import { FiltroCuentaDto } from './dto/filter_cuenta.dto';
 import { CreateCuentaDto } from './dto/create_cuenta.dto';
 import { UpdateCuentaDto } from './dto/update_cuenta.dto';
 import * as bcrypt from 'bcrypt';

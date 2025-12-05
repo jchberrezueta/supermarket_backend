@@ -2,7 +2,7 @@ import { Controller, Get, Post, Delete, Body, Put, Param, Query } from '@nestjs/
 import { CuentasService } from './cuentas.service';
 import { CreateCuentaDto } from './dto/create_cuenta.dto';
 import { UpdateCuentaDto } from './dto/update_cuenta.dto';
-import { FiltroCuentaDto } from './dto/filtro_cuenta.dto';
+import { FiltroCuentaDto } from './dto/filter_cuenta.dto';
 
 
 @Controller('cuentas')

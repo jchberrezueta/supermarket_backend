@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Delete, Body, Put, Param, Query } from '@nestjs/common';
 import { AccesosUsuariosService } from './accesos.service';
-import { FiltroAccesoDto } from './dto/filtro_acceso.dto';
+import { FiltroAccesoDto } from './dto/filter_acceso.dto';
 
 
 @Controller('accesos')
