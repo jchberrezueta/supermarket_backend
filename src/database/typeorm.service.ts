@@ -7,7 +7,7 @@ export class TypeOrmConfigService implements TypeOrmOptionsFactory{
 
     constructor(private readonly configService: ConfigService){}
 
-    createTypeOrmOptions(): TypeOrmModuleOptions {
+    public createTypeOrmOptions(): TypeOrmModuleOptions {
         return {
             type: this.configService.get('db.type'),
             host: this.configService.get('db.hostname'),
