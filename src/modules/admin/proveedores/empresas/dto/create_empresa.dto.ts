@@ -1,63 +1,78 @@
 import { 
   IsString, 
   IsEmail, 
-  IsDate, 
-  IsOptional, 
+  IsDateString, 
   IsEnum, 
   MaxLength, 
-  Matches
+  Length,
+  IsNumberString
 } from 'class-validator';
-import { Transform, Type } from 'class-transformer';
-import { Length } from 'class-validator';
-
-enum EstadoEmpresa {
-    ACTIVO = 'activo',
-    INACTIVO = 'inactivo'
-}
+import { Transform } from 'class-transformer';
+import { EstadoEmpresa } from '../enums/estado_empresa.enum';
 
 export class CreateEmpresaDTO {
-    @IsString()
-    @Length(1, 250)
-    @Transform(({value}) => (value == null || typeof value !== 'string')? null : value.trim().toLowerCase())
-    nombre: string;
 
-    @IsString()
-    @Length(1, 250)
-    @Transform(({value}) => (value == null || typeof value !== 'string')? null : value.trim().toLowerCase())
-    responsable: string;
+  @IsString()
+  @Length(1, 250)
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : null
+  )
+  nombreEmp: string;
 
-    @IsDate()
-    @Type(() => Date)
-    fechaContrato: Date;
+  @IsString()
+  @Length(1, 250)
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : null
+  )
+  responsableEmp: string;
 
-    @IsString()
-    @Length(1, 250)
-    @Transform(({value}) => (value == null || typeof value !== 'string')? null : value.trim().toLowerCase())
-    direccion: string;
+  @IsDateString()
+  fechaContratoEmp: string; // llega como string ISO
 
-    @IsString()
-    @Matches(/^\+?[0-9\s\-\(\)]{10,15}$/, {
-        message: 'El formato del teléfono no es válido'
-    })
-    @Length(1, 15)
-    @Transform(({value}) => (value == null || typeof value !== 'string')? null : value.trim().toLowerCase())
-    telefono: string;
+  @IsString()
+  @Length(1, 250)
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : null
+  )
+  direccionEmp: string;
 
-    @IsEmail()
-    @MaxLength(100)
-    @Transform(({value}) => (value == null || typeof value !== 'string')? null : value.trim().toLowerCase())
-    email: string;
+  @IsNumberString()
+  @Length(7, 15)
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim() : null
+  )
+  telefonoEmp: string;
 
-    @IsString()
-    @IsEnum(EstadoEmpresa)
-    estado: string;
+  @IsEmail()
+  @MaxLength(100)
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : null
+  )
+  emailEmp: string;
 
-    @IsString()
-    @Length(1, 250)
-    @Transform(({value}) => (value == null || typeof value !== 'string' || value.toString().trim() === '')? 'ninguna' : value.trim().toLowerCase())
-    descripcion: string;
+  @IsEnum(EstadoEmpresa)
+  estadoEmp: EstadoEmpresa;
 
-    toArray(): any[] {
-        return [this.nombre, this.responsable, this.fechaContrato, this.direccion, this.telefono, this.email, this.estado, this.descripcion];
+  @IsString()
+  @Length(1, 250)
+  @Transform(({ value }) => {
+    if (typeof value !== 'string' || value.trim() === '') {
+      return 'ninguna';
     }
+    return value.trim().toLowerCase();
+  })
+  descripcionEmp: string;
+
+  toArray(): any[] {
+    return [
+      this.nombreEmp,
+      this.responsableEmp,
+      this.fechaContratoEmp,
+      this.direccionEmp,
+      this.telefonoEmp,
+      this.emailEmp,
+      this.estadoEmp,
+      this.descripcionEmp
+    ];
+  }
 }

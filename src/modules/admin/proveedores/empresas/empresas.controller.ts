@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Patch, Delete, Body, UseGuards, Put, Param } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, UseGuards, Put, Param, Query } from '@nestjs/common';
 import { EmpresasService } from './empresas.service';
 import { Roles } from 'src/modules/auth/roles.decorator';
 import { RolesGuard } from 'src/modules/auth/roles.guard';
 import { CreateEmpresaDTO } from './dto/create_empresa.dto';
 import { AuthGuard } from '@nestjs/passport';
+import { FilterEmpresaDTO } from './dto/filter_empresa.dto';
 
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 @Roles('padmin', 'pbodega')
@@ -13,33 +14,36 @@ export class EmpresasController {
     constructor(private servicio: EmpresasService) {}
 
     @Get()
-    async listarEmpresas() {
+    async listar() {
         console.log('lo logramos :)');
-        return this.servicio.listarEmpresas(); 
+        return this.servicio.listar(); 
     }
 
     @Get('buscar/:id')
-    async buscarEmpresa(@Param('id') id:number) {
-        return this.servicio.buscarEmpresa(id); 
+    async buscar(@Param('id') id:number) {
+        return this.servicio.buscar(id); 
     }
 
-    @Get()
-    async filtrarEmpresas() {
-        return this.servicio.filtrarEmpresa(); 
+    @Get('filtrar')
+    async filtrar(@Query() queryParams: FilterEmpresaDTO) {
+        return this.servicio.filtrar(queryParams); 
     }
 
     @Post()
-    async insertarEmpresa(@Body() empresa: CreateEmpresaDTO) {
-        return this.servicio.insertarEmpresa(empresa); 
+    async insertar(@Body() empresa: CreateEmpresaDTO) {
+        return this.servicio.insertar(empresa); 
     }
 
-    @Put()
-    async actualizarEmpresa(@Body() empresa: CreateEmpresaDTO) {
-        return this.servicio.actualizarEmpresa(empresa); 
+    @Put('actualizar/:id')
+    async actualizar(
+        @Param('id') id: number, 
+        @Body() empresa: CreateEmpresaDTO
+    ) {
+        return this.servicio.actualizar(id, empresa); 
     }
 
     @Delete('eliminar/:id')
-    async eliminarEmpresa(@Param() id:number) {
-        return this.servicio.eliminarEmpresa(id); 
+    async eliminar(@Param() id:number) {
+        return this.servicio.eliminar(id); 
     }
 }
