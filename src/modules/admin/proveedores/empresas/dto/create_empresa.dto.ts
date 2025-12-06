@@ -8,7 +8,7 @@ import {
   IsNumberString
 } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { EstadoEmpresa } from '../enums/estado_empresa.enum';
+import { EnumEstadoEmpresa } from '../enums/estado_empresa.enum';
 
 export class CreateEmpresaDTO {
 
@@ -50,8 +50,8 @@ export class CreateEmpresaDTO {
   )
   emailEmp: string;
 
-  @IsEnum(EstadoEmpresa)
-  estadoEmp: EstadoEmpresa;
+  @IsEnum(EnumEstadoEmpresa)
+  estadoEmp: EnumEstadoEmpresa;
 
   @IsString()
   @Length(1, 250)

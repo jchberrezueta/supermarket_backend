@@ -1,4 +1,4 @@
-export enum EstadoEmpresa {
+export enum EnumEstadoEmpresa {
   ACTIVO = 'activo',
   INACTIVO = 'inactivo'
 }
