@@ -44,7 +44,9 @@ export class FilterEmpleadoDTO {
             this.ideRol,
             this.cedulaEmpl,
             this.primerNombreEmpl,
-            this.
+            this.apellidoPaternoEmpl,
+            this.tituloEmpl,
+            this.estadoEmpl
         ];
     }
 }
