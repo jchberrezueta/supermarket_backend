@@ -4,35 +4,35 @@ import { FilterEmpleadoDTO } from './dto/filter_empleado.dto';
 import { CreateEmpleadoDTO } from './dto/create_empleado.dto';
 import { UpdateEmpleadoDTO } from './dto/update_empleado.dto';
 
-
 @Injectable()
 export class EmpleadosService {
   
+  private fnName: string = 'empleado';
   constructor(private readonly db: DatabaseService){}
 
   async listar(){
-    return this.db.executeFunctionRead('fn_listar_Empleado');
+    return this.db.executeFunctionRead(`fn_listar_${this.fnName}`);
   }
 
   async buscar(id:number){
-    return this.db.executeFunctionRead('fn_buscar_Empleado');
+    return this.db.executeFunctionRead(`fn_buscar_${this.fnName}`, [id]);
   }
 
   async filtrar(queryParams: FilterEmpleadoDTO){
-    return this.db.executeFunctionRead('fn_filtrar_Empleado', queryParams.toArray());
+    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}`, queryParams.toArray());
   }
 
   async insertar(body:CreateEmpleadoDTO){
-    return this.db.executeFunctionWrite('fn_insertar_Empleado', body.toArray());
+    return this.db.executeFunctionWrite(`fn_insertar_${this.fnName}`, body.toArray());
   }
 
   async actualizar(id: number, body:UpdateEmpleadoDTO){
     const data = body.toArray(); data.unshift(id);
-    return this.db.executeFunctionWrite('fn_actualizar_Empleado', data);
+    return this.db.executeFunctionWrite(`fn_actualizar_${this.fnName}`, data);
   }
 
   async eliminar(id:number){
-    return this.db.executeFunctionWrite('fn_eliminar_Empleado', [id]);
+    return this.db.executeFunctionWrite(`fn_eliminar_${this.fnName}`, [id]);
   }
   
 }

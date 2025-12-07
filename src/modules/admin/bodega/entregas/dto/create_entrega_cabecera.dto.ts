@@ -1,15 +1,16 @@
-import { IsString, IsNumber, IsEnum, IsDateString, Length, IsInt, Min } from 'class-validator';
+import { IsString, IsNumber, IsEnum, IsDateString, Length, IsInt, Min, IsOptional } from 'class-validator';
 import { EnumEstadoEntrega } from '../enums/estado_entrega.enum';
+import { Transform } from 'class-transformer';
 
 export class CreateEntregaCabeceraDTO {
 
     @IsInt()
     @Min(0)
-    idPedi:number;
+    idePedi:number;
 
     @IsInt()
     @Min(0)
-    idProv:number;
+    ideProv:number;
 
     @IsDateString()
     fechaEntr:Date;
@@ -19,20 +20,23 @@ export class CreateEntregaCabeceraDTO {
     cantidadTotalEntr:number;
 
     @IsNumber()
+    @Min(0)
     totalEntr:number;
 
     @IsEnum(EnumEstadoEntrega)
     estadoEntr:EnumEstadoEntrega;
-
     
+    @Transform(({value}) => (
+      (typeof value !== 'string') || (typeof value === 'string' && value.trim() === '') || (value == null)) ? 'ninguna' : value.trim()
+    )
     @IsString()
     @Length(1, 250)
     observacionEntr:string;
 
     toArray(): any[] {
       return [
-        this.idPedi,
-        this.idProv,
+        this.idePedi,
+        this.ideProv,
         this.fechaEntr,
         this.cantidadTotalEntr,
         this.totalEntr,

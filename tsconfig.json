@@ -21,6 +21,7 @@
       "@common/*": ["src/common/*"],
       "@config": ["src/config/index"],
       "@database": ["src/database/index"],
+      "@helpers/*": ["src/helpers/*"],
       "@modules": ["src/modules/index"],
       "@admin": ["src/modules/admin/index"],
       "@entities": ["src/database/entities/index"],

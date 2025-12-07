@@ -14,7 +14,7 @@ export class CreateEntregaDetalleDTO {
     @Min(0)
     ideProd: number;
 
-    @IsNumber()
+    @IsInt()
     @Min(1)
     cantidadProd: number;
 

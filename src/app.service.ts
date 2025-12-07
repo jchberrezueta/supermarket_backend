@@ -10,8 +10,17 @@ export class AppService {
     return 'Hola, lo vamos a lograr :)';
   }
 
-  vamos(){
-    return this.db.executeQuery('SELECT * FROM EMPRESA');
+  vamos() {
+    return `
+      <html>
+        <head>
+          <title>My bonito Backend :)</title>
+        </head>
+        <body>
+          HOLA :), QUE TAL, JSJSJJS, BIENVENIDO AL MEJOR BACKEND DEL MUNDO :)
+        </body>
+      </html>
+    `;
   }
 
 }

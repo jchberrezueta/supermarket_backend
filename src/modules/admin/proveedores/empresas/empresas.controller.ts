@@ -31,16 +31,16 @@ export class EmpresasController {
     }
 
     @Post()
-    async insertar(@Body() empresa: CreateEmpresaDTO) {
-        return this.servicio.insertar(empresa); 
+    async insertar(@Body() body: CreateEmpresaDTO) {
+        return this.servicio.insertar(body); 
     }
 
     @Put('actualizar/:id')
     async actualizar(
         @Param('id') id: number, 
-        @Body() empresa: UpdateEmpresaDTO
+        @Body() body: UpdateEmpresaDTO
     ) {
-        return this.servicio.actualizar(id, empresa); 
+        return this.servicio.actualizar(id, body); 
     }
 
     @Delete('eliminar/:id')

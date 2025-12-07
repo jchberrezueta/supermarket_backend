@@ -1,19 +1,20 @@
 import { 
+  IsInt,
     IsNumber,
     Min
 } from 'class-validator';
 
 export class CreatePedidoDetalleDTO {
 
-    @IsNumber()
+    @IsInt()
     @Min(0)
     idePedi: number;
 
-    @IsNumber()
+    @IsInt()
     @Min(0)
     ideProd: number;
 
-    @IsNumber()
+    @IsInt()
     @Min(1)
     cantidadProd: number;
 

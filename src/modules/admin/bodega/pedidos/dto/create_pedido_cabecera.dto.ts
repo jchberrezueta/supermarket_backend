@@ -9,11 +9,9 @@ import {
 } from 'class-validator';
 import { EnumEstadoPedido } from '../enums/estado_pedido.enum';
 import { EnumMotivoPedido } from '../enums/motivo_pedido.enum';
+import { Transform } from 'class-transformer';
 
 export class CreatePedidoCabeceraDTO {
-    @IsInt()
-    @Min(0)
-    idePedi: number;
 
     @IsInt()
     @Min(0)
@@ -39,6 +37,9 @@ export class CreatePedidoCabeceraDTO {
     @IsEnum(EnumMotivoPedido)
     motivoPedi: EnumMotivoPedido;
 
+    @Transform(({value}) => (
+      (typeof value !== 'string') || (typeof value === 'string' && value.trim() === '') || (value == null)) ? 'ninguna' : value.trim()
+    )
     @IsString()
     @Length(1, 250)
     observacionPedi: string;

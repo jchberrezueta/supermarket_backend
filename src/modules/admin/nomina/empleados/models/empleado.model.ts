@@ -2,7 +2,7 @@ export interface IEmpleado {
   ide_empl: number;
   ide_rol: number;
   cedula_empl: string;
-  fecha_nacimiento_empl: Date;
+  fecha_nacimiento_empl: string;
   edad_empl: number;
   fecha_inicio_empl: Date;
   primer_nombre_empl: string;
@@ -12,10 +12,10 @@ export interface IEmpleado {
   estado_empl: 'activo' | 'inactivo';
   segundo_nombre_empl?: string | null;
   apellido_materno_empl?: string | null;
-  fecha_termino_empl?: Date | null;
+  fecha_termino_empl?: string | null;
 
   usua_ingre?: string | null;
-  fecha_ingre?: Date | null;
+  fecha_ingre?: string | null;
   usua_actua?: string | null;
-  fecha_actua?: Date | null;
+  fecha_actua?: string | null;
 }

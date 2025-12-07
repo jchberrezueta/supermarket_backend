@@ -1,9 +1,9 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { CreatePedidoDetalleDTO } from './create_pedido_detalle.dto';
-import { IsNumber, Min } from 'class-validator';
+import { IsInt, Min } from 'class-validator';
 
 export class UpdatePedidoDetalleDTO extends PartialType(CreatePedidoDetalleDTO) {
-    @IsNumber()
+    @IsInt()
     @Min(0)
     ideDetaPedi: number;
 

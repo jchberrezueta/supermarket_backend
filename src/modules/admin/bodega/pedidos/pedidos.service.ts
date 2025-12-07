@@ -12,11 +12,11 @@ export class PedidosService {
   constructor(private readonly db: DatabaseService){}
 
   async listar(){
-    return this.db.executeFunctionRead(`fn_insertar_${this.fnName}`);
+    return this.db.executeFunctionRead(`fn_listar_${this.fnName}`);
   }
 
   async buscar(id:number){
-    return this.db.executeFunctionRead(`fn_buscar_${this.fnName}`);
+    return this.db.executeFunctionRead(`fn_buscar_${this.fnName}`, [id]);
   }
 
   async filtrar(queryParams: FilterPedidoDTO){

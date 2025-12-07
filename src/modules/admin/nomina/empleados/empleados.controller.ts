@@ -31,16 +31,16 @@ export class EmpleadosController {
     }
 
     @Post()
-    async insertar(@Body() Empleado: CreateEmpleadoDTO) {
-        return this.servicio.insertar(Empleado); 
+    async insertar(@Body() body: CreateEmpleadoDTO) {
+        return this.servicio.insertar(body); 
     }
 
     @Put('actualizar/:id')
     async actualizar(
         @Param('id') id: number, 
-        @Body() Empleado: UpdateEmpleadoDTO
+        @Body() body: UpdateEmpleadoDTO
     ) {
-        return this.servicio.actualizar(id, Empleado); 
+        return this.servicio.actualizar(id, body); 
     }
 
     @Delete('eliminar/:id')

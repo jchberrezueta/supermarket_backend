@@ -3,40 +3,25 @@ import { EnumEstadoEntrega } from '../enums/estado_entrega.enum';
 import { Transform } from 'class-transformer';
 import { isIntNumeric } from '@helpers/utilities';
 
-export class FilterEntregaDTO {
+export class FilterEntregaDetalleDTO {
     
     @IsOptional()
     @Transform(({value}) => isIntNumeric(value) ? (+value) : -1 )
     @IsInt()
     @Min(0)
-    idePedi?: number;
+    ideEntr?: number;
 
     @IsOptional()
     @Transform(({value}) => isIntNumeric(value) ? (+value) : -1 )
     @IsInt()
     @Min(0)
-    ideProv?: number;
-
-    @IsOptional()
-    @IsEnum(EnumEstadoEntrega)
-    estadoEntr?: EnumEstadoEntrega;
-
-    @IsOptional()
-    @IsDateString()
-    fechaDesde?: string;
-
-    @IsOptional()
-    @IsDateString()
-    fechaHasta?: string;
+    ideProd?: number;
 
 
     toArray(): any[] {
         return [
-            this.idePedi ?? null,
-            this.ideProv ?? null,
-            this.estadoEntr ?? null,
-            this.fechaDesde ?? null,
-            this.fechaHasta ?? null        
+            this.ideEntr ?? null,
+            this.ideProd ?? null,   
         ];
     }
 }

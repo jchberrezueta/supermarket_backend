@@ -20,8 +20,7 @@ export class EntregasService {
   }
 
   async filtrar(queryParams: FilterEntregaDTO){
-    //console.log(queryParams.toArray());
-    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}`, []);
+    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}`, queryParams.toArray());
   }
 
   async insertar(body: CreateEntregaDTO){

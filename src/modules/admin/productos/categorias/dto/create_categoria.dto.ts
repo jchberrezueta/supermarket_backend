@@ -8,14 +8,21 @@ import { Length } from 'class-validator';
 
 
 export class CreateCategoriaDTO {
+
     @IsString()
     @Length(1, 100)
     @Transform(({value}) => value.trim().toLowerCase())
-    nombre: string;
+    nombreCate: string;
 
-    @IsOptional()
     @IsString()
     @Length(1, 250)
     @Transform(({value}) => value.trim().toLowerCase())
-    descripcion?: string;
+    descripcionCate?: string;
+
+    toArray = (): any[] => {
+      return [
+        this.nombreCate,
+        this.descripcionCate
+      ];
+    }
 }

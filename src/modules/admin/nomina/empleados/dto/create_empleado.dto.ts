@@ -1,14 +1,11 @@
 import { 
   IsString, 
-  IsEmail, 
   IsDateString, 
   IsEnum, 
-  MaxLength, 
   Length,
   IsNumberString,
   IsInt,
   Min,
-  IsDate,
   IsNumber
 } from 'class-validator';
 import { Transform } from 'class-transformer';
@@ -56,7 +53,7 @@ export class CreateEmpleadoDTO {
   rmuEmpl: number;
   
   @IsString()
-  @Length(1, 50)
+  @Length(1, 250)
   @Transform(({ value }) =>
     typeof value === 'string' ? value.trim().toLowerCase() : null
   )

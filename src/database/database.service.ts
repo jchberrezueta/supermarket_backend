@@ -24,8 +24,6 @@ export class DatabaseService {
     const indexs = params.map((_,i) => `$${i+1}`).join(', ');
     const queryRunner = this.datasource.createQueryRunner();
     await queryRunner.connect();
-    /*console.log(params);
-    console.log(indexs);*/
     try {
       await queryRunner.query('BEGIN');
       const result = await queryRunner.query(`SELECT * FROM ${functionName}(${indexs})`, params);
