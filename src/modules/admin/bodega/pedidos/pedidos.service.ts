@@ -34,16 +34,9 @@ export class PedidosService {
 
   async actualizar(id: number, body: UpdatePedidoDTO){
     const data = body.cabeceraPedido.toArray(); data.unshift(id);
-    const ids = await this.db.executeQuery(`
-        SELECT ide_deta_pedi 
-        FROM DETALLE_PEDIDO 
-        WHERE ide_pedi = ${id}
-        ORDER BY ide_deta_pedi
-      `);
     const result = await this.db.executeFunctionWrite(`fn_actualizar_${this.fnName}`, data);
     body.detallePedido.forEach( obj => {
-      const data = obj.toArray(); data.unshift(id);
-      this.db.executeFunctionWrite(`fn_actualizar_${this.fnName2}`, data);
+      this.db.executeFunctionWrite(`fn_actualizar_${this.fnName2}`, obj.toArray());
     });
     return result;
   }

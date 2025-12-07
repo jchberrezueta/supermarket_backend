@@ -4,17 +4,18 @@ import {
   IsEnum, 
   Length,
   IsNumber,
-  Min
+  Min,
+  IsInt
 } from 'class-validator';
 import { EnumEstadoPedido } from '../enums/estado_pedido.enum';
 import { EnumMotivoPedido } from '../enums/motivo_pedido.enum';
 
-export class PedidoCabeceraDTO {
-    @IsNumber()
+export class CreatePedidoCabeceraDTO {
+    @IsInt()
     @Min(0)
     idePedi: number;
 
-    @IsNumber()
+    @IsInt()
     @Min(0)
     ideEmpr: number;
 
@@ -24,7 +25,7 @@ export class PedidoCabeceraDTO {
     @IsDateString()
     fechaEntrPedi: string;
 
-    @IsNumber()
+    @IsInt()
     @Min(1)
     cantidadTotalPedi: number;
 

@@ -3,30 +3,34 @@ import { EnumEstadoPedido } from '../enums/estado_pedido.enum';
 import { EnumMotivoPedido } from '../enums/motivo_pedido.enum';
 
 export class FilterPedidoDTO {
-
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  ideEmp: number;
+  ideEmp?: number;
 
+  @IsOptional()
   @IsEnum(EnumEstadoPedido)
-  estadoPedi: EnumEstadoPedido;
+  estadoPedi?: EnumEstadoPedido;
 
+  @IsOptional()
   @IsEnum(EnumMotivoPedido)
-  motivoPedi: EnumMotivoPedido;
+  motivoPedi?: EnumMotivoPedido;
 
+  @IsOptional()
   @IsDateString()
-  fechaPedi: Date;
+  fechaPedi?: Date;
 
+  @IsOptional()
   @IsDateString()
-  fechaEntrPedi: Date;
+  fechaEntrPedi?: Date;
 
   toArray(): any[] {
     return [
-      this.ideEmp,
-      this.estadoPedi,
-      this.motivoPedi,
-      this.fechaPedi,
-      this.fechaEntrPedi
+      this.ideEmp ?? null,
+      this.estadoPedi ?? null,
+      this.motivoPedi ?? null,
+      this.fechaPedi ?? null,
+      this.fechaEntrPedi ?? null
     ];
   }
 }

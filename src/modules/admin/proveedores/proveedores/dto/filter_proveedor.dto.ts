@@ -1,16 +1,18 @@
-import { IsOptional, IsInt, IsString, Length } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsOptional, IsInt, IsString, Length, Min, IsNumberString } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 
 export class FilterProveedorDTO {
 
   @IsOptional()
-  @Type(() => Number)
   @IsInt()
+  @Min(0)
   ideEmpr?: number;
 
-  @IsOptional()
-  @IsString()
-  @Length(1, 15)
+  @IsNumberString()
+  @Length(7, 15)
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim() : null
+  )
   cedulaProv?: string;
 
   @IsOptional()

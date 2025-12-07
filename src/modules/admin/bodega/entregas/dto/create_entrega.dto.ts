@@ -1,43 +1,20 @@
-import { Transform, Type } from 'class-transformer';
-import { IsOptional, IsString, IsNumber, IsDate, MinLength, IsInt, Min, IsPositive, MinDate, IsIn, IsEnum, IsNotEmpty, MaxLength } from 'class-validator';
+import { 
+  ValidateNested,
+  IsArray
+} from 'class-validator';
+import { Type } from 'class-transformer';
+import { CreateEntregaCabeceraDTO } from './create_entrega_cabecera.dto';
+import { CreatePedidoDetalleDTO } from '../../pedidos/dto/create_pedido_detalle.dto';
 
-enum EstadoEntrega {
-    ACTIVO = 'activo',
-    INACTIVO = 'inactivo'
-}
+export class CreateEntregaDTO {
 
-export class CreateEntregaDto {
+  @ValidateNested()
+  @Type( () => CreateEntregaCabeceraDTO)
+  cabeceraEntrega: CreateEntregaCabeceraDTO;
 
-    @IsInt()
-    @Min(1)
-    idPedido:number;
+  @IsArray()
+  @ValidateNested({each: true})
+  @Type( () => CreatePedidoDetalleDTO)
+  detalleEntrega: CreatePedidoDetalleDTO[];
 
-    @IsInt()
-    @Min(1)
-    idProveedor:number;
-
-    @IsDate()
-    @Type(() => Date)
-    @MinDate(new Date())
-    fechaEntrega:Date;
-
-    @IsInt()
-    @Min(1)
-    cantidadTotal:number;
-
-    @IsNumber()
-    montoTotal:number;
-
-    @IsString()
-    @IsNotEmpty()
-    @Transform(({value}) => value.trim())
-    @Transform(({value}) => value.toLowerCase())
-    @IsEnum(EstadoEntrega)
-    estadoEntrega:string;
-
-    @IsOptional()
-    @IsString()
-    @IsNotEmpty()
-    @MaxLength(250)
-    observacion?:string;
 }

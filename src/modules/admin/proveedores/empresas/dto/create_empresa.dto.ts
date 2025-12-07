@@ -22,7 +22,7 @@ export class CreateEmpresaDTO {
   @IsString()
   @Length(1, 250)
   @Transform(({ value }) =>
-    typeof value === 'string' ? value.trim().toLowerCase() : null
+    typeof value ===  'string' ? value.trim().toLowerCase() : null
   )
   responsableEmp: string;
 

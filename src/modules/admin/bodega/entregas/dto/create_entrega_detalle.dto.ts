@@ -1,21 +1,16 @@
 import { 
+    IsInt,
     IsNumber,
-    IsOptional,
     Min
 } from 'class-validator';
 
-export class PedidoDetalleDTO {
+export class CreateEntregaDetalleDTO {
 
-    @IsOptional()
-    @IsNumber()
+    @IsInt()
     @Min(0)
-    ideDetaPedi?: number;
+    ideEntr: number;
 
-    @IsNumber()
-    @Min(0)
-    idePedi: number;
-
-    @IsNumber()
+    @IsInt()
     @Min(0)
     ideProd: number;
 
@@ -47,10 +42,9 @@ export class PedidoDetalleDTO {
     @Min(0)
     dctoCaducProd: number;
 
-    toArray(): any[] {
+    toArray = (): any[] => {
       return [
-        this.ideDetaPedi ?? null,
-        this.idePedi,
+        this.ideEntr,
         this.ideProd,
         this.cantidadProd,
         this.precioUnitarioProd,

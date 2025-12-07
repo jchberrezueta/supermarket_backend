@@ -8,6 +8,7 @@ import {
 export class CreateProveedorDTO {
 
   @IsInt()
+  @Min(0)
   ideEmpr: number;
 
   @IsNumberString()
@@ -54,7 +55,7 @@ export class CreateProveedorDTO {
 
   @IsOptional()
   @IsString()
-  @Length(0, 50)
+  @Length(1, 50)
   @Transform(({ value }) =>
     typeof value === 'string' ? value.trim().toLowerCase() : null
   )
@@ -62,14 +63,14 @@ export class CreateProveedorDTO {
 
   @IsOptional()
   @IsString()
-  @Length(0, 50)
+  @Length(1, 50)
   @Transform(({ value }) =>
     typeof value === 'string' ? value.trim().toLowerCase() : null
   )
   apellidoMaternoProv?: string;
 
 
-  toArray(): any[] {
+  toArray = (): any[] => {
     return [
       this.ideEmpr,
       this.cedulaProv,
