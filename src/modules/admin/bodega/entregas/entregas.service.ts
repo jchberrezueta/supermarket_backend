@@ -12,15 +12,16 @@ export class EntregasService {
   constructor(private readonly db: DatabaseService){}
 
   async listar(){
-    return this.db.executeFunctionRead(`fn_insertar_${this.fnName}`);
+    return this.db.executeFunctionRead(`fn_listar_${this.fnName}`);
   }
 
   async buscar(id:number){
-    return this.db.executeFunctionRead(`fn_buscar_${this.fnName}`);
+    return this.db.executeFunctionRead(`fn_buscar_${this.fnName}`, [id]);
   }
 
   async filtrar(queryParams: FilterEntregaDTO){
-    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}`, queryParams.toArray());
+    //console.log(queryParams.toArray());
+    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}`, []);
   }
 
   async insertar(body: CreateEntregaDTO){

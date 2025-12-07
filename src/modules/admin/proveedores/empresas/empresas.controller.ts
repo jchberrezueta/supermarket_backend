@@ -5,6 +5,7 @@ import { RolesGuard } from 'src/modules/auth/roles.guard';
 import { CreateEmpresaDTO } from './dto/create_empresa.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { FilterEmpresaDTO } from './dto/filter_empresa.dto';
+import { UpdateEmpresaDTO } from './dto/update_empresa.dto';
 
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 @Roles('padmin', 'pbodega')
@@ -37,7 +38,7 @@ export class EmpresasController {
     @Put('actualizar/:id')
     async actualizar(
         @Param('id') id: number, 
-        @Body() empresa: CreateEmpresaDTO
+        @Body() empresa: UpdateEmpresaDTO
     ) {
         return this.servicio.actualizar(id, empresa); 
     }

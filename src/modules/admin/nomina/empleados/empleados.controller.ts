@@ -1,11 +1,11 @@
 import { Controller, Get, Post, Patch, Delete, Body, UseGuards, Put, Param, Query } from '@nestjs/common';
-import { EmpresasService } from './empresas.service';
 import { Roles } from 'src/modules/auth/roles.decorator';
 import { RolesGuard } from 'src/modules/auth/roles.guard';
-import { CreateEmpresaDTO } from './dto/create_empresa.dto';
 import { AuthGuard } from '@nestjs/passport';
-import { FilterEmpresaDTO } from './dto/filter_empresa.dto';
 import { EmpleadosService } from './empleados.service';
+import { FilterEmpleadoDTO } from './dto/filter_empleado.dto';
+import { CreateEmpleadoDTO } from './dto/create_empleado.dto';
+import { UpdateEmpleadoDTO } from './dto/update_empleado.dto';
 
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 @Roles('padmin', 'pnomina')
@@ -26,21 +26,21 @@ export class EmpleadosController {
     }
 
     @Get('filtrar')
-    async filtrar(@Query() queryParams: FilterEmpresaDTO) {
+    async filtrar(@Query() queryParams: FilterEmpleadoDTO) {
         return this.servicio.filtrar(queryParams); 
     }
 
     @Post()
-    async insertar(@Body() empresa: CreateEmpresaDTO) {
-        return this.servicio.insertar(empresa); 
+    async insertar(@Body() Empleado: CreateEmpleadoDTO) {
+        return this.servicio.insertar(Empleado); 
     }
 
     @Put('actualizar/:id')
     async actualizar(
         @Param('id') id: number, 
-        @Body() empresa: CreateEmpresaDTO
+        @Body() Empleado: UpdateEmpleadoDTO
     ) {
-        return this.servicio.actualizar(id, empresa); 
+        return this.servicio.actualizar(id, Empleado); 
     }
 
     @Delete('eliminar/:id')

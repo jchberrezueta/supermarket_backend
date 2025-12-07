@@ -11,8 +11,8 @@ async function bootstrap() {
   //app.useLogger(new CustomLogger());
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,
-      transform: true
+      transform: true,
+      whitelist: true
     })
   );
   app.setGlobalPrefix(configService.get<string>('APP_API_PREFIX'));

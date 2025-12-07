@@ -1,29 +1,32 @@
-import { IsOptional, IsString, Length, IsEnum, IsNumber, Min, IsDateString, IsInt } from 'class-validator';
+import { IsOptional, IsString, Length, IsEnum, IsNumber, Min, IsDateString, IsInt, isInt, IsNumberString } from 'class-validator';
 import { EnumEstadoEntrega } from '../enums/estado_entrega.enum';
-
+import { Type } from 'class-transformer';
 
 export class FilterEntregaDTO {
+    
     @IsOptional()
+    @Type(() => Number)
     @IsInt()
     @Min(0)
-    idePedi: number;
+    idePedi?: number;
 
     @IsOptional()
+    @Type(() => Number)
     @IsInt()
     @Min(0)
-    ideProv: number;
+    ideProv?: number;
 
     @IsOptional()
     @IsEnum(EnumEstadoEntrega)
-    estadoEntr: EnumEstadoEntrega;
+    estadoEntr?: EnumEstadoEntrega;
 
     @IsOptional()
     @IsDateString()
-    fechaPedi: Date;
+    fechaPedi?: string;
 
     @IsOptional()
     @IsDateString()
-    fechaEntrPedi: Date;
+    fechaEntrPedi?: string;
 
     toArray(): any[] {
         return [

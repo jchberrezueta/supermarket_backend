@@ -27,6 +27,7 @@ export class EntregasController {
 
     @Get('filtrar')
     async filtrar(@Query() queryParams: FilterEntregaDTO) {
+        console.log(':)');
         return this.servicio.filtrar(queryParams); 
     }
 
