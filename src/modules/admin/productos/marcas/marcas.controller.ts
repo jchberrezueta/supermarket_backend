@@ -8,7 +8,7 @@ import { CreateMarcaDTO } from './dto/create_marca.dto';
 import { UpdateMarcaDTO } from './dto/update_marca.dto';
 
 @UseGuards(AuthGuard('jwt'), RolesGuard)
-@Roles('padmin', 'pbodega')
+@Roles('padmin', 'pinventario')
 @Controller('marcas')
 export class MarcasController {
 

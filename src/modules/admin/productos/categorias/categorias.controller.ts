@@ -9,7 +9,7 @@ import { CategoriasService } from './categorias.service';
 
 
 @UseGuards(AuthGuard('jwt'), RolesGuard)
-@Roles('padmin', 'pbodega')
+@Roles('padmin', 'pinventario')
 @Controller('categorias')
 export class CategoriasController {
 
