@@ -27,10 +27,11 @@ export class EmpresasController {
 
     @Get('filtrar')
     async filtrar(@Query() queryParams: FilterEmpresaDTO) {
+        console.log(queryParams.toArray());
         return this.servicio.filtrar(queryParams); 
     }
 
-    @Post()
+    @Post('insertar')
     async insertar(@Body() body: CreateEmpresaDTO) {
         return this.servicio.insertar(body); 
     }

@@ -6,7 +6,7 @@ export class FilterEmpresaDTO {
   @IsOptional()
   @IsString()
   @Length(1, 250)
-  nombreEmpr?: number;
+  nombreEmp?: number;
 
   @IsOptional()
   @IsEnum(EnumEstadoEmpresa)
@@ -19,7 +19,7 @@ export class FilterEmpresaDTO {
 
   toArray(): any[] {
     return [
-      this.nombreEmpr ?? null,
+      this.nombreEmp ?? null,
       this.estadoEmp ?? null,
       this.responsableEmp ?? null,
     ];
