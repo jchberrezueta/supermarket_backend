@@ -37,13 +37,14 @@ export class EmpresasController {
 
     @Put('actualizar/:id')
     async actualizar(
+        @Param('id') id: number,
         @Body() body: UpdateEmpresaDTO
     ) {
         return this.servicio.actualizar(body); 
     }
 
     @Delete('eliminar/:id')
-    async eliminar(@Param() id:number) {
+    async eliminar(@Param('id') id:number) {
         return this.servicio.eliminar(id); 
     }
 }
