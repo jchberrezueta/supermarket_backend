@@ -41,11 +41,11 @@ export class EntregasController {
         @Param('id') id: number, 
         @Body() body: UpdateEntregaDTO
     ) {
-        return this.servicio.actualizar(id, body); 
+        return this.servicio.actualizar(body); 
     }
 
     @Delete('eliminar/:id')
-    async eliminar(@Param() id:number) {
+    async eliminar(@Param('id') id:number) {
         return this.servicio.eliminar(id); 
     }
 }

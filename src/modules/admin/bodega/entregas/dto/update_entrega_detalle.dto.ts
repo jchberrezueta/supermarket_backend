@@ -1,24 +1,19 @@
-import { PartialType } from '@nestjs/mapped-types';
 import { CreateEntregaDetalleDTO } from './create_entrega_detalle.dto';
 import { IsInt, Min } from 'class-validator';
 
-export class UpdateEntregaDetalleDTO extends PartialType(CreateEntregaDetalleDTO) {
-    @IsInt()
-    @Min(0)
-    ideDetaEntr: number;
+export class UpdateEntregaDetalleDTO extends (CreateEntregaDetalleDTO) {
+  @IsInt()
+  @Min(0)
+  ideDetaEntr: number;
 
-    toArray = (): any[] => {
-      return [
-        this.ideDetaEntr,
-        this.ideEntr,
-        this.ideProd,
-        this.cantidadProd,
-        this.precioUnitarioProd,
-        this.subtotalProd,
-        this.dctoCompraProd,
-        this.ivaProd,
-        this.totalProd,
-        this.dctoCaducProd
-      ]
-    }
+  @IsInt()
+  @Min(0)
+  ideEntr: number;
+
+  toArray(): any[] {
+    const lista = super.toArray();
+    lista.unshift(this.ideEntr);
+    lista.unshift(this.ideDetaEntr);
+    return lista;
+  }
 }

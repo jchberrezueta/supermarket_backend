@@ -5,24 +5,30 @@ import {
   IsEnum, 
   MaxLength, 
   Length,
-  IsNumberString
+  IsNumberString,
+  IsInt,
+  Equals
 } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { EnumEstadosEmpresa } from '@models';
+import { EnumEstadosEmpresa, IEmpresa } from '@models';
 
-export class CreateEmpresaDTO {
+export class CreateEmpresaDTO implements IEmpresa{
+
+  @IsInt()
+  @Equals(-1)
+  ideEmp: number;
 
   @IsString()
   @Length(1, 250)
   @Transform(({ value }) =>
-    typeof value === 'string' ? value.trim().toLowerCase() : null
+    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
   )
   nombreEmp: string;
 
   @IsString()
   @Length(1, 250)
   @Transform(({ value }) =>
-    typeof value ===  'string' ? value.trim().toLowerCase() : null
+    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
   )
   responsableEmp: string;
 
@@ -32,21 +38,21 @@ export class CreateEmpresaDTO {
   @IsString()
   @Length(1, 250)
   @Transform(({ value }) =>
-    typeof value === 'string' ? value.trim().toLowerCase() : null
+    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
   )
   direccionEmp: string;
 
   @IsNumberString()
   @Length(7, 15)
   @Transform(({ value }) =>
-    typeof value === 'string' ? value.trim() : null
+    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
   )
   telefonoEmp: string;
 
   @IsEmail()
   @MaxLength(100)
   @Transform(({ value }) =>
-    typeof value === 'string' ? value.trim().toLowerCase() : null
+    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
   )
   emailEmp: string;
 
@@ -55,12 +61,9 @@ export class CreateEmpresaDTO {
 
   @IsString()
   @Length(1, 250)
-  @Transform(({ value }) => {
-    if (typeof value !== 'string' || value.trim() === '') {
-      return 'ninguna';
-    }
-    return value.trim().toLowerCase();
-  })
+  @Transform(({ value }) => 
+    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : 'ninguna'
+  )
   descripcionEmp: string;
 
   toArray (): any[] {

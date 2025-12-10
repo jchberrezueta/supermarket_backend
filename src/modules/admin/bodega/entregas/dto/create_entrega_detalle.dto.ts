@@ -1,58 +1,63 @@
+import { IDetalleEntrega } from '@models';
 import { 
+  Equals,
     IsInt,
     IsNumber,
     Min
 } from 'class-validator';
 
-export class CreateEntregaDetalleDTO {
+export class CreateEntregaDetalleDTO implements IDetalleEntrega {
 
-    @IsInt()
-    @Min(0)
-    ideEntr: number;
+  @IsInt()
+  @Equals(-1)
+  ideDetaEntr: number;
 
-    @IsInt()
-    @Min(0)
-    ideProd: number;
+  @IsInt()
+  @Equals(-1)
+  ideEntr: number;
 
-    @IsInt()
-    @Min(1)
-    cantidadProd: number;
+  @IsInt()
+  @Min(0)
+  ideProd: number;
 
-    @IsNumber()
-    @Min(0)
-    precioUnitarioProd: number;
+  @IsInt()
+  @Min(1)
+  cantidadProd: number;
 
-    @IsNumber()
-    @Min(0)
-    subtotalProd: number;
+  @IsNumber()
+  @Min(0)
+  precioUnitarioProd: number;
 
-    @IsNumber()
-    @Min(0)
-    dctoCompraProd: number;
+  @IsNumber()
+  @Min(0)
+  subtotalProd: number;
 
-    @IsNumber()
-    @Min(0)
-    ivaProd: number;
+  @IsNumber()
+  @Min(0)
+  dctoCompraProd: number;
 
-    @IsNumber()
-    @Min(0)
-    totalProd: number;
+  @IsNumber()
+  @Min(0)
+  ivaProd: number;
 
-    @IsNumber()
-    @Min(0)
-    dctoCaducProd: number;
+  @IsNumber()
+  @Min(0)
+  totalProd: number;
 
-    toArray = (): any[] => {
-      return [
-        this.ideEntr,
-        this.ideProd,
-        this.cantidadProd,
-        this.precioUnitarioProd,
-        this.subtotalProd,
-        this.dctoCompraProd,
-        this.ivaProd,
-        this.totalProd,
-        this.dctoCaducProd
-      ]
-    }
+  @IsNumber()
+  @Min(0)
+  dctoCaducProd: number;
+
+  toArray(): any[] {
+    return [
+      this.ideProd,
+      this.cantidadProd,
+      this.precioUnitarioProd,
+      this.subtotalProd,
+      this.dctoCompraProd,
+      this.ivaProd,
+      this.totalProd,
+      this.dctoCaducProd
+    ]
+  }
 }

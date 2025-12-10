@@ -1,18 +1,19 @@
 import { IsOptional, IsInt, IsString, Length, Min, IsNumberString } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
+import { isIntNumeric } from '@helpers/utilities';
+import { IFiltroProveedor } from '@models';
 
-export class FilterProveedorDTO {
+export class FilterProveedorDTO implements IFiltroProveedor {
 
   @IsOptional()
+  @Transform(({value}) => isIntNumeric(value) ? (+value) : null )
   @IsInt()
   @Min(0)
   ideEmpr?: number;
 
+  @IsOptional()
   @IsNumberString()
   @Length(7, 15)
-  @Transform(({ value }) =>
-    typeof value === 'string' ? value.trim() : null
-  )
   cedulaProv?: string;
 
   @IsOptional()

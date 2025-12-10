@@ -39,11 +39,11 @@ export class ProveedoresController {
         @Param('id') id: number,
         @Body() body: UpdateProveedorDTO
     ) {
-        return this.servicio.actualizar(id, body); 
+        return this.servicio.actualizar(body); 
     }
 
     @Delete('eliminar/:id')
-    async eliminar(@Param() id:number) {
+    async eliminar(@Param('id') id:number) {
         return this.servicio.eliminar(id); 
     }
 }

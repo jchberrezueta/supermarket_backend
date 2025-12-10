@@ -1,12 +1,12 @@
 import { IsOptional, IsString, Length, IsEnum } from 'class-validator';
-import { EnumEstadosEmpresa } from '@models';
+import { EnumEstadosEmpresa, IFiltroEmpresa } from '@models';
 
-export class FilterEmpresaDTO {
+export class FilterEmpresaDTO implements IFiltroEmpresa {
 
   @IsOptional()
   @IsString()
   @Length(1, 250)
-  nombreEmp?: number;
+  nombreEmp?: string;
 
   @IsOptional()
   @IsEnum(EnumEstadosEmpresa)

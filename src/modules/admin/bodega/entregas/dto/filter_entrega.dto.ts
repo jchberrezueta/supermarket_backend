@@ -1,18 +1,18 @@
 import { IsOptional, IsEnum, Min, IsDateString, IsInt } from 'class-validator';
-import { EnumEstadoEntrega } from '../enums/estado_entrega.enum';
 import { Transform } from 'class-transformer';
 import { isIntNumeric } from '@helpers/utilities';
+import { EnumEstadoEntrega, IFiltroEntrega } from '@models';
 
-export class FilterEntregaDTO {
+export class FilterEntregaDTO implements IFiltroEntrega {
     
     @IsOptional()
-    @Transform(({value}) => isIntNumeric(value) ? (+value) : -1 )
+    @Transform(({value}) => isIntNumeric(value) ? (+value) : null )
     @IsInt()
     @Min(0)
     idePedi?: number;
 
     @IsOptional()
-    @Transform(({value}) => isIntNumeric(value) ? (+value) : -1 )
+    @Transform(({value}) => isIntNumeric(value) ? (+value) : null )
     @IsInt()
     @Min(0)
     ideProv?: number;

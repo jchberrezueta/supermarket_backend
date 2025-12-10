@@ -1,47 +1,51 @@
-import { IsString, IsNumber, IsEnum, IsDateString, Length, IsInt, Min, IsOptional } from 'class-validator';
-import { EnumEstadoEntrega } from '../enums/estado_entrega.enum';
+import { IsString, IsNumber, IsEnum, IsDateString, Length, IsInt, Min, IsOptional, Equals } from 'class-validator';
 import { Transform } from 'class-transformer';
+import { EnumEstadoEntrega, IEntrega } from '@models';
 
-export class CreateEntregaCabeceraDTO {
+export class CreateEntregaCabeceraDTO implements IEntrega {
 
-    @IsInt()
-    @Min(0)
-    idePedi:number;
+  @IsInt()
+  @Equals(-1)
+  ideEntr: number;
 
-    @IsInt()
-    @Min(0)
-    ideProv:number;
+  @IsInt()
+  @Min(0)
+  idePedi: number;
 
-    @IsDateString()
-    fechaEntr:Date;
+  @IsInt()
+  @Min(0)
+  ideProv: number;
 
-    @IsInt()
-    @Min(1)
-    cantidadTotalEntr:number;
+  @IsDateString()
+  fechaEntr: string;
 
-    @IsNumber()
-    @Min(0)
-    totalEntr:number;
+  @IsInt()
+  @Min(1)
+  cantidadTotalEntr: number;
 
-    @IsEnum(EnumEstadoEntrega)
-    estadoEntr:EnumEstadoEntrega;
-    
-    @Transform(({value}) => (
-      (typeof value !== 'string') || (typeof value === 'string' && value.trim() === '') || (value == null)) ? 'ninguna' : value.trim()
-    )
-    @IsString()
-    @Length(1, 250)
-    observacionEntr:string;
+  @IsNumber()
+  @Min(0)
+  totalEntr: number;
 
-    toArray(): any[] {
-      return [
-        this.idePedi,
-        this.ideProv,
-        this.fechaEntr,
-        this.cantidadTotalEntr,
-        this.totalEntr,
-        this.estadoEntr,
-        this.observacionEntr
-      ]
-    }
+  @IsEnum(EnumEstadoEntrega)
+  estadoEntr:EnumEstadoEntrega;
+  
+  @IsString()
+  @Length(1, 250)
+  @Transform(({value}) => (
+    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : 'ninguna'
+  ))
+  observacionEntr: string;
+
+  toArray(): any[] {
+    return [
+      this.idePedi,
+      this.ideProv,
+      this.fechaEntr,
+      this.cantidadTotalEntr,
+      this.totalEntr,
+      this.estadoEntr,
+      this.observacionEntr
+    ]
+  }
 }
