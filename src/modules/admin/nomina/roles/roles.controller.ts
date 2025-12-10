@@ -31,7 +31,7 @@ export class RolesController {
         return this.servicio.filtrar(queryParams); 
     }
 
-    @Post()
+    @Post('insertar')
     async insertar(@Body() body: CreateRolDTO) {
         return this.servicio.insertar(body); 
     }

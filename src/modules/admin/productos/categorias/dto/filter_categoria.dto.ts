@@ -5,22 +5,21 @@ import {
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { Length } from 'class-validator';
+import { IFiltroCategoria } from '@models';
 
-export class FilterCategoriaDTO {
+export class FilterCategoriaDTO implements IFiltroCategoria {
 
     @IsOptional()
     @IsString()
     @Length(1, 100)
-    @Transform(({value}) => value.trim().toLowerCase())
-    nombreCate: string;
+    nombreCate?: string;
 
     @IsOptional()
     @IsString()
     @Length(1, 250)
-    @Transform(({value}) => value.trim().toLowerCase())
     descripcionCate?: string;
 
-    toArray = (): any[] => {
+    toArray(): any[] {
       return [
         this.nombreCate ?? null,
         this.descripcionCate ?? null

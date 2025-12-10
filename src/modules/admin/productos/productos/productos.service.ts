@@ -26,9 +26,8 @@ export class ProductosService {
     return this.db.executeFunctionWrite(`fn_insertar_${this.fnName}`, body.toArray());
   }
 
-  async actualizar(id: number, body:UpdateProductoDTO){
-    const data = body.toArray(); data.unshift(id);
-    return this.db.executeFunctionWrite(`fn_actualizar_${this.fnName}`, data);
+  async actualizar(body:UpdateProductoDTO){
+    return this.db.executeFunctionWrite(`fn_actualizar_${this.fnName}`, body.toArray());
   }
 
   async eliminar(id:number){

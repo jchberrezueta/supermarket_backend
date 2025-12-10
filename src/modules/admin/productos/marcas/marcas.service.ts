@@ -28,9 +28,8 @@ export class MarcasService {
     return this.db.executeFunctionWrite(`fn_insertar_${this.fnName}`, body.toArray());
   }
 
-  async actualizar(id: number, body:UpdateMarcaDTO){
-    const data = body.toArray(); data.unshift(id);
-    return this.db.executeFunctionWrite(`fn_actualizar_${this.fnName}`, data);
+  async actualizar(body:UpdateMarcaDTO){
+    return this.db.executeFunctionWrite(`fn_actualizar_${this.fnName}`, body.toArray());
   }
 
   async eliminar(id:number){
