@@ -27,7 +27,6 @@ export class EmpresasController {
 
     @Get('filtrar')
     async filtrar(@Query() queryParams: FilterEmpresaDTO) {
-        console.log(queryParams.toArray());
         return this.servicio.filtrar(queryParams); 
     }
 
@@ -38,10 +37,9 @@ export class EmpresasController {
 
     @Put('actualizar/:id')
     async actualizar(
-        @Param('id') id: number, 
         @Body() body: UpdateEmpresaDTO
     ) {
-        return this.servicio.actualizar(id, body); 
+        return this.servicio.actualizar(body); 
     }
 
     @Delete('eliminar/:id')

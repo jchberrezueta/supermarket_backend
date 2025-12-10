@@ -22,6 +22,7 @@
       "@config": ["src/config/index"],
       "@database": ["src/database/index"],
       "@helpers/*": ["src/helpers/*"],
+      "@models": ["src/models/index"],
       "@modules": ["src/modules/index"],
       "@admin": ["src/modules/admin/index"],
       "@entities": ["src/database/entities/index"],

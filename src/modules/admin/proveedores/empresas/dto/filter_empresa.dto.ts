@@ -1,5 +1,5 @@
 import { IsOptional, IsString, Length, IsEnum } from 'class-validator';
-import { EnumEstadoEmpresa } from '../enums/estado_empresa.enum';
+import { EnumEstadosEmpresa } from '@models';
 
 export class FilterEmpresaDTO {
 
@@ -9,8 +9,8 @@ export class FilterEmpresaDTO {
   nombreEmp?: number;
 
   @IsOptional()
-  @IsEnum(EnumEstadoEmpresa)
-  estadoEmp?: EnumEstadoEmpresa;
+  @IsEnum(EnumEstadosEmpresa)
+  estadoEmp?: EnumEstadosEmpresa;
 
   @IsOptional()
   @IsString()

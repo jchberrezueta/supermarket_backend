@@ -8,7 +8,7 @@ import {
   IsNumberString
 } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { EnumEstadoEmpresa } from '../enums/estado_empresa.enum';
+import { EnumEstadosEmpresa } from '@models';
 
 export class CreateEmpresaDTO {
 
@@ -50,8 +50,8 @@ export class CreateEmpresaDTO {
   )
   emailEmp: string;
 
-  @IsEnum(EnumEstadoEmpresa)
-  estadoEmp: EnumEstadoEmpresa;
+  @IsEnum(EnumEstadosEmpresa)
+  estadoEmp: EnumEstadosEmpresa;
 
   @IsString()
   @Length(1, 250)
@@ -63,7 +63,7 @@ export class CreateEmpresaDTO {
   })
   descripcionEmp: string;
 
-  toArray(): any[] {
+  toArray (): any[] {
     return [
       this.nombreEmp,
       this.responsableEmp,
