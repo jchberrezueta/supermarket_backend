@@ -1,40 +1,36 @@
 import { 
   IsString,
   IsOptional, 
-  IsNotEmpty,
   IsInt,
   Max,
   Min
 } from 'class-validator';
-import { Transform } from 'class-transformer';
 import { Length } from 'class-validator';
+import { IFiltroMarca } from '@models';
 
-
-export class FilterMarcaDTO {
-
-    @IsOptional()
-    @IsString()
-    @Length(1, 100)
-    @Transform(({value}) => value.trim().toLowerCase())
-    nombreMarc: string;
+export class FilterMarcaDTO implements IFiltroMarca{
 
     @IsOptional()
     @IsString()
     @Length(1, 100)
-    @Transform(({value}) => value.trim().toLowerCase())
-    paisOrigenMarc: string;
+    nombreMarc?: string;
+
+    @IsOptional()
+    @IsString()
+    @Length(1, 100)
+    paisOrigenMarc?: string;
 
     @IsOptional()
     @IsInt()
     @Min(1)
     @Max(10)
-    calidadMarc: number;
+    calidadMarc?: number;
 
-    toArray = (): any[] => {
+    toArray(): any[] {
       return [
-        this.nombreMarc,
-        this.paisOrigenMarc,
-        this.calidadMarc,
+        this.nombreMarc?? null,
+        this.paisOrigenMarc?? null,
+        this.calidadMarc?? null,
       ];
     }
 }
