@@ -1,25 +1,22 @@
-import { Transform } from "class-transformer";
+import { IFiltroRol } from "@models";
 import { IsOptional, IsString, Length } from "class-validator";
 
-export class FilterRolDTO {
+export class FilterRolDTO implements IFiltroRol {
 
     @IsOptional()
     @IsString()
     @Length(1, 100)
-    @Transform(({value}) => (
-        typeof value === 'string' ? value.trim().toLowerCase() : null
-    ))
-    nombreRol: string;
+    nombreRol?: string;
 
     @IsOptional()
     @IsString()
     @Length(1, 250)
-    descripcionRol: string;
+    descripcionRol?: string;
 
-    toArray = (): any[] => {
+    toArray(): any[] {
         return [
-            this.nombreRol,
-            this.descripcionRol  
+            this.nombreRol?? null,
+            this.descripcionRol?? null  
         ];
     }
 }

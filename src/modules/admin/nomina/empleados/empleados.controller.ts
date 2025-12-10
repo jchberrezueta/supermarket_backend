@@ -30,7 +30,7 @@ export class EmpleadosController {
         return this.servicio.filtrar(queryParams); 
     }
 
-    @Post()
+    @Post('insertar')
     async insertar(@Body() body: CreateEmpleadoDTO) {
         return this.servicio.insertar(body); 
     }
@@ -40,11 +40,11 @@ export class EmpleadosController {
         @Param('id') id: number, 
         @Body() body: UpdateEmpleadoDTO
     ) {
-        return this.servicio.actualizar(id, body); 
+        return this.servicio.actualizar(body); 
     }
 
     @Delete('eliminar/:id')
-    async eliminar(@Param() id:number) {
+    async eliminar(@Param('id') id:number) {
         return this.servicio.eliminar(id); 
     }
 }

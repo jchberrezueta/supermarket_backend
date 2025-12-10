@@ -29,7 +29,7 @@ export class ProveedoresController {
         return this.servicio.filtrar(queryParams); 
     }
 
-    @Post()
+    @Post('insertar')
     async insertar(@Body() body: CreateProveedorDTO) {
         return this.servicio.insertar(body); 
     }

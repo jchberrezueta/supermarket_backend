@@ -6,12 +6,18 @@ import {
   IsNumberString,
   IsInt,
   Min,
-  IsNumber
+  IsNumber,
+  Equals,
+  IsOptional
 } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { EnumEstadoEmpleado } from '../enums/estado_empleado.enum';
+import { EnumEstadoEmpleado, IEmpleado } from '@models';
 
-export class CreateEmpleadoDTO {
+export class CreateEmpleadoDTO implements IEmpleado {
+
+  @IsInt()
+  @Equals(-1)
+  ideEmpl: number;
 
   @IsInt()
   @Min(0)
@@ -20,7 +26,7 @@ export class CreateEmpleadoDTO {
   @IsNumberString()
   @Length(7, 15)
   @Transform(({ value }) =>
-    typeof value === 'string' ? value.trim() : null
+    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
   )
   cedulaEmpl: string;
 
@@ -37,14 +43,14 @@ export class CreateEmpleadoDTO {
   @IsString()
   @Length(1, 50)
   @Transform(({ value }) =>
-    typeof value === 'string' ? value.trim().toLowerCase() : null
+    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
   )
   primerNombreEmpl: string;
 
   @IsString()
   @Length(1, 50)
   @Transform(({ value }) =>
-    typeof value === 'string' ? value.trim().toLowerCase() : null
+    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
   )
   apellidoPaternoEmpl: string;
 
@@ -55,7 +61,7 @@ export class CreateEmpleadoDTO {
   @IsString()
   @Length(1, 250)
   @Transform(({ value }) =>
-    typeof value === 'string' ? value.trim().toLowerCase() : null
+    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : 'libre'
   )
   tituloEmpl: string;
 
@@ -63,23 +69,27 @@ export class CreateEmpleadoDTO {
   estadoEmpl: EnumEstadoEmpleado;
 
   @IsString()
-  @Length(1, 50)
+  @Length(0, 50)
   @Transform(({ value }) =>
-    typeof value === 'string' ? value.trim().toLowerCase() : null
+    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : ''
   )
   segundoNombreEmpl: string;
 
   @IsString()
-  @Length(1, 50)
+  @Length(0, 50)
   @Transform(({ value }) =>
-    typeof value === 'string' ? value.trim().toLowerCase() : null
+    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : ''
   )
   apellidoMaternoEmpl: string;
 
+  @IsOptional()
   @IsDateString()
+  @Transform(({ value }) =>
+    (typeof value === 'string' && value.trim() !== '') ? value.trim() : null
+  )
   fechaTerminoEmpl: string;
 
-  toArray = (): any[] => {
+  toArray(): any[] {
     return [
         this.ideRol,
         this.cedulaEmpl,
@@ -91,8 +101,8 @@ export class CreateEmpleadoDTO {
         this.rmuEmpl,
         this.tituloEmpl,
         this.estadoEmpl,
-        this.segundoNombreEmpl ?? null,
-        this.apellidoPaternoEmpl ?? null,
+        this.segundoNombreEmpl || null,
+        this.apellidoPaternoEmpl || null,
         this.fechaTerminoEmpl ?? null
     ]
   }

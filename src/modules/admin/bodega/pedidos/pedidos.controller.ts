@@ -29,7 +29,7 @@ export class PedidosController {
         return this.servicio.filtrar(queryParams); 
     }
 
-    @Post()
+    @Post('insertar')
     async insertar(@Body() body: CreatePedidoDTO) {
         return this.servicio.insertar(body); 
     }
@@ -39,11 +39,11 @@ export class PedidosController {
         @Param('id') id: number, 
         @Body() body: UpdatePedidoDTO
     ) {
-        return this.servicio.actualizar(id, body); 
+        return this.servicio.actualizar(body); 
     }
 
     @Delete('eliminar/:id')
-    async eliminar(@Param() id:number) {
+    async eliminar(@Param('id') id:number) {
         return this.servicio.eliminar(id); 
     }
 }

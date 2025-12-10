@@ -1,3 +1,14 @@
+export enum EnumEstadosPedido {
+    PROGRESO = 'progreso',
+    COMPLETADO = 'completado',
+    INCOMPLETO = 'incompleto'
+}
+
+export enum EnumMotivosPedido {
+    PEDIDO = 'pedido',
+    DEVOLUCION = 'devolucion'
+}
+
 export interface IPedido {
     idePedi: number;
     ideEmpr: number;
@@ -5,8 +16,8 @@ export interface IPedido {
     fechaEntrPedi: string;
     cantidadTotalPedi: number;
     totalPedi: number;
-    estadoPedi: string;
-    motivoPedi: string;
+    estadoPedi: EnumEstadosPedido;
+    motivoPedi: EnumMotivosPedido;
     observacionPedi: string;
 }
 
@@ -19,8 +30,8 @@ export class CPedido implements IPedido {
         private _fechaEntrPedi: string,
         private _cantidadTotalPedi: number,
         private _totalPedi: number,
-        private _estadoPedi: string,
-        private _motivoPedi: string,
+        private _estadoPedi: EnumEstadosPedido,
+        private _motivoPedi: EnumMotivosPedido,
         private _observacionPedi: string
     ) {}
 
@@ -71,14 +82,14 @@ export class CPedido implements IPedido {
     get estadoPedi() {
         return this._estadoPedi;
     }
-    set estadoPedi(value: string) {
+    set estadoPedi(value: EnumEstadosPedido) {
         this._estadoPedi = value;
     }
 
     get motivoPedi() {
         return this._motivoPedi;
     }
-    set motivoPedi(value: string) {
+    set motivoPedi(value: EnumMotivosPedido) {
         this._motivoPedi = value;
     }
 
@@ -97,8 +108,8 @@ export interface IPedidoResult {
     fecha_entr_pedi: string;
     cantidad_total_pedi: number;
     total_pedi: number;
-    estado_pedi: string;
-    motivo_pedi: string;
+    estado_pedi: EnumEstadosPedido;
+    motivo_pedi: EnumMotivosPedido;
     observacion_pedi: string;
 }
 
@@ -113,6 +124,6 @@ export interface IFiltroPedido {
     cantidadTotalPediMax?: number;
     totalPediMin?: number;
     totalPediMax?: number;
-    estadoPedi?: string;
-    motivoPedi?: string;
+    estadoPedi?: EnumEstadosPedido;
+    motivoPedi?: EnumMotivosPedido;
 }

@@ -31,7 +31,7 @@ export class EntregasController {
         return this.servicio.filtrar(queryParams); 
     }
 
-    @Post()
+    @Post('insertar')
     async insertar(@Body() body: CreateEntregaDTO) {
         return this.servicio.insertar(body); 
     }

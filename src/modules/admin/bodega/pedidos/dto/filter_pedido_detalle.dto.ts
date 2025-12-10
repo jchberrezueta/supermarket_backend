@@ -1,8 +1,9 @@
 import { IsOptional, Min, IsInt } from 'class-validator';
 import { isIntNumeric } from '@helpers/utilities';
 import { Transform } from 'class-transformer';
+import { IFiltroDetallePedido } from '@models';
 
-export class FilterPedidoDetalleDTO {
+export class FilterPedidoDetalleDTO implements IFiltroDetallePedido {
 
   @IsOptional()
   @Transform(({value}) => isIntNumeric(value) ? (+value) : -1 )

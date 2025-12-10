@@ -1,3 +1,8 @@
+export enum EnumEstadoEmpleado {
+    ACTIVO = 'activo',
+    INACTIVO = 'inactivo'
+}
+
 export interface IEmpleado {
     ideEmpl: number;
     ideRol: number;
@@ -9,7 +14,7 @@ export interface IEmpleado {
     apellidoPaternoEmpl: string;
     rmuEmpl: number;
     tituloEmpl: string;
-    estadoEmpl: string;
+    estadoEmpl: EnumEstadoEmpleado;
     segundoNombreEmpl: string;
     apellidoMaternoEmpl: string;
     fechaTerminoEmpl: string;
@@ -28,7 +33,7 @@ export class CEmpleado implements IEmpleado {
         private _apellidoPaternoEmpl: string,
         private _rmuEmpl: number,
         private _tituloEmpl: string,
-        private _estadoEmpl: string,
+        private _estadoEmpl: EnumEstadoEmpleado,
         private _segundoNombreEmpl: string,
         private _apellidoMaternoEmpl: string,
         private _fechaTerminoEmpl: string
@@ -109,7 +114,7 @@ export class CEmpleado implements IEmpleado {
     get estadoEmpl() {
         return this._estadoEmpl;
     }
-    set estadoEmpl(value: string) {
+    set estadoEmpl(value: EnumEstadoEmpleado) {
         this._estadoEmpl = value;
     }
 
@@ -146,7 +151,7 @@ export interface IEmpleadoResult {
     apellido_paterno_empl: string;
     rmu_empl: number;
     titulo_empl: string;
-    estado_empl: string;
+    estado_empl: EnumEstadoEmpleado;
     segundo_nombre_empl: string;
     apellido_materno_empl: string;
     fecha_termino_empl: string;
@@ -158,7 +163,7 @@ export interface IFiltroEmpleado {
     cedulaEmpl?: string;
     primerNombreEmpl?: string;
     apellidoPaternoEmpl?: string;
-    estadoEmpl?: string;
+    estadoEmpl?: EnumEstadoEmpleado;
     rmuEmplMin?: number;
     rmuEmplMax?: number;
     fechaInicioEmplDesde?: string;

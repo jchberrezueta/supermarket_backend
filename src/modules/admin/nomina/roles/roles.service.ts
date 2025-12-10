@@ -27,9 +27,8 @@ export class RolesService {
     return this.db.executeFunctionWrite(`fn_insertar_${this.fnName}`, body.toArray());
   }
 
-  async actualizar(id: number, body:UpdateRolDTO){
-    const data = body.toArray(); data.unshift(id);
-    return this.db.executeFunctionWrite(`fn_actualizar_${this.fnName}`, data);
+  async actualizar(body:UpdateRolDTO){
+    return this.db.executeFunctionWrite(`fn_actualizar_${this.fnName}`, body.toArray());
   }
 
   async eliminar(id:number){

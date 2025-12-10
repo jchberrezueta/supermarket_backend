@@ -26,9 +26,8 @@ export class EmpleadosService {
     return this.db.executeFunctionWrite(`fn_insertar_${this.fnName}`, body.toArray());
   }
 
-  async actualizar(id: number, body:UpdateEmpleadoDTO){
-    const data = body.toArray(); data.unshift(id);
-    return this.db.executeFunctionWrite(`fn_actualizar_${this.fnName}`, data);
+  async actualizar(body:UpdateEmpleadoDTO){
+    return this.db.executeFunctionWrite(`fn_actualizar_${this.fnName}`, body.toArray());
   }
 
   async eliminar(id:number){

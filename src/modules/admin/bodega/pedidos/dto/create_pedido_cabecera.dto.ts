@@ -5,55 +5,59 @@ import {
   Length,
   IsNumber,
   Min,
-  IsInt
+  IsInt,
+  Equals
 } from 'class-validator';
-import { EnumEstadoPedido } from '../enums/estado_pedido.enum';
-import { EnumMotivoPedido } from '../enums/motivo_pedido.enum';
 import { Transform } from 'class-transformer';
+import { EnumEstadosPedido, EnumMotivosPedido, IPedido } from '@models';
 
-export class CreatePedidoCabeceraDTO {
+export class CreatePedidoCabeceraDTO implements IPedido {
 
-    @IsInt()
-    @Min(0)
-    ideEmpr: number;
+  @IsInt()
+  @Equals(-1)
+  idePedi: number;
 
-    @IsDateString()
-    fechaPedi: string;
+  @IsInt()
+  @Min(0)
+  ideEmpr: number;
 
-    @IsDateString()
-    fechaEntrPedi: string;
+  @IsDateString()
+  fechaPedi: string;
 
-    @IsInt()
-    @Min(1)
-    cantidadTotalPedi: number;
+  @IsDateString()
+  fechaEntrPedi: string;
 
-    @IsNumber()
-    @Min(0)
-    totalPedi: number;
+  @IsInt()
+  @Min(1)
+  cantidadTotalPedi: number;
 
-    @IsEnum(EnumEstadoPedido)
-    estadoPedi: EnumEstadoPedido;
+  @IsNumber()
+  @Min(0)
+  totalPedi: number;
 
-    @IsEnum(EnumMotivoPedido)
-    motivoPedi: EnumMotivoPedido;
+  @IsEnum(EnumEstadosPedido)
+  estadoPedi: EnumEstadosPedido;
 
-    @Transform(({value}) => (
-      (typeof value !== 'string') || (typeof value === 'string' && value.trim() === '') || (value == null)) ? 'ninguna' : value.trim()
-    )
-    @IsString()
-    @Length(1, 250)
-    observacionPedi: string;
+  @IsEnum(EnumMotivosPedido)
+  motivoPedi: EnumMotivosPedido;
 
-    toArray(): any[] {
-      return [
-        this.ideEmpr,
-        this.fechaPedi,
-        this.fechaEntrPedi,
-        this.cantidadTotalPedi,
-        this.totalPedi,
-        this.estadoPedi,
-        this.motivoPedi,
-        this.observacionPedi
-      ]
-    }
+  @IsString()
+  @Length(1, 250)
+  @Transform(({value}) => 
+    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : 'ninguna'
+  )
+  observacionPedi: string;
+
+  toArray(): any[] {
+    return [
+      this.ideEmpr,
+      this.fechaPedi,
+      this.fechaEntrPedi,
+      this.cantidadTotalPedi,
+      this.totalPedi,
+      this.estadoPedi,
+      this.motivoPedi,
+      this.observacionPedi
+    ]
+  }
 }

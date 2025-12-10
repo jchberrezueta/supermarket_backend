@@ -1,8 +1,7 @@
 import { IsOptional, IsEnum, Min, IsDateString, IsInt } from 'class-validator';
-import { EnumEstadoPedido } from '../enums/estado_pedido.enum';
-import { EnumMotivoPedido } from '../enums/motivo_pedido.enum';
 import { isIntNumeric } from 'src/helpers/utilities';
 import { Transform } from 'class-transformer';
+import { EnumEstadosPedido, EnumMotivosPedido } from '@models';
 
 export class FilterPedidoDTO {
 
@@ -13,20 +12,20 @@ export class FilterPedidoDTO {
   ideEmp?: number;
 
   @IsOptional()
-  @IsEnum(EnumEstadoPedido)
-  estadoPedi?: EnumEstadoPedido;
+  @IsEnum(EnumEstadosPedido)
+  estadoPedi?: EnumEstadosPedido;
 
   @IsOptional()
-  @IsEnum(EnumMotivoPedido)
-  motivoPedi?: EnumMotivoPedido;
-
-  @IsOptional()
-  @IsDateString()
-  fechaPedi?: Date;
+  @IsEnum(EnumMotivosPedido)
+  motivoPedi?: EnumMotivosPedido;
 
   @IsOptional()
   @IsDateString()
-  fechaEntrPedi?: Date;
+  fechaPedi?: string;
+
+  @IsOptional()
+  @IsDateString()
+  fechaEntrPedi?: string;
 
   toArray(): any[] {
     return [

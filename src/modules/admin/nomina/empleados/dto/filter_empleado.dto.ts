@@ -1,55 +1,48 @@
+import { EnumEstadoEmpleado, IFiltroEmpleado } from '@models';
 import { Transform } from 'class-transformer';
 import { IsOptional, IsString, Length, IsEnum, IsIn, IsInt, Min, IsNumberString } from 'class-validator';
-import { EnumEstadoEmpleado } from '../enums/estado_empleado.enum';
 import { isIntNumeric } from 'src/helpers/utilities';
 
-export class FilterEmpleadoDTO {
+export class FilterEmpleadoDTO implements IFiltroEmpleado {
     
     @IsOptional()
     @Transform(({value}) => isIntNumeric(value) ? (+value) : -1 )
     @IsInt()
     @Min(0)
-    ideRol: number;
+    ideRol?: number;
 
+    @IsOptional()
     @IsNumberString()
     @Length(7, 15)
-    @Transform(({ value }) =>
-        typeof value === 'string' ? value.trim() : null
-    )
-    cedulaEmpl: string;
+    cedulaEmpl?: string;
     
+    @IsOptional()
     @IsString()
     @Length(1, 50)
-    @Transform(({ value }) =>
-        typeof value === 'string' ? value.trim().toLowerCase() : null
-    )
-    primerNombreEmpl: string;
+    primerNombreEmpl?: string;
 
+    @IsOptional()
     @IsString()
     @Length(1, 50)
-    @Transform(({ value }) =>
-        typeof value === 'string' ? value.trim().toLowerCase() : null
-    )
-    apellidoPaternoEmpl: string;
+    apellidoPaternoEmpl?: string;
 
+    @IsOptional()
     @IsString()
     @Length(1, 250)
-    @Transform(({ value }) =>
-        typeof value === 'string' ? value.trim().toLowerCase() : null
-    )
-    tituloEmpl: string;
+    tituloEmpl?: string;
 
+    @IsOptional()
     @IsEnum(EnumEstadoEmpleado)
-    estadoEmpl: EnumEstadoEmpleado;
+    estadoEmpl?: EnumEstadoEmpleado;
 
     toArray(): any[] {
         return [
-            this.ideRol,
-            this.cedulaEmpl,
-            this.primerNombreEmpl,
-            this.apellidoPaternoEmpl,
-            this.tituloEmpl,
-            this.estadoEmpl
+            this.ideRol?? null,
+            this.cedulaEmpl?? null,
+            this.primerNombreEmpl?? null,
+            this.apellidoPaternoEmpl?? null,
+            this.tituloEmpl?? null,
+            this.estadoEmpl?? null
         ];
     }
 }
