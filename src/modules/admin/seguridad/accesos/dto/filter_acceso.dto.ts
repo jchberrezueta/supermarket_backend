@@ -1,17 +1,38 @@
-import { IsOptional, IsInt, IsString, Min, Max, IsEnum, IsNumber } from 'class-validator';
+import { IFiltroAccesoUsuario } from '@models';
+import { IsOptional, IsInt, IsString, Min, Max, IsEnum, IsNumber, Length, IsDateString } from 'class-validator';
 
 
-export class FiltroAccesoDto {
+export class FiltroAccesoDto implements IFiltroAccesoUsuario{
+
   @IsOptional()
-  @IsNumber()
-  ide_cuen?: string;
+  @IsInt()
+  @Min(0)
+  ideCuen?: number;
 
   @IsOptional()
   @IsString()
-  ip_acce?: string;
+  @Length(1, 15)
+  ipAcce?: string;
 
   @IsOptional()
   @IsString()
-  navegador_acce?: string;
+  @Length(1, 250)
+  navegadorAcce?: string;
+
+  @IsDateString()
+  fechaAcceDesde?: string;
+
+  @IsDateString()
+  fechaAcceHasta?: string;
+
+  toArray(): any[] {
+    return [
+      this.ideCuen?? null,
+      this.ipAcce?? null,
+      this.navegadorAcce?? null,
+      this.fechaAcceDesde?? null,
+      this.fechaAcceHasta?? null
+    ]
+  }
 
 }

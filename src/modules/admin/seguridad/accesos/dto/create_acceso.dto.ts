@@ -1,33 +1,55 @@
-import { IsOptional, IsInt, IsString, Min, Max, IsEnum, IsNumber, IsDate } from 'class-validator';
+import { IAccesoUsuario } from '@models';
+import { Transform } from 'class-transformer';
+import { IsOptional, IsInt, IsString, Min, Max, IsEnum, IsNumber, Length, IsDateString, Equals } from 'class-validator';
 
 
-export class CreateAccesoDto {
-  @IsOptional()
-  @IsNumber()
-  ide_cuen?: string;
+export class CreateAccesoUsuarioDto implements IAccesoUsuario{
 
-  @IsOptional()
-  @IsDate()
-  fecha_acce?: string;
+    @IsInt()
+    @Equals(-1)
+    ideAcce: number;
 
-  @IsOptional()
-  @IsNumber()
-  num_intentos_acce?: number;
+    @IsInt()
+    @Min(0)
+    ideCuen: number;
 
-  @IsOptional()
-  @IsString()
-  ip_acce?: string;
+    @IsString()
+    @Length(1, 250)
+    @Transform(({ value }) =>
+    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
+    )
+    navegadorAcce: string;
 
-  @IsOptional()
-  @IsString()
-  navegador_acce?: string;
+    @IsDateString()
+    fechaAcce: string;
 
-  @IsOptional()
-  @IsString()
-  latitud_acce?: string;
+    @IsInt()
+    @Min(0)
+    numIntFallAcce: number;
 
-  @IsOptional()
-  @IsString()
-  longitud_acce?: string;
+    @IsString()
+    @Length(1, 15)
+    @Transform(({ value }) =>
+    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
+    )
+    ipAcce: string;
+
+    @IsNumber()
+    latitudAcce: number;
+
+    @IsNumber()
+    longitudAcce: number;
+
+    toArray(): any[] {
+        return [
+            this.ideCuen,
+            this.navegadorAcce,
+            this.fechaAcce,
+            this.numIntFallAcce,
+            this.ipAcce,
+            this.latitudAcce,
+            this.longitudAcce
+        ]
+    }
 
 }
