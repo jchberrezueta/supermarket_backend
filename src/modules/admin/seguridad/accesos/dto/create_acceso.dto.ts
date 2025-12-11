@@ -35,11 +35,11 @@ export class CreateAccesoUsuarioDto implements IAccesoUsuario{
 
     @IsOptional()
     @IsNumber()
-    latitudAcce: number;
+    latitudAcce?: number;
 
     @IsOptional()
     @IsNumber()
-    longitudAcce: number;
+    longitudAcce?: number;
 
 }
 

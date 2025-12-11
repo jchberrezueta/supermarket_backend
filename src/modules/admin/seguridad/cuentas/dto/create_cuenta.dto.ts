@@ -20,6 +20,7 @@ export class CreateCuentaDto implements ICuenta {
   usuarioCuen: string;
 
   @IsString()
+  @Length(1, 250)
   passwordCuen: string;
 
   @IsEnum(EnumEstadosCuenta)

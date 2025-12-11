@@ -32,7 +32,7 @@ export class AuthController {
             numIntFallAcce: body.numIntentos ?? 0,
             ipAcce: ip || '999.999.999.999',
             latitudAcce: null,
-            longitudAcce: null        
+            longitudAcce: null  
         };
         // Registrar acceso usuario
         await this.servicio.insertarAccesoUsuario(accesoUsuario);

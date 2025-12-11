@@ -5,8 +5,8 @@ export interface IAccesoUsuario {
     fechaAcce: string;
     numIntFallAcce: number;
     ipAcce: string;
-    latitudAcce: number;
-    longitudAcce: number;
+    latitudAcce?: number;
+    longitudAcce?: number;
 }
 
 export class CAccesoUsuario implements IAccesoUsuario {
@@ -18,8 +18,8 @@ export class CAccesoUsuario implements IAccesoUsuario {
         private _fechaAcce: string,
         private _numIntFallAcce: number,
         private _ipAcce: string,
-        private _latitudAcce: number,
-        private _longitudAcce: number
+        private _latitudAcce?: number,
+        private _longitudAcce?: number
     ) {}
 
     // --- Getters / Setters ---
@@ -88,11 +88,11 @@ export interface IAccesoUsuarioResult {
     fecha_acce: string;
     num_int_fall_acce: number;
     ip_acce: string;
-    latitud_acce: number;
-    longitud_acce: number;
+    latitud_acce: number | null;
+    longitud_acce: number | null;
 }
 
-export interface IFiltroAccesoUsuario{
+export interface IFiltroAccesoUsuario {
     ideCuen?: number;
     navegadorAcce?: string;
     fechaAcceDesde?: string;
