@@ -1,8 +1,13 @@
+export enum EnumEstadosOpcion {
+    SI = 'si',
+    no = 'no'
+}
+
 export interface IOpciones {
     ideOpci: number;
     nombreOpci: string;
     rutaOpci: string;
-    activoOpci: string;
+    activoOpci: EnumEstadosOpcion;
     descripcionOpci: string;
     nivelOpci: number;
     padreOpci: number;
@@ -15,7 +20,7 @@ export class COpciones implements IOpciones {
         private _ideOpci: number,
         private _nombreOpci: string,
         private _rutaOpci: string,
-        private _activoOpci: string,
+        private _activoOpci: EnumEstadosOpcion,
         private _descripcionOpci: string,
         private _nivelOpci: number,
         private _padreOpci: number,
@@ -48,7 +53,7 @@ export class COpciones implements IOpciones {
     get activoOpci() {
         return this._activoOpci;
     }
-    set activoOpci(value: string) {
+    set activoOpci(value: EnumEstadosOpcion) {
         this._activoOpci = value;
     }
 
@@ -85,7 +90,7 @@ export interface IOpcionesResult {
     ide_opci: number;
     nombre_opci: string;
     ruta_opci: string;
-    activo_opci: string;
+    activo_opci: EnumEstadosOpcion;
     descripcion_opci: string;
     nivel_opci: number;
     padre_opci: number;
@@ -96,7 +101,7 @@ export interface IFiltroOpciones {
     ideOpci?: number;
     nombreOpci?: string;
     rutaOpci?: string;
-    activoOpci?: string;
+    activoOpci?: EnumEstadosOpcion;
     nivelOpci?: number;
     padreOpci?: number;
     iconoOpci?: string;
