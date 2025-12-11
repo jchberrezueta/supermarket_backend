@@ -1,4 +1,4 @@
-import { IsOptional, IsString, Length, IsNumberString, IsIn } from 'class-validator';
+import { IsOptional, IsString, Length, IsNumberString, IsIn, IsEmail } from 'class-validator';
 import { IFiltroCliente } from '@models';
 
 export class FilterClienteDTO implements IFiltroCliente {
@@ -19,7 +19,7 @@ export class FilterClienteDTO implements IFiltroCliente {
     apellidoPaternoClie?: string;
 
     @IsOptional()
-    @IsString()
+    @IsEmail()
     @Length(1, 100)
     emailClie?: string;
         

@@ -7,11 +7,11 @@ export interface IOpciones {
     ideOpci: number;
     nombreOpci: string;
     rutaOpci: string;
+    nivelOpci: number;
+    padreOpci?: number | null;
+    iconoOpci?: string | null;
     activoOpci: EnumEstadosOpcion;
     descripcionOpci: string;
-    nivelOpci: number;
-    padreOpci?: number;
-    iconoOpci?: string;
 }
 
 export class COpciones implements IOpciones {
@@ -23,8 +23,8 @@ export class COpciones implements IOpciones {
         private _activoOpci: EnumEstadosOpcion,
         private _descripcionOpci: string,
         private _nivelOpci: number,
-        private _padreOpci?: number,
-        private _iconoOpci?: string
+        private _padreOpci?: number | null,
+        private _iconoOpci?: string | null
     ) {}
 
     // --- Getters / Setters ---
@@ -67,14 +67,14 @@ export class COpciones implements IOpciones {
     get nivelOpci() {
         return this._nivelOpci;
     }
-    set nivelOpci(value: number) {
+    set nivelOpci(value: number | null) {
         this._nivelOpci = value;
     }
 
     get padreOpci() {
         return this._padreOpci;
     }
-    set padreOpci(value: number) {
+    set padreOpci(value: number | null) {
         this._padreOpci = value;
     }
 
@@ -93,8 +93,8 @@ export interface IOpcionesResult {
     activo_opci: EnumEstadosOpcion;
     descripcion_opci: string;
     nivel_opci: number;
-    padre_opci?: number;
-    icono_opci?: string;
+    padre_opci: number | null;
+    icono_opci: string | null;
 }
 
 export interface IFiltroOpciones {

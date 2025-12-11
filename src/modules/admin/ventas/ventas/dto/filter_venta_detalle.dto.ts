@@ -17,7 +17,6 @@ export class FilterVentaDetalleDTO implements IFiltroDetalleVenta {
     @Min(0)
     ideProd?: number;
 
-
     toArray(): any[] {
         return [
             this.ideVent ?? null,

@@ -1,6 +1,6 @@
 import { ICliente } from '@models';
 import { Transform } from 'class-transformer';
-import { IsString, Length, IsEmail, Min, IsInt, Equals, IsNumberString, IsDateString, IsIn } from 'class-validator';
+import { IsString, Length, IsEmail, Min, IsInt, Equals, IsNumberString, IsDateString, IsIn, IsOptional } from 'class-validator';
 
 export class CreateClienteDTO implements ICliente {
 
@@ -54,23 +54,25 @@ export class CreateClienteDTO implements ICliente {
     @IsIn(['si', 'no'])
     esSocio: 'si' | 'no';
 
-     @IsString()
+    @IsString()
     @IsIn(['si', 'no'])
     esTerceraEdad: 'si' | 'no';
 
+    @IsOptional()
     @IsString()
-    @Length(0, 50)
+    @Length(1, 50)
     @Transform(({ value }) =>
-        (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : ''
+        (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
     )
-    segundoNombreClie: string;
+    segundoNombreClie?: string | null;
 
+    @IsOptional()
     @IsString()
-    @Length(0, 50)
+    @Length(1, 50)
     @Transform(({ value }) =>
-        (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : ''
+        (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
     )
-    apellidoMaternoClie: string;
+    apellidoMaternoClie?: string | null;
 
     toArray(): any[] {
         return [
@@ -83,8 +85,8 @@ export class CreateClienteDTO implements ICliente {
             this.emailClie,
             this.esSocio,
             this.esTerceraEdad,
-            this.segundoNombreClie || null,
-            this.apellidoMaternoClie || null
+            this.segundoNombreClie?? null,
+            this.apellidoMaternoClie?? null
         ];
     }
 }

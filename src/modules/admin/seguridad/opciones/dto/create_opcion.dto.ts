@@ -39,7 +39,7 @@ export class CreateOpcionDto implements IOpciones {
     @IsOptional()
     @IsInt()
     @Min(0)
-    padreOpci?: number;
+    padreOpci?: number | null;
 
     @IsOptional()
     @IsString()
@@ -47,7 +47,7 @@ export class CreateOpcionDto implements IOpciones {
     @Transform(({ value }) =>
         (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
     )
-    iconoOpci?: string;
+    iconoOpci?: string | null;
 
   toArray(): any[] {
     return [

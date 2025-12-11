@@ -6,6 +6,7 @@ import { ClientesService } from './clientes.service';
 import { FilterClienteDTO } from './dto/filter_cliente.dto';
 import { CreateClienteDTO } from './dto/create_cliente.dto';
 import { UpdateClienteDTO } from './dto/update_cliente.dto';
+import { toArray } from 'rxjs';
 
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 @Roles('padmin', 'pventas')

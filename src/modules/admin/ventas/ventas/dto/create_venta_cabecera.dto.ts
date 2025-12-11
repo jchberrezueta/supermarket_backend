@@ -1,6 +1,6 @@
 import { IsString, IsNumber, IsEnum, IsDateString, Length, IsInt, Min, IsOptional, Equals } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { EnumEstadoEntrega, EnumEstadoVenta, IEntrega, IVenta } from '@models';
+import { EnumEstadoVenta, IVenta } from '@models';
 
 export class CreateVentaCabeceraDTO implements IVenta {
 

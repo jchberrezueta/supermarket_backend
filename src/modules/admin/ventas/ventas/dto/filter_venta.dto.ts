@@ -34,7 +34,6 @@ export class FilterVentaDTO implements IFiltroVenta {
     @IsDateString()
     fechaHasta?: string;
 
-
     toArray(): any[] {
         return [
             this.ideEmpl ?? null,
