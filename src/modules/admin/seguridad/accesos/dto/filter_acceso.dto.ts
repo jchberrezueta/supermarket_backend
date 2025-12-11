@@ -4,7 +4,7 @@ import { Transform } from 'class-transformer';
 import { IsOptional, IsInt, IsString, Min, Max, IsEnum, IsNumber, Length, IsDateString } from 'class-validator';
 
 
-export class FiltroAccesoDto implements IFiltroAccesoUsuario{
+export class FilterAccesoUsuarioDto implements IFiltroAccesoUsuario{
 
   @IsOptional()
   @Transform(({value}) => isIntNumeric(value) ? (+value) : null )

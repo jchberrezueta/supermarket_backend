@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Delete, Body, Put, Param, Query, UseGuards } from '@nestjs/common';
 import { AccesosUsuariosService } from './accesos.service';
-import { FiltroAccesoDto } from './dto/filter_acceso.dto';
+import { FilterAccesoUsuarioDto } from './dto/filter_acceso.dto';
 import { Roles } from 'src/modules/auth/roles.decorator';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from 'src/modules/auth/roles.guard';
@@ -16,9 +16,13 @@ export class accesosController {
         return this.servicio.listar(); 
     }
 
+    @Get('buscar/:id')
+    async buscar(@Param('id') id: number) {
+        return this.servicio.buscar(id); 
+    }
 
     @Get('filtrar')
-    async filtrar(@Query() queryParams: FiltroAccesoDto) {
+    async filtrar(@Query() queryParams: FilterAccesoUsuarioDto) {
         return this.servicio.filtrar(queryParams); 
     }
 }
