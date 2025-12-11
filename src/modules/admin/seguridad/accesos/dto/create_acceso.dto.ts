@@ -16,7 +16,7 @@ export class CreateAccesoUsuarioDto implements IAccesoUsuario{
     @IsString()
     @Length(1, 250)
     @Transform(({ value }) =>
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
+        (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
     )
     navegadorAcce: string;
 
@@ -30,7 +30,7 @@ export class CreateAccesoUsuarioDto implements IAccesoUsuario{
     @IsString()
     @Length(1, 15)
     @Transform(({ value }) =>
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
+        (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
     )
     ipAcce: string;
 
