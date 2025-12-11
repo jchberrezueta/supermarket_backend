@@ -1,6 +1,6 @@
-import { EnumEstadosCuenta, EnumEstadosOpcion, ICuenta, IOpciones } from '@models';
+import { EnumEstadosOpcion, IOpciones } from '@models';
 import { Transform } from 'class-transformer';
-import { IsString, Equals, IsInt, Min, IsEnum, Length } from 'class-validator';
+import { IsString, Equals, IsInt, Min, IsEnum, Length, IsOptional } from 'class-validator';
 
 export class CreateOpcionDto implements IOpciones {
 
@@ -36,26 +36,28 @@ export class CreateOpcionDto implements IOpciones {
     @Min(0)
     nivelOpci: number;
 
+    @IsOptional()
     @IsInt()
     @Min(0)
-    padreOpci: number;
+    padreOpci?: number;
 
+    @IsOptional()
     @IsString()
     @Length(1, 50)
     @Transform(({ value }) =>
         (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
     )
-    iconoOpci: string;
+    iconoOpci?: string;
 
   toArray(): any[] {
     return [
         this.nombreOpci,
         this.rutaOpci,
-        this.activoOpci,
-        this.descripcionOpci,
         this.nivelOpci,
-        this.padreOpci,
-        this.iconoOpci
+        this.padreOpci?? null,
+        this.iconoOpci?? null,
+        this.activoOpci,
+        this.descripcionOpci
     ]
   }
 }

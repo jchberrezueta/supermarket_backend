@@ -9,7 +9,7 @@ import { UpdatePerfilDto } from './dto/update_perfil.dto';
 
 
 @UseGuards(AuthGuard('jwt'), RolesGuard)
-@Roles('padmin', 'pbodega')
+@Roles('padmin', 'pseguridad')
 @Controller('perfiles')
 export class PerfilesController {
 

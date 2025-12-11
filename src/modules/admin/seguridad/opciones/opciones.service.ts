@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {DatabaseService} from '@database';
-import { FiltroOpcionDto } from './dto/filter_opcion.dto';
+import { FilterOpcionDto } from './dto/filter_opcion.dto';
 import { CreateOpcionDto } from './dto/create_opcion.dto';
 import { UpdateOpcionDto } from './dto/update_opcion.dto';
 
@@ -18,7 +18,7 @@ export class OpcionesService {
     return this.db.executeFunctionRead(`fn_buscar_${this.fnName}`, [id]);
   }
 
-  async filtrar(queryParams: FiltroOpcionDto){
+  async filtrar(queryParams: FilterOpcionDto){
     return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}`, queryParams.toArray());
   }
 

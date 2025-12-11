@@ -4,7 +4,7 @@ import { Roles } from 'src/modules/auth/roles.decorator';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from 'src/modules/auth/roles.guard';
 import { OpcionesService } from './opciones.service';
-import { FiltroOpcionDto } from './dto/filter_opcion.dto';
+import { FilterOpcionDto } from './dto/filter_opcion.dto';
 import { CreateOpcionDto } from './dto/create_opcion.dto';
 import { UpdateOpcionDto } from './dto/update_opcion.dto';
 
@@ -26,7 +26,7 @@ export class OpcionesController {
     }
 
     @Get('filtrar')
-    async filtrar(@Query() queryParams: FiltroOpcionDto) {
+    async filtrar(@Query() queryParams: FilterOpcionDto) {
         return this.servicio.filtrar(queryParams); 
     }
 

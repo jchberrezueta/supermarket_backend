@@ -2,7 +2,7 @@ import { EnumEstadosOpcion, IFiltroOpciones } from '@models';
 import { IsOptional, IsInt, IsString, Min, Max, IsEnum, IsNumber, Length, IsDateString } from 'class-validator';
 
 
-export class FiltroOpcionDto implements IFiltroOpciones {
+export class FilterOpcionDto implements IFiltroOpciones {
 
     @IsOptional()
     @IsString()

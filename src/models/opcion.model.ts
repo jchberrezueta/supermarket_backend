@@ -10,8 +10,8 @@ export interface IOpciones {
     activoOpci: EnumEstadosOpcion;
     descripcionOpci: string;
     nivelOpci: number;
-    padreOpci: number;
-    iconoOpci: string;
+    padreOpci?: number;
+    iconoOpci?: string;
 }
 
 export class COpciones implements IOpciones {
@@ -23,8 +23,8 @@ export class COpciones implements IOpciones {
         private _activoOpci: EnumEstadosOpcion,
         private _descripcionOpci: string,
         private _nivelOpci: number,
-        private _padreOpci: number,
-        private _iconoOpci: string
+        private _padreOpci?: number,
+        private _iconoOpci?: string
     ) {}
 
     // --- Getters / Setters ---
@@ -93,8 +93,8 @@ export interface IOpcionesResult {
     activo_opci: EnumEstadosOpcion;
     descripcion_opci: string;
     nivel_opci: number;
-    padre_opci: number;
-    icono_opci: string;
+    padre_opci?: number;
+    icono_opci?: string;
 }
 
 export interface IFiltroOpciones {
