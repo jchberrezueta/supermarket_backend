@@ -1,43 +1,49 @@
-import { Controller, Get, Post, Delete, Body, Put, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Put, Param, Query, UseGuards } from '@nestjs/common';
 import { CuentasService } from './cuentas.service';
 import { CreateCuentaDto } from './dto/create_cuenta.dto';
 import { UpdateCuentaDto } from './dto/update_cuenta.dto';
 import { FiltroCuentaDto } from './dto/filter_cuenta.dto';
+import { Roles } from 'src/modules/auth/roles.decorator';
+import { AuthGuard } from '@nestjs/passport';
+import { RolesGuard } from 'src/modules/auth/roles.guard';
 
-
+@UseGuards(AuthGuard('jwt'), RolesGuard)
+@Roles('padmin', 'pseguridad')
 @Controller('cuentas')
 export class CuentasController {
 
     constructor(private servicio: CuentasService) {}
 
-
-    @Get('listar')
-    async getCuentas() {
-        return await this.servicio.listarCuentas(); 
+    @Get()
+    async listar() {
+        return this.servicio.listar(); 
     }
 
     @Get('buscar/:id')
-    async findCuenta(@Param('id') id:number) {
-        return await this.servicio.buscarCuentaPorId(id); 
+    async buscar(@Param('id') id:number) {
+        return this.servicio.buscar(id); 
     }
 
     @Get('filtrar')
-    async filterCuentas(@Query() filtros: FiltroCuentaDto) {
-        return await this.servicio.filtrarCuentas(filtros); 
+    async filtrar(@Query() queryParams: FiltroCuentaDto) {
+        return this.servicio.filtrar(queryParams); 
     }
 
-    @Post()
-    async create(@Body() createCuentaDto: CreateCuentaDto) {
-        return await this.servicio.insertarCuenta(createCuentaDto); 
+    @Post('insertar')
+    async insertar(@Body() body: CreateCuentaDto) {
+        return this.servicio.insertar(body); 
     }
 
-    @Put(':id')
-    async update(@Param('id') id: number, @Body() updateCuentaDto: UpdateCuentaDto) {
-        return await this.servicio.actualizarCuenta(id, updateCuentaDto); 
+    @Put('actualizar/:id')
+    async actualizar(
+        @Param('id') id: number, 
+        @Body() body: UpdateCuentaDto
+    ) {
+        return this.servicio.actualizar(body); 
     }
 
-    @Delete(':id')
-    async delete(@Param('id') id: number) {
-        return await this.servicio.eliminarCuenta(id); 
+    @Delete('eliminar/:id')
+    async eliminar(@Param('id') id: number) {
+        return this.servicio.eliminar(id); 
     }
 }

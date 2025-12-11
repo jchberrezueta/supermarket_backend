@@ -9,112 +9,44 @@ import * as bcrypt from 'bcrypt';
 @Injectable()
 export class CuentasService {
   
-    constructor(private readonly db: DatabaseService){}
+  private fnName: string = 'cuenta';
+  constructor(private readonly db: DatabaseService){}
 
-    async listarCuentas(){
-        const binds = {
-          p_result: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR },
-          p_response: { dir: oracledb.BIND_OUT, type: oracledb.CLOB },
-        };
-
-        /*const outBinds = await this.db.ejecutarProcedimiento('listar_cuentas', binds);
-        return outBinds;*/
-    }
-
-    /**
-    * Buscar x ID
-    */
-    async buscarCuentaPorId(id: number) {
-        const binds = {
-            p_id: id,
-            p_result: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR },
-            p_response: { dir: oracledb.BIND_OUT, type: oracledb.CLOB },
-        };
-
-        /*const outBinds = await this.db.ejecutarProcedimiento('buscar_cuenta', binds);
-        return outBinds;*/
-    }
-
-    async filtrarCuentas(filtros: FiltroCuentaDto) {
-        const binds = {
-            p_ususario_cuen: filtros.usuario_cuen || null,
-            p_estado_cuen: filtros.estado_cuen || null,
-            p_ide_empl: filtros.ide_empl || null,
-            p_ide_perf: filtros.ide_perf || null,
-
-            p_result: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR },
-            p_response: { dir: oracledb.BIND_OUT, type: oracledb.CLOB },
-        };
-
-        /*const outBinds = await this.db.ejecutarProcedimiento('filtrar_cuentas', binds);
-        return outBinds;*/
-    }
-
-    async eliminarCuenta(id: number) {
-        const binds = {
-            p_id: id,
-            p_result: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
-            p_response: { dir: oracledb.BIND_OUT, type: oracledb.CLOB },
-        };
-
-        /*const outBinds = await this.db.ejecutarProcedimiento('eliminar_cuenta', binds);
-        return outBinds;*/
-    }
-
-
-
-   async insertarCuenta(data: CreateCuentaDto) {
-    const binds = {
-      p_ide_empl: data.ide_empl,         
-      p_ide_perf: data.ide_perf,          
-      p_usuario_cuen: data.usuario_cuen,  
-      p_password_cuen: data.password_cuen,
-      p_estado_cuen: data.estado_cuen,    
-      p_usua_ingre: data.usua_ingre || 'uinsert', 
-
-      p_result: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
-      p_id: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
-      p_response: { dir: oracledb.BIND_OUT, type: oracledb.CLOB },
-    };
-    //Encriptacion de passwords :)
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(binds.p_password_cuen, saltRounds);
-    const cuentaConHash = {
-      ...binds,
-      p_password_cuen: hashedPassword,
-    };
-    /*const outBinds = await this.db.ejecutarProcedimiento('insertar_cuenta', cuentaConHash);
-    return outBinds;*/
+  async listar(){
+    this.db.executeFunctionRead(`fn_listar_${this.fnName}`);
   }
 
-  async actualizarCuenta(id: number, data: UpdateCuentaDto) {
-    const binds = {
-      p_id: id,
-      p_ide_empl: data.ide_empl,         
-      p_ide_perf: data.ide_perf,          
-      p_usuario_cuen: data.usuario_cuen,  
-      p_password_cuen: data.password_cuen, //encriptar
-      p_estado_cuen: data.estado_cuen,    
-      p_usua_actua: data.usua_actua || 'uactua', 
-
-      p_result: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
-      p_response: { dir: oracledb.BIND_OUT, type: oracledb.CLOB },
-    };
-
-    //Encriptacion de passwords :)
-    /*const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(binds.p_password_cuen, saltRounds);
-    const cuentaConHash = {
-      ...binds,
-      p_password_cuen: hashedPassword,
-    };*/
-
-    /*const outBinds = await this.db.ejecutarProcedimiento('actualizar_cuenta', binds);
-    return outBinds;*/
+  async buscar(id: number) {
+    this.db.executeFunctionRead(`fn_buscar_${this.fnName}`, [id]);
   }
 
+  async filtrar(queryParams: FiltroCuentaDto) {
+    this.db.executeFunctionRead(`fn_filtrar_${this.fnName}`, queryParams.toArray());
+  }
 
-  async buscarUsuario(usuario: string){
+  async eliminar(id: number) {
+    this.db.executeFunctionRead(`fn_eliminar_${this.fnName}`, [id]);
+  }
+
+  async insertar(body: CreateCuentaDto) {
+    /*Encriptacion de passwords :)*/
+    const hashedPassword = await this.encriptadorHash(body.passwordCuen);
+    body.passwordCuen = hashedPassword;
+    this.db.executeFunctionWrite(`fn_insertar_${this.fnName}`, body.toArray());
+  }
+
+  async actualizar(body: UpdateCuentaDto) {
+    /*const hashedPassword = await this.encriptadorHash(body.passwordCuen);
+    body.passwordCuen = hashedPassword;*/
+    this.db.executeFunctionWrite(`fn_actualizar_${this.fnName}`, body.toArray());
+  }
+
+  async encriptadorHash(value: string) {
+     const saltRounds = 10;
+     return await bcrypt.hash(value, saltRounds);
+  }
+
+  async buscarUsuario(usuario: string) {
     const result = await this.db.executeQuery(`SELECT * FROM CUENTA WHERE usuario_cuen LIKE '${usuario}'`);
     return result[0];
   }
@@ -164,5 +96,4 @@ export class CuentasService {
     return result[0].menu;
   }
 
-  
 }

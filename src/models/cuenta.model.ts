@@ -1,10 +1,16 @@
+export enum EnumEstadosCuenta {
+    ACTIVO = 'activo',
+    INACTIVO = 'inactivo',
+    BLOQUEADO = 'bloqueado'
+}
+
 export interface ICuenta {
     ideCuen: number;
     ideEmpl: number;
     idePerf: number;
     usuarioCuen: string;
     passwordCuen: string;
-    estadoCuen: string;
+    estadoCuen: EnumEstadosCuenta;
 }
 
 export class CCuenta implements ICuenta {
@@ -15,7 +21,7 @@ export class CCuenta implements ICuenta {
         private _idePerf: number,
         private _usuarioCuen: string,
         private _passwordCuen: string,
-        private _estadoCuen: string
+        private _estadoCuen: EnumEstadosCuenta
     ) {}
 
     // --- Getters / Setters ---
@@ -58,7 +64,7 @@ export class CCuenta implements ICuenta {
     get estadoCuen() {
         return this._estadoCuen;
     }
-    set estadoCuen(value: string) {
+    set estadoCuen(value: EnumEstadosCuenta) {
         this._estadoCuen = value;
     }
 }
@@ -69,7 +75,7 @@ export interface ICuentaResult {
     ide_perf: number;
     usuario_cuen: string;
     password_cuen: string;
-    estado_cuen: string;
+    estado_cuen: EnumEstadosCuenta;
 }
 
 export interface IFiltroCuenta {
@@ -77,5 +83,5 @@ export interface IFiltroCuenta {
     ideEmpl?: number;
     idePerf?: number;
     usuarioCuen?: string;
-    estadoCuen?: string;
+    estadoCuen?: EnumEstadosCuenta;
 }

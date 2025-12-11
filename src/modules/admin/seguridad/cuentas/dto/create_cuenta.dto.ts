@@ -1,32 +1,37 @@
-import { IsString, IsNotEmpty, IsOptional, IsDateString, IsNumber } from 'class-validator';
+import { EnumEstadosCuenta, ICuenta } from '@models';
+import { IsString, Equals, IsInt, Min, IsEnum, Length } from 'class-validator';
 
-export class CreateCuentaDto {
+export class CreateCuentaDto implements ICuenta {
 
-  @IsNumber()
-  @IsNotEmpty()
-  ide_empl: number;
+  @IsInt()
+  @Equals(-1)
+  ideCuen: number;
 
-  @IsNumber()
-  @IsNotEmpty()
-  ide_perf: number;
+  @IsInt()
+  @Min(0)
+  ideEmpl: number;
 
-  @IsString()
-  @IsNotEmpty()
-  usuario_cuen: string;
-
-  @IsString()
-  @IsNotEmpty()
-  password_cuen: string;
+  @IsInt()
+  @Min(0)
+  idePerf: number;
 
   @IsString()
-  @IsNotEmpty()
-  estado_cuen: string;
+  @Length(1, 25)
+  usuarioCuen: string;
 
   @IsString()
-  @IsOptional()
-  usua_ingre?: string;
+  passwordCuen: string;
 
-  @IsDateString()
-  @IsOptional()
-  fecha_ingre?: string;
+  @IsEnum(EnumEstadosCuenta)
+  estadoCuen: EnumEstadosCuenta;
+
+  toArray(): any[] {
+    return [
+      this.ideEmpl,
+      this.idePerf,
+      this.usuarioCuen,
+      this.passwordCuen,
+      this.estadoCuen
+    ]
+  }
 }
