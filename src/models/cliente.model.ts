@@ -7,8 +7,8 @@ export interface ICliente {
     primerNombreClie: string;
     apellidoPaternoClie: string;
     emailClie: string;
-    esSocio: string;
-    esTerceraEdad: string;
+    esSocio: 'si' | 'no';
+    esTerceraEdad: 'si' | 'no';
     segundoNombreClie: string;
     apellidoMaternoClie: string;
 }
@@ -24,8 +24,8 @@ export class CCliente implements ICliente {
         private _primerNombreClie: string,
         private _apellidoPaternoClie: string,
         private _emailClie: string,
-        private _esSocio: string,
-        private _esTerceraEdad: string,
+        private _esSocio: 'si' | 'no',
+        private _esTerceraEdad: 'si' | 'no',
         private _segundoNombreClie: string,
         private _apellidoMaternoClie: string
     ) {}
@@ -91,14 +91,14 @@ export class CCliente implements ICliente {
     get esSocio() {
         return this._esSocio;
     }
-    set esSocio(value: string) {
+    set esSocio(value: 'si' | 'no') {
         this._esSocio = value;
     }
 
     get esTerceraEdad() {
         return this._esTerceraEdad;
     }
-    set esTerceraEdad(value: string) {
+    set esTerceraEdad(value: 'si' | 'no') {
         this._esTerceraEdad = value;
     }
 
@@ -126,8 +126,8 @@ export interface IClienteResult {
     primer_nombre_clie: string;
     apellido_paterno_clie: string;
     email_clie: string;
-    es_socio: string;
-    es_tercera_edad: string;
+    es_socio: 'si' | 'no';
+    es_tercera_edad: 'si' | 'no';
     segundo_nombre_clie: string;
     apellido_materno_clie: string;
 }
@@ -137,6 +137,6 @@ export interface IFiltroCliente {
     primerNombreClie?: string;
     apellidoPaternoClie?: string;
     emailClie?: string;
-    esSocio?: string;
-    esTerceraEdad?: string;
+    esSocio?: 'si' | 'no';
+    esTerceraEdad?: 'si' | 'no';
 }

@@ -1,3 +1,9 @@
+export enum EnumEstadoVenta {
+    COMPLETADO = 'completado',
+    CANCELADO = 'cancelado',
+    DEVUELTO = 'devuelto'
+}
+
 export interface IVenta {
     ideVent: number;
     ideEmpl: number;
@@ -8,7 +14,7 @@ export interface IVenta {
     subTotalVent: number;
     totalVent: number;
     dctoVent: number;
-    estadoVent: string;
+    estadoVent: EnumEstadoVenta;
 }
 
 export class CVenta implements IVenta {
@@ -23,7 +29,7 @@ export class CVenta implements IVenta {
         private _subTotalVent: number,
         private _totalVent: number,
         private _dctoVent: number,
-        private _estadoVent: string
+        private _estadoVent: EnumEstadoVenta
     ) {}
 
     // --- Getters / Setters ---
@@ -94,7 +100,7 @@ export class CVenta implements IVenta {
     get estadoVent() {
         return this._estadoVent;
     }
-    set estadoVent(value: string) {
+    set estadoVent(value: EnumEstadoVenta) {
         this._estadoVent = value;
     }
 }
@@ -109,7 +115,7 @@ export interface IVentaResult {
     sub_total_vent: number;
     total_vent: number;
     dcto_vent: number;
-    estado_vent: string;
+    estado_vent: EnumEstadoVenta;
 }
 
 export interface IFiltroVenta {
@@ -125,5 +131,5 @@ export interface IFiltroVenta {
     subTotalVentMax?: number;
     totalVentMin?: number;
     totalVentMax?: number;
-    estadoVent?: string;
+    estadoVent?: EnumEstadoVenta;
 }

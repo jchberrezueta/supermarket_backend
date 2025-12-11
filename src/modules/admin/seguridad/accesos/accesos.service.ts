@@ -15,7 +15,7 @@ export class AccesosUsuariosService {
 
 
   async filtrar(queryParams: FiltroAccesoDto) {
-    this.db.executeFunctionRead(`fn_listar_${this.fnName}`, queryParams.toArray())
+    this.db.executeFunctionRead(`fn_filtrar_${this.fnName}`, queryParams.toArray())
   }
 
   async insertarAccesoUsuario(data: any) {
