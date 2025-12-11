@@ -15,9 +15,9 @@ export interface IEmpleado {
     rmuEmpl: number;
     tituloEmpl: string;
     estadoEmpl: EnumEstadoEmpleado;
-    segundoNombreEmpl: string;
-    apellidoMaternoEmpl: string;
-    fechaTerminoEmpl: string;
+    segundoNombreEmpl?: string | null;
+    apellidoMaternoEmpl?: string | null;
+    fechaTerminoEmpl?: string | null;
 }
 
 export class CEmpleado implements IEmpleado {
@@ -34,9 +34,9 @@ export class CEmpleado implements IEmpleado {
         private _rmuEmpl: number,
         private _tituloEmpl: string,
         private _estadoEmpl: EnumEstadoEmpleado,
-        private _segundoNombreEmpl: string,
-        private _apellidoMaternoEmpl: string,
-        private _fechaTerminoEmpl: string
+        private _segundoNombreEmpl?: string | null,
+        private _apellidoMaternoEmpl?: string | null,
+        private _fechaTerminoEmpl?: string | null
     ) {}
 
     // --- Getters / Setters ---
@@ -121,21 +121,21 @@ export class CEmpleado implements IEmpleado {
     get segundoNombreEmpl() {
         return this._segundoNombreEmpl;
     }
-    set segundoNombreEmpl(value: string) {
+    set segundoNombreEmpl(value: string | null) {
         this._segundoNombreEmpl = value;
     }
 
     get apellidoMaternoEmpl() {
         return this._apellidoMaternoEmpl;
     }
-    set apellidoMaternoEmpl(value: string) {
+    set apellidoMaternoEmpl(value: string | null) {
         this._apellidoMaternoEmpl = value;
     }
 
     get fechaTerminoEmpl() {
         return this._fechaTerminoEmpl;
     }
-    set fechaTerminoEmpl(value: string) {
+    set fechaTerminoEmpl(value: string | null) {
         this._fechaTerminoEmpl = value;
     }
 }
@@ -152,9 +152,9 @@ export interface IEmpleadoResult {
     rmu_empl: number;
     titulo_empl: string;
     estado_empl: EnumEstadoEmpleado;
-    segundo_nombre_empl: string;
-    apellido_materno_empl: string;
-    fecha_termino_empl: string;
+    segundo_nombre_empl: string | null;
+    apellido_materno_empl: string | null;
+    fecha_termino_empl: string | null;
 }
 
 export interface IFiltroEmpleado {

@@ -95,6 +95,7 @@ export class CreateProductoDTO implements IProducto {
       this.ideMarc,
       this.codigoBarraProd,
       this.nombreProd,
+      this.urlImgProd?? null,
       this.precioCompraProd,
       this.precioVentaProd,
       this.ivaProd,
@@ -105,7 +106,6 @@ export class CreateProductoDTO implements IProducto {
       this.disponibleProd,
       this.estadoProd,
       this.descripcionProd,
-      this.urlImgProd?? null
     ];
   }
 }

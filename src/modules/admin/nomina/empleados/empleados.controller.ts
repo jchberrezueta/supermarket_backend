@@ -8,7 +8,7 @@ import { CreateEmpleadoDTO } from './dto/create_empleado.dto';
 import { UpdateEmpleadoDTO } from './dto/update_empleado.dto';
 
 @UseGuards(AuthGuard('jwt'), RolesGuard)
-@Roles('padmin', 'pnomina')
+@Roles('padmin', 'prrhh')
 @Controller('empleados')
 export class EmpleadosController {
 

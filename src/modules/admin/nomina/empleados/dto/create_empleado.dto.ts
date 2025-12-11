@@ -68,26 +68,28 @@ export class CreateEmpleadoDTO implements IEmpleado {
   @IsEnum(EnumEstadoEmpleado)
   estadoEmpl: EnumEstadoEmpleado;
 
+  @IsOptional()
   @IsString()
   @Length(0, 50)
   @Transform(({ value }) =>
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : ''
+    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
   )
-  segundoNombreEmpl: string;
+  segundoNombreEmpl?: string | null;
 
+  @IsOptional()
   @IsString()
   @Length(0, 50)
   @Transform(({ value }) =>
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : ''
+    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
   )
-  apellidoMaternoEmpl: string;
+  apellidoMaternoEmpl?: string | null;
 
   @IsOptional()
   @IsDateString()
   @Transform(({ value }) =>
     (typeof value === 'string' && value.trim() !== '') ? value.trim() : null
   )
-  fechaTerminoEmpl: string;
+  fechaTerminoEmpl?: string | null;
 
   toArray(): any[] {
     return [
@@ -101,8 +103,8 @@ export class CreateEmpleadoDTO implements IEmpleado {
         this.rmuEmpl,
         this.tituloEmpl,
         this.estadoEmpl,
-        this.segundoNombreEmpl || null,
-        this.apellidoPaternoEmpl || null,
+        this.segundoNombreEmpl ?? null,
+        this.apellidoPaternoEmpl ?? null,
         this.fechaTerminoEmpl ?? null
     ]
   }

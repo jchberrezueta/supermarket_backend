@@ -7,9 +7,8 @@ import { FilterRolDTO } from './dto/filter_rol.dto';
 import { CreateRolDTO } from './dto/create_rol.dto';
 import { UpdateRolDTO } from './dto/update_rol.dto';
 
-
 @UseGuards(AuthGuard('jwt'), RolesGuard)
-@Roles('padmin', 'pnomina')
+@Roles('padmin', 'prrhh')
 @Controller('empleados')
 export class RolesController {
 
