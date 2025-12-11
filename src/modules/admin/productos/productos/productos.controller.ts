@@ -7,7 +7,6 @@ import { CreateProductoDTO } from './dto/create_producto.dto';
 import { FilterProductoDTO } from './dto/filter_producto.dto';
 import { ProductosService } from './productos.service';
 
-
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 @Roles('padmin', 'pinventario')
 @Controller('productos')

@@ -7,7 +7,6 @@ import { CreateCategoriaDTO } from './dto/create_categoria.dto';
 import { UpdateCategoriaDTO } from './dto/update_categoria.dto';
 import { CategoriasService } from './categorias.service';
 
-
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 @Roles('padmin', 'pinventario')
 @Controller('categorias')

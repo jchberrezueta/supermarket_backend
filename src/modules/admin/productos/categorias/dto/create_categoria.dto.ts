@@ -25,7 +25,7 @@ export class CreateCategoriaDTO implements ICategoria {
   @IsString()
   @Length(1, 250)
   @Transform(({value}) => 
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
+    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : 'ninguna'
   )
   descripcionCate: string;
 

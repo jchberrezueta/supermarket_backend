@@ -3,7 +3,8 @@ import {
   IsOptional, 
   IsNotEmpty,
   IsInt,
-  Min
+  Min,
+  IsIn
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { Length, IsEnum } from 'class-validator';
@@ -36,9 +37,8 @@ export class FilterProductoDTO implements IFiltroProducto {
   nombreProd?: string;
   
   @IsOptional()
-  @IsString()
-  @Length(1, 25)
-  disponibleProd?: string;
+  @IsIn(['si', 'no'])
+  disponibleProd?: 'si' | 'no';
 
   @IsOptional()
   @IsEnum(EnumEstadosProducto)

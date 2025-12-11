@@ -1,17 +1,16 @@
 import { 
   IsString,
-  IsOptional, 
-  IsNotEmpty,
   IsInt,
   Equals,
   Min,
-  IsNumber
+  IsNumber,
+  IsIn,
+  IsOptional
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { Length, IsEnum } from 'class-validator';
 import { IProducto } from '@models';
 import { EnumEstadosProducto } from '../../../../../models/producto.model';
-
 
 export class CreateProductoDTO implements IProducto {
 
@@ -69,12 +68,8 @@ export class CreateProductoDTO implements IProducto {
   @Min(0)
   stockProd: number;
 
-  @IsString()
-  @Length(1, 25)
-  @Transform(({ value }) =>
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
-  )
-  disponibleProd: string;
+  @IsIn(['si', 'no'])
+  disponibleProd: 'si' | 'no';
 
   @IsEnum(EnumEstadosProducto)
   estadoProd: EnumEstadosProducto;
@@ -86,12 +81,13 @@ export class CreateProductoDTO implements IProducto {
   )
   descripcionProd: string;
 
+  @IsOptional()
   @IsString()
   @Length(1, 500)
   @Transform(({ value }) =>
     (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
   )
-  urlImgProd: string;
+  urlImgProd?: string | null;
 
   toArray(): any[] {
     return [
@@ -109,7 +105,7 @@ export class CreateProductoDTO implements IProducto {
       this.disponibleProd,
       this.estadoProd,
       this.descripcionProd,
-      this.urlImgProd
+      this.urlImgProd?? null
     ];
   }
 }

@@ -17,10 +17,10 @@ export interface IProducto {
     dctoCaducProd: number;
     precioFinalProd: number;
     stockProd: number;
-    disponibleProd: string;
+    disponibleProd: 'si' | 'no';
     estadoProd: EnumEstadosProducto;
     descripcionProd: string;
-    urlImgProd: string;
+    urlImgProd?: string | null;
 }
 
 export class CProducto implements IProducto {
@@ -38,10 +38,10 @@ export class CProducto implements IProducto {
         private _dctoCaducProd: number,
         private _precioFinalProd: number,
         private _stockProd: number,
-        private _disponibleProd: string,
+        private _disponibleProd: 'si' | 'no',
         private _estadoProd: EnumEstadosProducto,
         private _descripcionProd: string,
-        private _urlImgProd: string
+        private _urlImgProd?: string | null
     ) {}
 
     // --- Getters / Setters ---
@@ -133,7 +133,7 @@ export class CProducto implements IProducto {
     get disponibleProd() {
         return this._disponibleProd;
     }
-    set disponibleProd(value: string) {
+    set disponibleProd(value: 'si' | 'no') {
         this._disponibleProd = value;
     }
 
@@ -154,7 +154,7 @@ export class CProducto implements IProducto {
     get urlImgProd() {
         return this._urlImgProd;
     }
-    set urlImgProd(value: string) {
+    set urlImgProd(value: string | null) {
         this._urlImgProd = value;
     }
 }
@@ -172,10 +172,10 @@ export interface IProductoResult {
     dcto_caduc_prod: number;
     precio_final_prod: number;
     stock_prod: number;
-    disponible_prod: string;
+    disponible_prod: 'si' | 'no';
     estado_prod: EnumEstadosProducto;
     descripcion_prod: string;
-    url_img_prod: string;
+    url_img_prod: string | null;
 }
 
 export interface IFiltroProducto {

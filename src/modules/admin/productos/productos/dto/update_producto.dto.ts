@@ -9,8 +9,8 @@ export class UpdateProductoDTO extends (CreateProductoDTO) {
     ideProd: number;
 
     toArray(): any[] {
-    const lista = super.toArray();
-    lista.unshift(this.ideProd);
-    return lista;
+        const lista = super.toArray();
+        lista.unshift(this.ideProd);
+        return lista;
     }
 }
