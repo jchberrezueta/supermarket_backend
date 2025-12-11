@@ -3,7 +3,6 @@ import { IFiltroAccesoUsuario } from '@models';
 import { Transform } from 'class-transformer';
 import { IsOptional, IsInt, IsString, Min, Max, IsEnum, IsNumber, Length, IsDateString } from 'class-validator';
 
-
 export class FilterAccesoUsuarioDto implements IFiltroAccesoUsuario{
 
   @IsOptional()
@@ -28,14 +27,14 @@ export class FilterAccesoUsuarioDto implements IFiltroAccesoUsuario{
   @IsDateString()
   fechaAcceHasta?: string;
 
-  toArray(): any[] {
-    return [
-      this.ideCuen?? null,
-      this.ipAcce?? null,
-      this.navegadorAcce?? null,
-      this.fechaAcceDesde?? null,
-      this.fechaAcceHasta?? null
-    ]
-  }
+}
 
+export const FilterAccesoUsuarioDtoToArray = (obj: FilterAccesoUsuarioDto): any[] => {
+  return [
+    obj.ideCuen?? null,
+    obj.ipAcce?? null,
+    obj.navegadorAcce?? null,
+    obj.fechaAcceDesde?? null,
+    obj.fechaAcceHasta?? null
+  ];
 }

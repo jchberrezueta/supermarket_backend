@@ -2,7 +2,6 @@ import { IAccesoUsuario } from '@models';
 import { Transform } from 'class-transformer';
 import { IsOptional, IsInt, IsString, Min, Max, IsEnum, IsNumber, Length, IsDateString, Equals } from 'class-validator';
 
-
 export class CreateAccesoUsuarioDto implements IAccesoUsuario{
 
     @IsInt()
@@ -34,22 +33,24 @@ export class CreateAccesoUsuarioDto implements IAccesoUsuario{
     )
     ipAcce: string;
 
+    @IsOptional()
     @IsNumber()
     latitudAcce: number;
 
+    @IsOptional()
     @IsNumber()
     longitudAcce: number;
 
-    toArray(): any[] {
-        return [
-            this.ideCuen,
-            this.navegadorAcce,
-            this.fechaAcce,
-            this.numIntFallAcce,
-            this.ipAcce,
-            this.latitudAcce,
-            this.longitudAcce
-        ]
-    }
+}
 
+export const CreateAccesoUsuarioToArray = (obj: CreateAccesoUsuarioDto): any[] => {
+    return [
+        obj.ideCuen,
+        obj.navegadorAcce,
+        obj.fechaAcce,
+        obj.numIntFallAcce,
+        obj.ipAcce,
+        obj.latitudAcce?? null,
+        obj.longitudAcce?? null
+    ];
 }

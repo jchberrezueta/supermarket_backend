@@ -3,7 +3,6 @@ import { CuentasService } from '../admin/seguridad/cuentas/cuentas.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 
-
 @Injectable()
 export class AuthService {
 
@@ -25,7 +24,6 @@ export class AuthService {
   async login(user: any) {
     const info = await this.cuentasService.getPerfilPermisos(user.ide_cuen);
     const rutasSidebar = await this.cuentasService.getSidebarRutas(user.ide_cuen);
-    //console.log(info);
     const permisosUsuario = info.map(p => ({
       ruta: p.ruta_opci,
       listar: p.listar === 'si',

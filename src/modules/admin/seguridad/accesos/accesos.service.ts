@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '@database';
-import { FilterAccesoUsuarioDto } from './dto/filter_acceso.dto';
-import { CreateAccesoUsuarioDto } from './dto/create_acceso.dto';
+import { FilterAccesoUsuarioDto, FilterAccesoUsuarioDtoToArray } from './dto/filter_acceso.dto';
+import { CreateAccesoUsuarioToArray, CreateAccesoUsuarioDto } from './dto/create_acceso.dto';
 
 @Injectable()
 export class AccesosUsuariosService {
@@ -18,11 +18,11 @@ export class AccesosUsuariosService {
   }
 
   async filtrar(queryParams: FilterAccesoUsuarioDto) {
-    this.db.executeFunctionRead(`fn_filtrar_${this.fnName}`, queryParams.toArray())
+    this.db.executeFunctionRead(`fn_filtrar_${this.fnName}`, FilterAccesoUsuarioDtoToArray(queryParams));
   }
 
   async insertarAccesoUsuario(data: CreateAccesoUsuarioDto) {
-    this.db.executeFunctionWrite(`fn_insertar_${this.fnName}`, data.toArray());
+    this.db.executeFunctionWrite(`fn_insertar_${this.fnName}`, CreateAccesoUsuarioToArray(data));
   }
 
 }
