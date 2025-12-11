@@ -1,4 +1,4 @@
-import { IsOptional, IsInt, IsString, Length, Min, IsNumberString } from 'class-validator';
+import { IsOptional, IsInt, IsString, Length, Min, IsNumberString, IsEmail } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { isIntNumeric } from '@helpers/utilities';
 import { IFiltroProveedor } from '@models';
@@ -27,7 +27,7 @@ export class FilterProveedorDTO implements IFiltroProveedor {
   apellidoPaternoProv?: string;
 
   @IsOptional()
-  @IsString()
+  @IsEmail()
   @Length(1, 100)
   emailProv?: string;
 

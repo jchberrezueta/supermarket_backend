@@ -8,8 +8,8 @@ export interface IProveedor {
     emailProv: string;
     primerNombreProv: string;
     apellidoPaternoProv: string;
-    segundoNombreProv: string;
-    apellidoMaternoProv: string;
+    segundoNombreProv?: string | null;
+    apellidoMaternoProv?: string | null;
 }
 
 export class CProveedor implements IProveedor {
@@ -24,8 +24,8 @@ export class CProveedor implements IProveedor {
         private _emailProv: string,
         private _primerNombreProv: string,
         private _apellidoPaternoProv: string,
-        private _segundoNombreProv: string,
-        private _apellidoMaternoProv: string
+        private _segundoNombreProv?: string | null,
+        private _apellidoMaternoProv?: string | null
     ) {}
 
     // --- Getters / Setters ---
@@ -96,14 +96,14 @@ export class CProveedor implements IProveedor {
     get segundoNombreProv() {
         return this._segundoNombreProv;
     }
-    set segundoNombreProv(value: string) {
+    set segundoNombreProv(value: string | null) {
         this._segundoNombreProv = value;
     }
 
     get apellidoMaternoProv() {
         return this._apellidoMaternoProv;
     }
-    set apellidoMaternoProv(value: string) {
+    set apellidoMaternoProv(value: string | null) {
         this._apellidoMaternoProv = value;
     }
 }
@@ -118,8 +118,8 @@ export interface IProveedorResult {
     email_prov: string;
     primer_nombre_prov: string;
     apellido_paterno_prov: string;
-    segundo_nombre_prov: string;
-    apellido_materno_prov: string;
+    segundo_nombre_prov: string | null;
+    apellido_materno_prov: string | null;
 }
 
 export interface IFiltroProveedor {

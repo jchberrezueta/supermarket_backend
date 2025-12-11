@@ -59,19 +59,21 @@ export class CreateProveedorDTO implements IProveedor {
   )
   apellidoPaternoProv: string;
 
+  @IsOptional()
   @IsString()
-  @Length(0, 50)
+  @Length(1, 50)
   @Transform(({ value }) =>
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : ''
+    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
   )
-  segundoNombreProv: string;
+  segundoNombreProv?: string | null;
 
+  @IsOptional()
   @IsString()
-  @Length(0, 50)
+  @Length(1, 50)
   @Transform(({ value }) =>
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : ''
+    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
   )
-  apellidoMaternoProv: string;
+  apellidoMaternoProv?: string | null;
 
 
   toArray (): any[] {
@@ -84,8 +86,8 @@ export class CreateProveedorDTO implements IProveedor {
       this.emailProv,
       this.primerNombreProv,
       this.apellidoPaternoProv,
-      this.segundoNombreProv || null,
-      this.apellidoMaternoProv || null,
+      this.segundoNombreProv?? null,
+      this.apellidoMaternoProv?? null,
     ];
   }
 }
