@@ -18,8 +18,8 @@ export class AccesosUsuariosService {
     this.db.executeFunctionRead(`fn_listar_${this.fnName}`, queryParams.toArray())
   }
 
-  async insertarAccesoUsuario(data: CreateAccesoUsuarioDto) {
-    this.db.executeFunctionWrite(`fn_insertar_${this.fnName}`, data.toArray());
+  async insertarAccesoUsuario(data: any) {
+    //this.db.executeFunctionWrite(`fn_insertar_${this.fnName}`, data.toArray());
   }
 
 }
