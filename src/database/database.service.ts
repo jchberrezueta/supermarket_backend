@@ -1,11 +1,21 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 
 @Injectable()
-export class DatabaseService {
+export class DatabaseService implements OnModuleInit {
 
   constructor(@InjectDataSource() private readonly datasource: DataSource){}
+
+  async onModuleInit() {
+    // Acceder a la información de la conexión
+    console.log(this.datasource.options);    
+    // Verificar si está conectado
+    if (!this.datasource.isInitialized) {
+      await this.datasource.initialize();
+    }
+    console.log('------> Conexión inicializada BD correctamente <-----');
+  }
 
   async executeQuery(query: string){
     return this.datasource.query(query);
