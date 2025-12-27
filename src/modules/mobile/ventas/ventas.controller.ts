@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Req, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Req, BadRequestException, UnauthorizedException, ParseIntPipe } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { MobileVentasService } from './ventas.service';
 import { CreateVentaClienteDto } from './dto';
@@ -19,21 +19,30 @@ export class MobileVentasController {
      */
     @Post()
     async crearVenta(@Body() body: CreateVentaClienteDto, @Req() req: any) {
+        console.log('=== CREAR VENTA ===');
+        console.log('Body recibido:', JSON.stringify(body, null, 2));
+        console.log('User del token:', req.user);
+        
         // Verificar que el cliente autenticado coincide con el de la venta
         const clienteToken = req.user?.ide_clie;
         
         if (!clienteToken) {
+            console.log('Error: Cliente no autenticado');
             throw new UnauthorizedException('Cliente no autenticado');
         }
 
         // Verificar que la venta corresponde al cliente autenticado
-        if (body.cabeceraVenta.ideClie !== clienteToken) {
+        if (body.cabeceraVenta?.ideClie !== clienteToken) {
+            console.log(`Error: ideClie del body (${body.cabeceraVenta?.ideClie}) != clienteToken (${clienteToken})`);
             throw new BadRequestException('El cliente de la venta no coincide con el usuario autenticado');
         }
 
         try {
-            return await this.ventasService.crearVenta(body);
+            const result = await this.ventasService.crearVenta(body);
+            console.log('Venta creada exitosamente:', result);
+            return result;
         } catch (error) {
+            console.error('Error al crear venta:', error);
             throw new BadRequestException(error.message || 'Error al procesar la venta');
         }
     }
@@ -58,7 +67,7 @@ export class MobileVentasController {
      * GET /mobile/ventas/:id
      */
     @Get(':id')
-    async obtenerDetalle(@Param('id') id: number, @Req() req: any) {
+    async obtenerDetalle(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
         const clienteId = req.user?.ide_clie;
         
         if (!clienteId) {

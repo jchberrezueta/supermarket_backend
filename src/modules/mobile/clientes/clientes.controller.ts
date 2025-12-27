@@ -1,7 +1,7 @@
-import { Controller, Get, Put, Body, UseGuards, Req, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Put, Post, Body, UseGuards, Req, BadRequestException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { MobileClientesService } from './clientes.service';
-import { UpdateClienteDto } from './dto';
+import { UpdateClienteDto, CambiarPasswordDto } from './dto';
 
 /**
  * Controller para gestión del perfil del cliente
@@ -50,6 +50,28 @@ export class MobileClientesController {
             return await this.clientesService.actualizarPerfil(clienteId, body);
         } catch (error) {
             throw new BadRequestException(error.message || 'Error al actualizar el perfil');
+        }
+    }
+
+    /**
+     * Cambiar contraseña del cliente autenticado
+     * POST /mobile/clientes/cambiar-password
+     */
+    @Post('cambiar-password')
+    async cambiarPassword(@Body() body: CambiarPasswordDto, @Req() req: any) {
+        const clienteId = req.user?.ide_clie;
+        
+        if (!clienteId) {
+            throw new BadRequestException('Cliente no identificado');
+        }
+
+        try {
+            return await this.clientesService.cambiarPassword(clienteId, body);
+        } catch (error) {
+            if (error instanceof UnauthorizedException) {
+                throw error;
+            }
+            throw new BadRequestException(error.message || 'Error al cambiar la contraseña');
         }
     }
 }
