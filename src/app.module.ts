@@ -5,7 +5,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { 
   AdminModule, 
   LandingModule, 
-  AuthModule 
+  AuthModule,
+  MobileModule 
 } from '@modules';
 import { TypeOrmConfigService } from '@database';
 import { configOptions } from '@config'
@@ -24,6 +25,7 @@ import { DatabaseModule } from './database/database.module';
     AdminModule,
     LandingModule,
     AuthModule,
+    MobileModule,
   ],
   controllers: [AppController],
   providers: [AppService],

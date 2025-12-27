@@ -19,7 +19,7 @@ import { accesosModule } from '../admin/seguridad/accesos/accesos.module'
     ],
     providers: [AuthService, JwtStrategy],
     controllers: [AuthController],
-    exports: [AuthService]
+    exports: [AuthService, JwtModule]
 })
 export class AuthModule {}
 
