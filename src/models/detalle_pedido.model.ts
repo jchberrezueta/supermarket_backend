@@ -1,3 +1,8 @@
+export enum EnumEstadoPedido {
+    COMPLETADO = 'completado',
+    INCOMPLETO = 'incompleto'
+}
+
 export interface IDetallePedido {
     ideDetaPedi: number;
     idePedi: number;
@@ -9,6 +14,7 @@ export interface IDetallePedido {
     ivaProd: number;
     totalProd: number;
     dctoCaducProd: number;
+    estadoDetaPedi: EnumEstadoPedido;
 }
 
 export class CDetallePedido implements IDetallePedido {
@@ -23,7 +29,8 @@ export class CDetallePedido implements IDetallePedido {
         private _dctoCompraProd: number,
         private _ivaProd: number,
         private _totalProd: number,
-        private _dctoCaducProd: number
+        private _dctoCaducProd: number,
+        private _estadoDetaPedi: EnumEstadoPedido
     ) {}
 
     // --- Getters / Setters ---
@@ -97,6 +104,13 @@ export class CDetallePedido implements IDetallePedido {
     set dctoCaducProd(value: number) {
         this._dctoCaducProd = value;
     }
+
+    get estadoDetaPedi() {
+        return this._estadoDetaPedi;
+    }
+    set estadoDetaPedi(value: EnumEstadoPedido) {
+        this._estadoDetaPedi = value;
+    }
 }
 
 export interface IDetallePedidoResult {
@@ -110,6 +124,7 @@ export interface IDetallePedidoResult {
     iva_prod: number;
     total_prod: number;
     dcto_caduc_prod: number;
+    estado_deta_pedi: EnumEstadoPedido;
 }
 
 export interface IFiltroDetallePedido {
@@ -122,4 +137,5 @@ export interface IFiltroDetallePedido {
     precioUnitarioProdMax?: number;
     subtotalProdMin?: number;
     subtotalProdMax?: number;
+    estadoDetaPedi?: EnumEstadoPedido;
 }
