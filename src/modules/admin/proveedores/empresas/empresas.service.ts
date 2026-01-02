@@ -3,6 +3,7 @@ import {DatabaseService} from '@database';
 import { CreateEmpresaDTO } from './dto/create_empresa.dto';
 import { UpdateEmpresaDTO } from './dto/update_empresa.dto';
 import { FilterEmpresaDTO } from './dto/filter_empresa.dto';
+import { ListEstadosEmpresa } from '@models';
 
 @Injectable()
 export class EmpresasService {
@@ -32,6 +33,10 @@ export class EmpresasService {
 
   async eliminar(id:number){
     return this.db.executeFunctionWrite(`fn_eliminar_${this.fnName}`, [id]);
+  }
+
+  listarEstados(){
+    return ListEstadosEmpresa;
   }
   
 }

@@ -20,6 +20,11 @@ export class EmpresasController {
         return this.servicio.listar(); 
     }
 
+    @Get('listar/estados')
+    getEstados() {
+        return this.servicio.listarEstados();
+    }
+
     @Get('buscar/:id')
     async buscar(@Param('id') id:number) {
         return this.servicio.buscar(id); 
@@ -47,4 +52,6 @@ export class EmpresasController {
     async eliminar(@Param('id') id:number) {
         return this.servicio.eliminar(id); 
     }
+
+    
 }
