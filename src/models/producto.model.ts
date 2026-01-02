@@ -20,7 +20,7 @@ export interface IProducto {
     disponibleProd: 'si' | 'no';
     estadoProd: EnumEstadosProducto;
     descripcionProd: string;
-    urlImgProd?: string | null;
+    urlImgProd: string;
 }
 
 export class CProducto implements IProducto {
@@ -41,7 +41,7 @@ export class CProducto implements IProducto {
         private _disponibleProd: 'si' | 'no',
         private _estadoProd: EnumEstadosProducto,
         private _descripcionProd: string,
-        private _urlImgProd?: string | null
+        private _urlImgProd: string
     ) {}
 
     // --- Getters / Setters ---
@@ -154,7 +154,7 @@ export class CProducto implements IProducto {
     get urlImgProd() {
         return this._urlImgProd;
     }
-    set urlImgProd(value: string | null) {
+    set urlImgProd(value: string) {
         this._urlImgProd = value;
     }
 }
@@ -175,7 +175,7 @@ export interface IProductoResult {
     disponible_prod: 'si' | 'no';
     estado_prod: EnumEstadosProducto;
     descripcion_prod: string;
-    url_img_prod: string | null;
+    url_img_prod: string;
 }
 
 export interface IFiltroProducto {
