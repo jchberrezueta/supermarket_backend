@@ -74,14 +74,14 @@ export class COpciones implements IOpciones {
     get padreOpci() {
         return this._padreOpci;
     }
-    set padreOpci(value: number | null) {
+    set padreOpci(value: number | null | undefined) {
         this._padreOpci = value;
     }
 
     get iconoOpci() {
         return this._iconoOpci;
     }
-    set iconoOpci(value: string) {
+    set iconoOpci(value: string | null | undefined) {
         this._iconoOpci = value;
     }
 }
