@@ -5,7 +5,7 @@ export interface IDetalleVenta {
     cantidadProd: number;
     precioUnitarioProd: number;
     subtotalProd: number;
-    dctoPromo: number;
+    dctoPromoProd: number;
     ivaProd: number;
     totalProd: number;
 }
@@ -19,7 +19,7 @@ export class CDetalleVenta implements IDetalleVenta {
         private _cantidadProd: number,
         private _precioUnitarioProd: number,
         private _subtotalProd: number,
-        private _dctoPromo: number,
+        private _dctoPromoProd: number,
         private _ivaProd: number,
         private _totalProd: number
     ) {}
@@ -68,11 +68,11 @@ export class CDetalleVenta implements IDetalleVenta {
         this._subtotalProd = value;
     }
 
-    get dctoPromo() {
-        return this._dctoPromo;
+    get dctoPromoProd() {
+        return this._dctoPromoProd;
     }
-    set dctoPromo(value: number) {
-        this._dctoPromo = value;
+    set dctoPromoProd(value: number) {
+        this._dctoPromoProd = value;
     }
 
     get ivaProd() {
@@ -97,7 +97,7 @@ export interface IDetalleVentaResult {
     cantidad_prod: number;
     precio_unitario_prod: number;
     subtotal_prod: number;
-    dcto_promo: number;
+    dcto_promo_prod: number;
     iva_prod: number;
     total_prod: number;
 }

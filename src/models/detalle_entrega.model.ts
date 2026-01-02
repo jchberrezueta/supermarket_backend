@@ -1,4 +1,4 @@
-export enum EnumEstadoEntrega {
+export enum EnumEstadoDetalleEntrega {
     COMPLETO = 'completo',
     INCOMPLETO = 'incompleto'
 }
@@ -14,7 +14,7 @@ export interface IDetalleEntrega {
     ivaProd: number;
     totalProd: number;
     dctoCaducProd: number;
-    estadoDetaEntr: EnumEstadoEntrega;
+    estadoDetaEntr: EnumEstadoDetalleEntrega;
 }
 
 export class CDetalleEntrega implements IDetalleEntrega {
@@ -30,7 +30,7 @@ export class CDetalleEntrega implements IDetalleEntrega {
         private _ivaProd: number,
         private _totalProd: number,
         private _dctoCaducProd: number,
-        private _estadoDetaEntr: EnumEstadoEntrega
+        private _estadoDetaEntr: EnumEstadoDetalleEntrega
     ) {}
 
     // --- Getters / Setters ---
@@ -108,7 +108,7 @@ export class CDetalleEntrega implements IDetalleEntrega {
     get estadoDetaEntr() {
         return this._estadoDetaEntr;
     }
-    set estadoDetaEntr(value: EnumEstadoEntrega) {
+    set estadoDetaEntr(value: EnumEstadoDetalleEntrega) {
         this._estadoDetaEntr = value;
     }
 }
@@ -124,7 +124,7 @@ export interface IDetalleEntregaResult {
     iva_prod: number;
     total_prod: number;
     dcto_caduc_prod: number;
-    estado_deta_entr: EnumEstadoEntrega;
+    estado_deta_entr: EnumEstadoDetalleEntrega;
 }
 
 export interface IFiltroDetalleEntrega {
@@ -135,5 +135,5 @@ export interface IFiltroDetalleEntrega {
     cantidadProdMax?: number;
     precioUnitarioProdMin?: number;
     precioUnitarioProdMax?: number;
-    estadoDetaEntr?: EnumEstadoEntrega;
+    estadoDetaEntr?: EnumEstadoDetalleEntrega;
 }

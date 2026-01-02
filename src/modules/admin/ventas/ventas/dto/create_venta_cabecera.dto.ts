@@ -40,10 +40,14 @@ export class CreateVentaCabeceraDTO implements IVenta {
 
   @IsNumber()
   @Min(0)
-  dctoVent: number;
+  dctoSocioVent: number;
 
   @IsEnum(EnumEstadoVenta)
   estadoVent:EnumEstadoVenta;
+
+  @IsNumber()
+  @Min(0)
+  dctoEdadVent: number;
 
   toArray(): any[] {
     return [
@@ -53,9 +57,10 @@ export class CreateVentaCabeceraDTO implements IVenta {
       this.fechaVent,
       this.cantidadVent,
       this.subTotalVent,
-      this.dctoVent,
+      this.dctoSocioVent,
       this.totalVent,
-      this.estadoVent
+      this.estadoVent,
+      this.dctoEdadVent,
     ]
   }
 }

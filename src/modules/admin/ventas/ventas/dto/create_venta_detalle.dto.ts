@@ -34,25 +34,25 @@ export class CreateVentaDetalleDTO implements IDetalleVenta {
 
   @IsNumber()
   @Min(0)
-  dctoProd: number;
-
-  @IsNumber()
-  @Min(0)
-  dctoPromo: number;
+  dctoPromoProd: number;
 
   @IsNumber()
   @Min(0)
   ivaProd: number;
+
+  @IsNumber()
+  @Min(0)
+  totalProd: number;
 
   toArray(): any[] {
     return [
       this.ideProd,
       this.cantidadProd,
       this.precioUnitarioProd,
-      this.dctoProd,
-      this.dctoPromo,
+      this.dctoPromoProd,
       this.ivaProd,
-      this.subtotalProd
+      this.subtotalProd,
+      this.totalProd,
     ]
   }
 }
