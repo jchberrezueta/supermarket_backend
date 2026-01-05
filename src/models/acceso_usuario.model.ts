@@ -69,14 +69,14 @@ export class CAccesoUsuario implements IAccesoUsuario {
     get latitudAcce() {
         return this._latitudAcce;
     }
-    set latitudAcce(value: number) {
+    set latitudAcce(value: number | null | undefined) {
         this._latitudAcce = value;
     }
 
     get longitudAcce() {
         return this._longitudAcce;
     }
-    set longitudAcce(value: number | null) {
+    set longitudAcce(value: number | null | undefined) {
         this._longitudAcce = value;
     }
 }

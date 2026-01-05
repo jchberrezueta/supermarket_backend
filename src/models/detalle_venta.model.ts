@@ -5,9 +5,9 @@ export interface IDetalleVenta {
     cantidadProd: number;
     precioUnitarioProd: number;
     subtotalProd: number;
-    dctoProd: number;
-    dctoPromo: number;
+    dctoPromoProd: number;
     ivaProd: number;
+    totalProd: number;
 }
 
 export class CDetalleVenta implements IDetalleVenta {
@@ -19,9 +19,9 @@ export class CDetalleVenta implements IDetalleVenta {
         private _cantidadProd: number,
         private _precioUnitarioProd: number,
         private _subtotalProd: number,
-        private _dctoProd: number,
-        private _dctoPromo: number,
-        private _ivaProd: number
+        private _dctoPromoProd: number,
+        private _ivaProd: number,
+        private _totalProd: number
     ) {}
 
     // --- Getters / Setters ---
@@ -68,18 +68,11 @@ export class CDetalleVenta implements IDetalleVenta {
         this._subtotalProd = value;
     }
 
-    get dctoProd() {
-        return this._dctoProd;
+    get dctoPromoProd() {
+        return this._dctoPromoProd;
     }
-    set dctoProd(value: number) {
-        this._dctoProd = value;
-    }
-
-    get dctoPromo() {
-        return this._dctoPromo;
-    }
-    set dctoPromo(value: number) {
-        this._dctoPromo = value;
+    set dctoPromoProd(value: number) {
+        this._dctoPromoProd = value;
     }
 
     get ivaProd() {
@@ -87,6 +80,13 @@ export class CDetalleVenta implements IDetalleVenta {
     }
     set ivaProd(value: number) {
         this._ivaProd = value;
+    }
+
+    get totalProd() {
+        return this._totalProd;
+    }
+    set totalProd(value: number) {
+        this._totalProd = value;
     }
 }
 
@@ -97,9 +97,9 @@ export interface IDetalleVentaResult {
     cantidad_prod: number;
     precio_unitario_prod: number;
     subtotal_prod: number;
-    dcto_prod: number;
-    dcto_promo: number;
+    dcto_promo_prod: number;
     iva_prod: number;
+    total_prod: number;
 }
 
 export interface IFiltroDetalleVenta {
@@ -112,4 +112,6 @@ export interface IFiltroDetalleVenta {
     precioUnitarioProdMax?: number;
     subtotalProdMin?: number;
     subtotalProdMax?: number;
+    totalProdMin?: number;
+    totalProdMax?: number;
 }

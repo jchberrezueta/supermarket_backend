@@ -96,14 +96,14 @@ export class CProveedor implements IProveedor {
     get segundoNombreProv() {
         return this._segundoNombreProv;
     }
-    set segundoNombreProv(value: string | null) {
+    set segundoNombreProv(value: string | null | undefined) {
         this._segundoNombreProv = value;
     }
 
     get apellidoMaternoProv() {
         return this._apellidoMaternoProv;
     }
-    set apellidoMaternoProv(value: string | null) {
+    set apellidoMaternoProv(value: string | null | undefined) {
         this._apellidoMaternoProv = value;
     }
 }

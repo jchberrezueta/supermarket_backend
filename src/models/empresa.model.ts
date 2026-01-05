@@ -5,14 +5,14 @@ export enum EnumEstadosEmpresa {
 }
 
 export const ListEstadosEmpresa = [
-  {
-    value: EnumEstadosEmpresa.ACTIVO,
-    label: 'activo'
-  },
-  {
-    value: EnumEstadosEmpresa.INACTIVO,
-    label: 'inactivo'
-  },
+    {
+        label: 'Activo',
+        value: EnumEstadosEmpresa.ACTIVO,
+    },
+    {
+        label: 'Inactivo',
+        value: EnumEstadosEmpresa.INACTIVO
+    }
 ]
 
 export class CEmpresa implements IEmpresa {

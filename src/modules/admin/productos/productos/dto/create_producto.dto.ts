@@ -87,7 +87,7 @@ export class CreateProductoDTO implements IProducto {
   @Transform(({ value }) =>
     (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
   )
-  urlImgProd?: string | null;
+  urlImgProd: string;
 
   toArray(): any[] {
     return [
@@ -95,7 +95,7 @@ export class CreateProductoDTO implements IProducto {
       this.ideMarc,
       this.codigoBarraProd,
       this.nombreProd,
-      this.urlImgProd?? null,
+      this.urlImgProd,
       this.precioCompraProd,
       this.precioVentaProd,
       this.ivaProd,

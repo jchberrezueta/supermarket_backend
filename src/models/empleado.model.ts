@@ -121,21 +121,21 @@ export class CEmpleado implements IEmpleado {
     get segundoNombreEmpl() {
         return this._segundoNombreEmpl;
     }
-    set segundoNombreEmpl(value: string | null) {
+    set segundoNombreEmpl(value: string | null | undefined) {
         this._segundoNombreEmpl = value;
     }
 
     get apellidoMaternoEmpl() {
         return this._apellidoMaternoEmpl;
     }
-    set apellidoMaternoEmpl(value: string | null) {
+    set apellidoMaternoEmpl(value: string | null | undefined) {
         this._apellidoMaternoEmpl = value;
     }
 
     get fechaTerminoEmpl() {
         return this._fechaTerminoEmpl;
     }
-    set fechaTerminoEmpl(value: string | null) {
+    set fechaTerminoEmpl(value: string | null | undefined) {
         this._fechaTerminoEmpl = value;
     }
 }

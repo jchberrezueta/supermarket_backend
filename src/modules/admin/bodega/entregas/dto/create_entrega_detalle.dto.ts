@@ -1,6 +1,7 @@
-import { IDetalleEntrega } from '@models';
+import { EnumEstadoDetalleEntrega, IDetalleEntrega } from '@models';
 import { 
   Equals,
+    IsEnum,
     IsInt,
     IsNumber,
     Min
@@ -48,6 +49,9 @@ export class CreateEntregaDetalleDTO implements IDetalleEntrega {
   @Min(0)
   dctoCaducProd: number;
 
+  @IsEnum(EnumEstadoDetalleEntrega)
+  estadoDetaEntr: EnumEstadoDetalleEntrega
+
   toArray(): any[] {
     return [
       this.ideProd,
@@ -57,7 +61,8 @@ export class CreateEntregaDetalleDTO implements IDetalleEntrega {
       this.dctoCompraProd,
       this.ivaProd,
       this.totalProd,
-      this.dctoCaducProd
+      this.dctoCaducProd,
+      this.estadoDetaEntr
     ]
   }
 }
