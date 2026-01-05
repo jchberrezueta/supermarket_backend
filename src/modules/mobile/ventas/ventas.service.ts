@@ -14,14 +14,30 @@ export class MobileVentasService {
      * Crear una nueva venta desde la app móvil
      */
     async crearVenta(body: CreateVentaClienteDto) {
+        // Verificar stock disponible para todos los productos antes de procesar
+        for (const detalle of body.detalleVenta) {
+            const stockResult = await this.db.executeQuery(
+                `SELECT stock_prod, nombre_prod FROM producto WHERE ide_prod = ${detalle.ideProd}`
+            );
+            
+            if (!stockResult || stockResult.length === 0) {
+                throw new BadRequestException(`Producto con ID ${detalle.ideProd} no encontrado`);
+            }
+            
+            const stockActual = stockResult[0].stock_prod;
+            const nombreProducto = stockResult[0].nombre_prod;
+            
+            if (stockActual < detalle.cantidadProd) {
+                throw new BadRequestException(
+                    `Stock insuficiente para "${nombreProducto}". Disponible: ${stockActual}, Solicitado: ${detalle.cantidadProd}`
+                );
+            }
+        }
+
         const cabecera = body.cabeceraVenta;
         
-        // Construir array de parámetros para fn_insertar_venta
-        // Orden: p_ide_empl, p_ide_clie, p_num_factura_vent, p_fecha_vent, 
-        //        p_cantidad_vent, p_sub_total_vent, p_dcto_socio_vent, 
-        //        p_dcto_edad_vent, p_total_vent, p_estado_vent, p_usua_ingre
         const cabeceraParams = [
-            null,                               // p_ide_empl - ventas móviles no requieren empleado
+            null,                               // p_ide_empl
             cabecera.ideClie,                   // p_ide_clie
             cabecera.numFacturaVent,            // p_num_factura_vent
             cabecera.fechaVent,                 // p_fecha_vent
@@ -34,33 +50,23 @@ export class MobileVentasService {
             cabecera.usuaIngre || 'mobile'      // p_usua_ingre
         ];
 
-        console.log('=== Parámetros cabecera venta ===', cabeceraParams);
-
-        // Insertar cabecera de venta
         let result;
         try {
             result = await this.db.executeFunctionWrite(
                 `fn_insertar_${this.fnName}`,
                 cabeceraParams
             );
-            console.log('=== Resultado fn_insertar_venta ===', result);
         } catch (dbError) {
-            console.error('=== Error BD al insertar venta ===', dbError);
             throw new BadRequestException(`Error de BD: ${dbError.message}`);
         }
 
         if (!result || result.p_result !== 1) {
-            console.error('=== fn_insertar_venta falló ===', result);
             throw new BadRequestException(result?.p_response || 'Error al crear la venta');
         }
 
         const ideVenta = result.p_id;
 
-        // Insertar detalles de venta
         for (const detalle of body.detalleVenta) {
-            // Construir array de parámetros para fn_insertar_detalle_venta
-            // Orden: p_ide_vent, p_ide_prod, p_cantidad_prod, p_precio_unitario_prod, 
-            //        p_subtotal_prod, p_iva_prod, p_dcto_promo_prod, p_total_prod
             const detalleParams = [
                 ideVenta,                           // p_ide_vent
                 detalle.ideProd,                    // p_ide_prod
@@ -73,12 +79,17 @@ export class MobileVentasService {
             ];
             
             await this.db.executeFunctionWrite(`fn_insertar_${this.fnNameDetalle}`, detalleParams);
+
+            // Actualizar stock del producto (descontar la cantidad vendida)
+            await this.db.executeQuery(
+                `UPDATE producto SET stock_prod = stock_prod - ${detalle.cantidadProd} WHERE ide_prod = ${detalle.ideProd}`
+            );
         }
 
         return {
             success: true,
             message: 'Venta registrada correctamente',
-            ideVenta: ideVenta
+            ideVenta
         };
     }
 
@@ -113,7 +124,6 @@ export class MobileVentasService {
      * Obtener detalle de una venta específica
      */
     async obtenerDetalleVenta(idVenta: number, idCliente: number) {
-        // Primero verificar que la venta pertenece al cliente
         const ventaQuery = `
             SELECT * FROM venta 
             WHERE ide_vent = ${idVenta} AND ide_clie = ${idCliente}
@@ -124,7 +134,6 @@ export class MobileVentasService {
             throw new NotFoundException('Venta no encontrada');
         }
 
-        // Obtener detalles de la venta
         const detalleQuery = `
             SELECT 
                 dv.ide_deta_vent,
@@ -137,7 +146,7 @@ export class MobileVentasService {
                 dv.iva_prod,
                 dv.total_prod,
                 p.nombre_prod,
-                p.imagen_prod
+                p.url_img_prod as imagen_prod
             FROM detalle_venta dv
             INNER JOIN producto p ON p.ide_prod = dv.ide_prod
             WHERE dv.ide_vent = ${idVenta}
