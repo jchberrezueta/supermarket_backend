@@ -8,4 +8,4 @@ import { ProveedoresController } from './proveedores.controller';
     controllers: [ProveedoresController],
     providers: [ProveedoresService]
 })
-export class ProveedoresModule {}
+export class ProveedoritosModule {}
