@@ -47,11 +47,20 @@ export class CreateVentaCabeceraDto {
     @IsOptional()
     usuaIngre?: string;
 
+    @IsString()
+    @IsOptional()
+    tipoPagoVent?: string;  // 'efectivo', 'tarjeta_credito', 'tarjeta_debito', 'paypal'
+
+    @IsNumber()
+    @IsOptional()
+    ideMetoPago?: number;   // ID del método de pago guardado (null si es efectivo)
+
     /**
      * Convierte a array para fn_insertar_venta
      * Orden: p_ide_empl, p_ide_clie, p_num_factura_vent, p_fecha_vent, 
      *        p_cantidad_vent, p_sub_total_vent, p_dcto_socio_vent, 
-     *        p_dcto_edad_vent, p_total_vent, p_estado_vent, p_usua_ingre
+     *        p_dcto_edad_vent, p_total_vent, p_estado_vent, p_usua_ingre,
+     *        p_tipo_pago_vent, p_ide_meto_pago
      */
     toArray(): any[] {
         return [
@@ -65,7 +74,9 @@ export class CreateVentaCabeceraDto {
             this.dctoEdadVent,  // p_dcto_edad_vent
             this.totalVent,     // p_total_vent
             'completado',       // p_estado_vent
-            this.usuaIngre || 'mobile' // p_usua_ingre
+            this.usuaIngre || 'mobile', // p_usua_ingre
+            this.tipoPagoVent || 'efectivo', // p_tipo_pago_vent
+            this.ideMetoPago || null  // p_ide_meto_pago
         ];
     }
 }

@@ -17,8 +17,8 @@ export class DatabaseService implements OnModuleInit {
     console.log('------> Conexión inicializada BD correctamente <-----');
   }
 
-  async executeQuery(query: string){
-    return this.datasource.query(query);
+  async executeQuery(query: string, params: any[] = []){
+    return this.datasource.query(query, params);
   }
 
   async executeFunctionWrite(functionName:string, params:any[] = []) {

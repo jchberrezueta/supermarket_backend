@@ -4,6 +4,7 @@ import { MobileProductosModule } from './productos/productos.module';
 import { MobileCategoriasModule } from './categorias/categorias.module';
 import { MobileVentasModule } from './ventas/ventas.module';
 import { MobileClientesModule } from './clientes/clientes.module';
+import { MetodosPagoModule } from './metodos-pago/metodos-pago.module';
 
 @Module({
     imports: [
@@ -11,7 +12,8 @@ import { MobileClientesModule } from './clientes/clientes.module';
         MobileProductosModule,
         MobileCategoriasModule,
         MobileVentasModule,
-        MobileClientesModule
+        MobileClientesModule,
+        MetodosPagoModule
     ],
 })
 export class MobileModule {}

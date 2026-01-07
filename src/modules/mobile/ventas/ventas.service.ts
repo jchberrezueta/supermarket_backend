@@ -47,7 +47,9 @@ export class MobileVentasService {
             cabecera.dctoEdadVent || 0,         // p_dcto_edad_vent
             cabecera.totalVent,                 // p_total_vent
             'completado',                       // p_estado_vent
-            cabecera.usuaIngre || 'mobile'      // p_usua_ingre
+            cabecera.usuaIngre || 'mobile',     // p_usua_ingre
+            cabecera.tipoPagoVent || 'efectivo', // p_tipo_pago_vent
+            cabecera.ideMetoPago || null        // p_ide_meto_pago
         ];
 
         let result;
