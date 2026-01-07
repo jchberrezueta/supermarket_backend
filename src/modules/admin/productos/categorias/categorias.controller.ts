@@ -47,4 +47,17 @@ export class CategoriasController {
     async eliminar(@Param('id') id:number) {
         return this.servicio.eliminar(id); 
     }
+
+
+
+
+    @Get('listar/combo/nombre')
+    async listarComboCategoriaNombre() {
+        return this.servicio.listarComboCategoriaNombre();
+    }
+
+    @Get('listar/combo/descripcion')
+    async listarComboCategoriaDescripcion() {
+        return this.servicio.listarComboCategoriaDescripcion(); 
+    }
 }

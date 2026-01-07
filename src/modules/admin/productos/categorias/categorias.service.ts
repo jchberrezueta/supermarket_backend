@@ -34,5 +34,48 @@ export class CategoriasService {
   async eliminar(id:number){
     return this.db.executeFunctionWrite(`fn_eliminar_${this.fnName}`, [id]);
   }
+
+
+
+
+  async listarComboCategoriaNombre(){
+    const query = 
+      `
+        SELECT json_build_object(
+          'response', 'OK',
+          'data',
+          json_agg(
+            json_build_object(
+              'label', nombre_cate,
+              'value', ide_cate
+            )
+            ORDER BY nombre_cate
+          )
+        )
+        FROM categoria;
+    `;
+    const result = await this.db.executeQuery(query);
+    return result[0].json_build_object.data;
+  }
+
+  async listarComboCategoriaDescripcion(){
+    const query = 
+      `
+        SELECT json_build_object(
+          'response', 'OK',
+          'data',
+          json_agg(
+            json_build_object(
+              'label', descripcion_cate,
+              'value', ide_cate
+            )
+            ORDER BY descripcion_cate
+          )
+        )
+        FROM categoria;
+    `;
+    const result = await this.db.executeQuery(query);
+    return result[0].json_build_object.data;
+  }
   
 }

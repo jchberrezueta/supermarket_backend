@@ -47,4 +47,18 @@ export class MarcasController {
     async eliminar(@Param('id') id:number) {
         return this.servicio.eliminar(id); 
     }
+
+
+    @Get('listar/combo/nombre')
+    async listarComboCategoriaNombre() {
+        return this.servicio.listarComboNombre(); 
+    }
+    @Get('listar/combo/pais')
+    async listarComboCategoriaPais() {
+        return this.servicio.listarComboPais(); 
+    }
+    @Get('listar/combo/calidad')
+    async listarComboCategoriaCalidad() {
+        return this.servicio.listarComboCalidad(); 
+    }
 }

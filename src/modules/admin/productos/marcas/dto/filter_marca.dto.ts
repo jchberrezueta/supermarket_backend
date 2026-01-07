@@ -7,6 +7,8 @@ import {
 } from 'class-validator';
 import { Length } from 'class-validator';
 import { IFiltroMarca } from '@models';
+import { isIntNumeric } from '@helpers/utilities';
+import { Transform } from 'class-transformer';
 
 export class FilterMarcaDTO implements IFiltroMarca{
 
@@ -22,6 +24,7 @@ export class FilterMarcaDTO implements IFiltroMarca{
 
     @IsOptional()
     @IsInt()
+    @Transform(({value}) => isIntNumeric(value) ? (+value) : null )
     @Min(1)
     @Max(10)
     calidadMarc?: number;
