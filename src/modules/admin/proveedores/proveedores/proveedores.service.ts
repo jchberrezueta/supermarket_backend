@@ -75,6 +75,10 @@ export class ProveedoresService {
     return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}_empresa`, queryParams.toArray());
   }
 
+  async buscarProveedor(id:number){
+    return this.db.executeFunctionRead(`fn_buscar_${this.fnName}_empresa`, [id]);
+  }
+
   async listarComboProveedorCedula() {
     const query = 
     `

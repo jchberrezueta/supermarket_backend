@@ -57,6 +57,12 @@ export class ProveedoresController {
         return this.servicio.filtrarProveedores(queryParams);
     }
 
+    @Get('buscar/proveedor/:id')
+    async buscarProveedor(@Param('id') id:number) {
+        return this.servicio.buscarProveedor(id); 
+    }
+
+
     @Get('listar/proveedores/combo/cedula')
     async listarProveedoresComboCedula() {
         return this.servicio.listarComboProveedorCedula();
