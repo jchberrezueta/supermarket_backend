@@ -6,6 +6,8 @@ import { CreateEmpresaDTO } from './dto/create_empresa.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { FilterEmpresaDTO } from './dto/filter_empresa.dto';
 import { UpdateEmpresaDTO } from './dto/update_empresa.dto';
+import { CreateEmpresaPrecioDTO } from './dto/create_precio.dto';
+import { UpdateEmpresaPrecioDTO } from './dto/update_precio.dto';
 
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 @Roles('padmin', 'pbodega')
@@ -53,5 +55,32 @@ export class EmpresasController {
         return this.servicio.eliminar(id); 
     }
 
-    
+    /**
+    *  EMPRESAS PRECIOS
+    */
+
+    @Get('listar/precios')
+    getPrecios() {
+        return this.servicio.listarPrecios();
+    }
+
+    @Get('listar/precios/:id')
+    getPreciosProductosEmpresa(
+        @Param('id') id: number
+    ) {
+        return this.servicio.listarPreciosProductosEmpresa(id);
+    }
+
+    @Post('insertar/precio')
+    async insertarPrecio(@Body() body: CreateEmpresaPrecioDTO) {
+        return this.servicio.insertarPrecio(body); 
+    }
+
+    @Put('actualizar/precio/:id')
+    async actualizarPrecio(
+        @Param('id') id: number,
+        @Body() body: UpdateEmpresaPrecioDTO
+    ) {
+        return this.servicio.actualizarPrecio(body); 
+    }
 }

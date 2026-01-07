@@ -33,5 +33,22 @@ export class ProductosService {
   async eliminar(id:number){
     return this.db.executeFunctionWrite(`fn_eliminar_${this.fnName}`, [id]);
   }
+
+
+  async listarComboProductos() {
+    const query = 
+      `
+        SELECT json_agg(
+          json_build_object(
+              'label', nombre_prod,
+              'value', ide_prod
+          )
+          ORDER BY nombre_prod
+        ) AS productos
+        FROM producto;
+    `;
+    const result = await this.db.executeQuery(query);
+    return result[0].productos;
+  }
   
 }

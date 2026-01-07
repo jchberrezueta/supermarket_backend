@@ -20,6 +20,11 @@ export class ProductosController {
         return this.servicio.listar(); 
     }
 
+    @Get('listar/combo/productos')
+    async listarComboProductos() {
+        return this.servicio.listarComboProductos();
+    }
+
     @Get('buscar/:id')
     async buscar(@Param('id') id:number) {
         return this.servicio.buscar(id); 
