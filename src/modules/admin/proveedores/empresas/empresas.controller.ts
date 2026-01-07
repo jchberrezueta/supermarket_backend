@@ -55,6 +55,12 @@ export class EmpresasController {
         return this.servicio.eliminar(id); 
     }
 
+
+    @Get('listar/combo/empresas')
+    async listarComboEmpresas() {
+        return this.servicio.listarComboEmpresas();
+    }
+
     /**
     *  EMPRESAS PRECIOS
     */

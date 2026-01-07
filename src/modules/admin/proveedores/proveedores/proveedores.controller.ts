@@ -46,4 +46,31 @@ export class ProveedoresController {
     async eliminar(@Param('id') id:number) {
         return this.servicio.eliminar(id); 
     }
+
+    @Get('listar/proveedores')
+    async listarProveedores() {
+        return this.servicio.listarProveedores();
+    }
+
+    @Get('filtrar/proveedores')
+    async filtrarProveedores(@Query() queryParams: FilterProveedorDTO) {
+        return this.servicio.filtrarProveedores(queryParams);
+    }
+
+    @Get('listar/proveedores/combo/cedula')
+    async listarProveedoresComboCedula() {
+        return this.servicio.listarComboProveedorCedula();
+    }
+    @Get('listar/proveedores/combo/primer/nombre')
+    async listarProveedoresComboPrimerNombre() {
+        return this.servicio.listarComboProveedorPrimerNombre();
+    }
+    @Get('listar/proveedores/combo/apellido/paterno')
+    async listarProveedoresComboApellidoPaterno() {
+        return this.servicio.listarComboProveedorApellidoPaterno();
+    }
+    @Get('listar/proveedores/combo/email')
+    async listarProveedoresComboEmail() {
+        return this.servicio.listarComboProveedorEmail();
+    }
 }
