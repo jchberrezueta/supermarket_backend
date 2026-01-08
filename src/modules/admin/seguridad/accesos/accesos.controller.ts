@@ -46,7 +46,7 @@ export class accesosController {
     async listarComboIps() {
         return this.servicio.listarComboIps(); 
     }
-    @Get('listar/combo/ips')
+    @Get('listar/combo/navegador')
     async listarComboNavegador() {
         return this.servicio.listarComboNavegador(); 
     }
