@@ -32,6 +32,7 @@ export class accesosController {
      */
     @Get('listar/accesos')
     async listarAccesosUsuarios() {
+        console.log('aqui :)');
         return this.servicio.listarAccesos(); 
     }
     @Get('filtrar/accesos')

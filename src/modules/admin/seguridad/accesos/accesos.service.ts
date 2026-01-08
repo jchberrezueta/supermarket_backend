@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '@database';
 import { FilterAccesoUsuarioDto, FilterAccesoUsuarioDtoToArray } from './dto/filter_acceso.dto';
 import { CreateAccesoUsuarioToArray, CreateAccesoUsuarioDto } from './dto/create_acceso.dto';
+import { toArray } from 'rxjs';
 
 @Injectable()
 export class AccesosUsuariosService {
@@ -30,10 +31,10 @@ export class AccesosUsuariosService {
    * JOINS
    */
   async listarAccesos(){
-    this.db.executeFunctionRead(`fn_listar_${this.fnName}_cuenta`);
+    return this.db.executeFunctionRead(`fn_listar_${this.fnName}_cuenta`);
   }
   async filtrarAccesos(queryParams: FilterAccesoUsuarioDto){
-    this.db.executeFunctionRead(`fn_filtrar_${this.fnName}_cuenta`);
+    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}`, queryParams.toArray());
   }
 
   /**

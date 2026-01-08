@@ -21,11 +21,23 @@ export class FilterAccesoUsuarioDto implements IFiltroAccesoUsuario{
   @Length(1, 250)
   navegadorAcce?: string;
 
+  @IsOptional()
   @IsDateString()
   fechaAcceDesde?: string;
 
+  @IsOptional()
   @IsDateString()
   fechaAcceHasta?: string;
+
+  toArray(): any[] {
+    return [
+      this.ideCuen?? null,
+      this.ipAcce?? null,
+      this.navegadorAcce?? null,
+      this.fechaAcceDesde?? null,
+      this.fechaAcceHasta?? null
+    ]
+  }
 
 }
 
