@@ -24,7 +24,7 @@ export class CuentasService {
   }
 
   async eliminar(id: number) {
-    return this.db.executeFunctionRead(`fn_eliminar_${this.fnName}`, [id]);
+    return this.db.executeFunctionWrite(`fn_eliminar_${this.fnName}`, [id]);
   }
 
   async insertar(body: CreateCuentaDto) {
@@ -35,8 +35,11 @@ export class CuentasService {
   }
 
   async actualizar(body: UpdateCuentaDto) {
-    /*const hashedPassword = await this.encriptadorHash(body.passwordCuen);
-    body.passwordCuen = hashedPassword;*/
+    // Solo encriptar si se proporciona nueva contraseña
+    if (body.passwordCuen && body.passwordCuen.trim() !== '') {
+      const hashedPassword = await this.encriptadorHash(body.passwordCuen);
+      body.passwordCuen = hashedPassword;
+    }
     return this.db.executeFunctionWrite(`fn_actualizar_${this.fnName}`, body.toArray());
   }
 
