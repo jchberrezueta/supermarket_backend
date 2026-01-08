@@ -46,4 +46,28 @@ export class PedidosController {
     async eliminar(@Param('id') id:number) {
         return this.servicio.eliminar(id); 
     }
+
+    /**
+     * JOINS
+     */
+    @Get('listar/pedidos')
+    async listarPedidos() {
+        return this.servicio.listarPedidos(); 
+    }
+    @Get('filtrar/pedidos')
+    async filtrarPedidos(@Query() queryParams: FilterPedidoDTO) {
+        return this.servicio.filtrarPedidos(queryParams); 
+    }
+
+    /**
+     * COMBOS
+     */
+    @Get('listar/combo/estados')
+    async listarComboEstados() {
+        return this.servicio.listarComboEstados(); 
+    }
+    @Get('listar/combo/motivos')
+    async listarComboMotivos() {
+        return this.servicio.listarComboMotivos(); 
+    }
 }

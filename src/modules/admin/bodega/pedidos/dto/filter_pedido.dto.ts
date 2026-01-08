@@ -1,15 +1,11 @@
-import { IsOptional, IsEnum, Min, IsDateString, IsInt } from 'class-validator';
-import { isIntNumeric } from 'src/helpers/utilities';
-import { Transform } from 'class-transformer';
+import { IsOptional, IsEnum, IsDateString, IsString } from 'class-validator';
 import { EnumEstadosPedido, EnumMotivosPedido } from '@models';
 
 export class FilterPedidoDTO {
 
   @IsOptional()
-  @Transform(({value}) => isIntNumeric(value) ? (+value) : -1 )
-  @IsInt()
-  @Min(0)
-  ideEmp?: number;
+  @IsString()
+  nombreEmpr?: string;
 
   @IsOptional()
   @IsEnum(EnumEstadosPedido)
@@ -29,7 +25,7 @@ export class FilterPedidoDTO {
 
   toArray(): any[] {
     return [
-      this.ideEmp ?? null,
+      this.nombreEmpr ?? null,
       this.estadoPedi ?? null,
       this.motivoPedi ?? null,
       this.fechaPedi ?? null,

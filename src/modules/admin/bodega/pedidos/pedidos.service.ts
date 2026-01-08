@@ -43,4 +43,62 @@ export class PedidosService {
   async eliminar(id: number){
     return this.db.executeFunctionWrite(`fn_eliminar_${this.fnName}`, [id]);
   }
+
+
+  /**
+   * JOINS
+   */
+  async listarPedidos(){
+    return this.db.executeFunctionRead(`fn_listar_${this.fnName}_empresa`);
+  }
+  async filtrarPedidos(queryParams: FilterPedidoDTO){
+    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}_empresa`, queryParams.toArray());
+  }
+
+  /**
+   * COMBOS
+   */
+  async listarComboEstados() {
+    const query = 
+    `
+      SELECT json_build_object(
+        'data', json_agg(
+          json_build_object(
+            'label', estado,
+            'value', estado
+          )
+        )
+      )
+      FROM (
+        SELECT 'progreso'   AS estado
+        UNION ALL
+        SELECT 'completado'
+        UNION ALL
+        SELECT 'incompleto'
+      ) t;
+    `;
+    const result = await this.db.executeQuery(query);
+    return result[0].json_build_object.data;
+  }
+
+  async listarComboMotivos() {
+    const query = 
+    `
+      SELECT json_build_object(
+        'data', json_agg(
+          json_build_object(
+            'label', motivo,
+            'value', motivo
+          )
+        )
+      )
+      FROM (
+        SELECT 'peticion'   AS motivo
+        UNION ALL
+        SELECT 'devolucion'
+      ) t;
+    `;
+    const result = await this.db.executeQuery(query);
+    return result[0].json_build_object.data;
+  }
 }
