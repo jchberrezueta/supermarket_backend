@@ -43,4 +43,38 @@ export class EntregasService {
   async eliminar(id: number){
     return this.db.executeFunctionWrite(`fn_eliminar_${this.fnName}`, [id]);
   }
+
+
+  /**
+   * JOINS
+   */
+  async listarEntregas(){
+    return this.db.executeFunctionRead(`fn_listar_${this.fnName}_pedido`);
+  }
+  async filtrarEntregas(queryParams: FilterEntregaDTO){
+    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}_pedido`, queryParams.toArray());
+  }
+
+  /**
+   * COMBOS
+   */
+  async listarComboEstados() {
+    const query = 
+    `
+      SELECT json_build_object(
+        'response', 'OK',
+        'data',
+        json_agg(
+          json_build_object('label', estado, 'value', estado)
+        )
+      )
+      FROM (
+        SELECT 'completo' AS estado
+        UNION ALL
+        SELECT 'incompleto'
+      ) t;
+    `;
+    const result = await this.db.executeQuery(query);
+    return result[0].json_build_object.data;
+  }
 }

@@ -69,7 +69,10 @@ export class ProveedoresController {
     /**
      * COMBOS
      */
-
+    @Get('listar/proveedores/combo/proveedores')
+    async listarComboProveedores() {
+        return this.servicio.listarComboProveedores();
+    }
     @Get('listar/proveedores/combo/cedula')
     async listarProveedoresComboCedula() {
         return this.servicio.listarComboProveedorCedula();

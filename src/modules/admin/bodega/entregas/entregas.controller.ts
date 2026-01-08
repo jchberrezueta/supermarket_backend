@@ -48,4 +48,24 @@ export class EntregasController {
     async eliminar(@Param('id') id:number) {
         return this.servicio.eliminar(id); 
     }
+
+    /**
+     * JOINS
+     */
+    @Get('listar/entregas')
+    async listarEntregas() {
+        return this.servicio.listarEntregas(); 
+    }
+    @Get('filtrar/pedidos')
+    async filtrarEntregas(@Query() queryParams: FilterEntregaDTO) {
+        return this.servicio.filtrarEntregas(queryParams); 
+    }
+
+    /**
+     * COMBOS
+     */
+    @Get('listar/combo/estados')
+    async listarComboEstados() {
+        return this.servicio.listarComboEstados(); 
+    }
 }

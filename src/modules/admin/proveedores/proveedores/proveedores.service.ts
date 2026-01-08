@@ -54,6 +54,33 @@ export class ProveedoresService {
    * COMBOS
    */
 
+  async listarComboProveedores() {
+    const query = 
+    `
+      SELECT json_build_object(
+        'response', 'OK',
+        'data',
+        json_agg(
+          json_build_object(
+            'label',
+              trim(
+                p.primer_nombre_prov || ' ' ||
+                coalesce(p.segundo_nombre_prov, '') || ' ' ||
+                p.apellido_paterno_prov || ' ' ||
+                coalesce(p.apellido_materno_prov, '')
+              ),
+            'value', p.ide_prov
+          )
+          ORDER BY p.apellido_paterno_prov, p.primer_nombre_prov
+        )
+      )
+      FROM proveedor p;
+    `;
+    const result = await this.db.executeQuery(query);
+    return result[0].json_build_object.data;
+  }
+
+
   async listarComboProveedorCedula() {
     const query = 
     `
