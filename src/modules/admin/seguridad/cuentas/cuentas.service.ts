@@ -95,4 +95,76 @@ export class CuentasService {
     return result[0].menu;
   }
 
+  /**
+   * JOINS
+   */
+  async listarCuentas(){
+    this.db.executeFunctionRead(`fn_listar_${this.fnName}_perfil`);
+  }
+  async filtrarCuentas(){
+    this.db.executeFunctionRead(`fn_filtrar_${this.fnName}_perfil`);
+  }
+
+
+  /**
+   * COMBOS
+   */
+  async listarComboCuentas() {
+    const query = `
+      SELECT json_build_object(
+        'response', 'OK',
+        'data',
+        json_agg(
+          json_build_object(
+            'label', usuario_cuen,
+            'value', ide_cuen
+          )
+          ORDER BY usuario_cuen
+        )
+      )
+      FROM cuenta;
+    `;
+    const result = await this.db.executeQuery(query);
+    return result[0].json_build_object.data;
+  }
+
+  async listarComboUsuarios() {
+    const query = `
+      SELECT json_build_object(
+        'response', 'OK',
+        'data',
+        json_agg(
+          json_build_object(
+            'label', usuario_cuen,
+            'value', usuario_cuen
+          )
+          ORDER BY usuario_cuen
+        )
+      )
+      FROM cuenta;
+    `;
+    const result = await this.db.executeQuery(query);
+    return result[0].json_build_object.data;
+  }
+
+  async listarComboEstados() {
+    const query = `
+      SELECT json_build_object(
+        'response', 'OK',
+        'data',
+        json_agg(
+          json_build_object('label', estado, 'value', estado)
+        )
+      )
+      FROM (
+        VALUES
+          ('activo'),
+          ('inactivo'),
+          ('bloqueado')
+      ) AS estados(estado);
+    `;
+    const result = await this.db.executeQuery(query);
+    return result[0].json_build_object.data;
+  }
+
 }

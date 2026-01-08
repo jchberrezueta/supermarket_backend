@@ -35,5 +35,29 @@ export class PerfilesService {
   async eliminar(id:number){
     return this.db.executeFunctionWrite(`fn_eliminar_${this.fnName}`, [id]);
   }
+
+
+  /**
+   * COMBOS
+   */
+  async listarComboPerfiles() {
+    const query = 
+    `
+      SELECT json_build_object(
+        'response', 'OK',
+        'data',
+        json_agg(
+          json_build_object(
+            'label', nombre_perf,
+            'value', ide_perf
+          )
+          ORDER BY nombre_perf
+        )
+      )
+      FROM perfil;
+    `;
+    const result = await this.db.executeQuery(query);
+    return result[0].json_build_object.data;
+  }
   
 }

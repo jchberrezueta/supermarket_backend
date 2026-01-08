@@ -47,6 +47,31 @@ export class EmpleadosService {
   /**
    * COMBOS
    */
+  async listarComboEmpleados() {
+    const query = 
+    `
+      SELECT json_build_object(
+        'response', 'OK',
+        'data',
+        json_agg(
+          json_build_object(
+            'label',
+              trim(
+                e.primer_nombre_empl || ' ' ||
+                coalesce(e.segundo_nombre_empl, '') || ' ' ||
+                e.apellido_paterno_empl || ' ' ||
+                coalesce(e.apellido_materno_empl, '')
+              ),
+            'value', e.ide_empl
+          )
+          ORDER BY e.apellido_paterno_empl, e.primer_nombre_empl
+        )
+      )
+      FROM empleado e;
+    `;
+    const result = await this.db.executeQuery(query);
+    return result[0].json_build_object.data;
+  }
   async listarComboCedulas() {
     const query = 
     `

@@ -25,4 +25,29 @@ export class accesosController {
     async filtrar(@Query() queryParams: FilterAccesoUsuarioDto) {
         return this.servicio.filtrar(queryParams); 
     }
+
+
+    /**
+     * JOINS
+     */
+    @Get('listar/accesos')
+    async listarAccesosUsuarios() {
+        return this.servicio.listarAccesos(); 
+    }
+    @Get('filtrar/accesos')
+    async filtrarAccesosUsuarios(@Query() queryParams: FilterAccesoUsuarioDto) {
+        return this.servicio.filtrarAccesos(queryParams); 
+    }
+
+    /**
+     * COMBOS
+     */
+    @Get('listar/combo/ips')
+    async listarComboIps() {
+        return this.servicio.listarComboIps(); 
+    }
+    @Get('listar/combo/ips')
+    async listarComboNavegador() {
+        return this.servicio.listarComboNavegador(); 
+    }
 }

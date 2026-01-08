@@ -48,4 +48,13 @@ export class PerfilesController {
     async eliminar(@Param('id') id:number) {
         return this.servicio.eliminar(id); 
     }
+
+
+    /**
+     * COMBOS
+     */
+    @Get('listar/combo/perfiles')
+    async listarComboPerfiles() {
+        return this.servicio.listarComboPerfiles(); 
+    }
 }

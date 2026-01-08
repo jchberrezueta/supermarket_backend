@@ -63,6 +63,10 @@ export class EmpleadosController {
     /**
      * COMBOS
      */
+    @Get('listar/combo/empleados')
+    async listarComboEmpleados() {
+        return this.servicio.listarComboEmpleados(); 
+    }
     @Get('listar/combo/cedulas')
     async listarComboCedulas() {
         return this.servicio.listarComboCedulas(); 

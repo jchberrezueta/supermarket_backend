@@ -25,4 +25,62 @@ export class AccesosUsuariosService {
     this.db.executeFunctionWrite(`fn_insertar_${this.fnName}`, CreateAccesoUsuarioToArray(data));
   }
 
+
+  /**
+   * JOINS
+   */
+  async listarAccesos(){
+    this.db.executeFunctionRead(`fn_listar_${this.fnName}_cuenta`);
+  }
+  async filtrarAccesos(queryParams: FilterAccesoUsuarioDto){
+    this.db.executeFunctionRead(`fn_filtrar_${this.fnName}_cuenta`);
+  }
+
+  /**
+   * COMBOS
+   */
+  async listarComboIps() {
+    const query = `
+      SELECT json_build_object(
+        'response', 'OK',
+        'data',
+        json_agg(
+          json_build_object(
+            'label', ip_acce,
+            'value', ip_acce
+          )
+          ORDER BY ip_acce
+        )
+      )
+      FROM (
+        SELECT DISTINCT ip_acce
+        FROM acceso_usuario
+      ) t;
+    `;
+    const result = await this.db.executeQuery(query);
+    return result[0].json_build_object.data;
+  }
+
+  async listarComboNavegador() {
+    const query = `
+      SELECT json_build_object(
+        'response', 'OK',
+        'data',
+        json_agg(
+          json_build_object(
+            'label', navegador_acce,
+            'value', navegador_acce
+          )
+          ORDER BY navegador_acce
+        )
+      )
+      FROM (
+        SELECT DISTINCT navegador_acce
+        FROM acceso_usuario
+      ) t;
+    `;
+    const result = await this.db.executeQuery(query);
+    return result[0].json_build_object.data;
+  }
+
 }

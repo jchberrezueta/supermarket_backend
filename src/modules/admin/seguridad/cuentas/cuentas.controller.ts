@@ -46,4 +46,33 @@ export class CuentasController {
     async eliminar(@Param('id') id: number) {
         return this.servicio.eliminar(id); 
     }
+
+    /**
+     * JOINS
+     */
+    @Get('listar/cuentas')
+    async listarCuentas() {
+        return this.servicio.listarCuentas(); 
+    }
+    @Get('filtrar/cuentas')
+    async filtrarCuentas() {
+        return this.servicio.filtrarCuentas(); 
+    }
+
+
+    /**
+     * COMBOS
+     */
+    @Get('listar/combo/cuentas')
+    async listarComoboCuentas() {
+        return this.servicio.listarComboCuentas(); 
+    }
+    @Get('listar/combo/usuarios')
+    async listarComboUsuarios() {
+        return this.servicio.listarComboUsuarios(); 
+    }
+    @Get('listar/combo/estados')
+    async listarComboEstados() {
+        return this.servicio.listarComboEstados(); 
+    }
 }
