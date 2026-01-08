@@ -48,10 +48,10 @@ export class FilterProductoDTO implements IFiltroProducto {
     return [
       this.ideCate?? null,
       this.ideMarc?? null,
-      this.codigoBarraProd?? null,
       this.nombreProd?? null,
-      this.disponibleProd?? null,
-      this.estadoProd?? null
+      this.codigoBarraProd?? null,
+      this.estadoProd?? null,
+      this.disponibleProd?? null
     ];
   }
 }

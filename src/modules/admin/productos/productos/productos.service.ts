@@ -40,6 +40,9 @@ export class ProductosService {
   async listarProductos(){
     return this.db.executeFunctionRead(`fn_listar_${this.fnName}_categoria_marca`);
   }
+  async filtrarProductos(queryParams: FilterProductoDTO){
+    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}_categoria_marca`, queryParams.toArray());
+  }
   
 
   /**

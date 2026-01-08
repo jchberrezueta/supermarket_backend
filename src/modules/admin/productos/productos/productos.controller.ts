@@ -55,6 +55,10 @@ export class ProductosController {
     async listarProductos() {
         return this.servicio.listarProductos();
     }
+    @Get('filtrar/productos')
+    async filtrarProductos(@Query() queryParams: FilterProductoDTO) {
+        return this.servicio.filtrarProductos(queryParams);
+    }
     
 
     /**
