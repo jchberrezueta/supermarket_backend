@@ -34,7 +34,9 @@ export class ProductosService {
     return this.db.executeFunctionWrite(`fn_eliminar_${this.fnName}`, [id]);
   }
 
-
+  /**
+   * COMBOS
+   */
   async listarComboProductos() {
     const query = 
       `
@@ -50,5 +52,11 @@ export class ProductosService {
     const result = await this.db.executeQuery(query);
     return result[0].productos;
   }
-  
+
+  /**
+   * JOINS
+   */
+  async listarProductos(){
+    return this.db.executeFunctionRead(`fn_listar_${this.fnName}_categoria_marca`);
+  }
 }

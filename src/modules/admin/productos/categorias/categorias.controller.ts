@@ -49,7 +49,9 @@ export class CategoriasController {
     }
 
 
-
+    /**
+     * COMBOS
+     */
 
     @Get('listar/combo/nombre')
     async listarComboCategoriaNombre() {

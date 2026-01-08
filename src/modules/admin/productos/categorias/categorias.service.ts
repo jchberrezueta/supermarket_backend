@@ -36,7 +36,9 @@ export class CategoriasService {
   }
 
 
-
+  /**
+   * COMBOS
+   */
 
   async listarComboCategoriaNombre(){
     const query = 

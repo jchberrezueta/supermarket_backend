@@ -22,11 +22,6 @@ export class EmpresasController {
         return this.servicio.listar(); 
     }
 
-    @Get('listar/estados')
-    getEstados() {
-        return this.servicio.listarEstados();
-    }
-
     @Get('buscar/:id')
     async buscar(@Param('id') id:number) {
         return this.servicio.buscar(id); 
@@ -56,9 +51,18 @@ export class EmpresasController {
     }
 
 
+    /**
+     * COMBOS
+     */
+
     @Get('listar/combo/empresas')
     async listarComboEmpresas() {
         return this.servicio.listarComboEmpresas();
+    }
+
+    @Get('listar/combo/empresas/estados')
+    getEstados() {
+        return this.servicio.listarEstados();
     }
 
     /**

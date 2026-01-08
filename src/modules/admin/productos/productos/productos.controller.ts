@@ -20,11 +20,6 @@ export class ProductosController {
         return this.servicio.listar(); 
     }
 
-    @Get('listar/combo/productos')
-    async listarComboProductos() {
-        return this.servicio.listarComboProductos();
-    }
-
     @Get('buscar/:id')
     async buscar(@Param('id') id:number) {
         return this.servicio.buscar(id); 
@@ -51,5 +46,22 @@ export class ProductosController {
     @Delete('eliminar/:id')
     async eliminar(@Param('id') id:number) {
         return this.servicio.eliminar(id); 
+    }
+
+    /**
+     * COMBOS
+     */
+
+    @Get('listar/combo/productos')
+    async listarComboProductos() {
+        return this.servicio.listarComboProductos();
+    }
+
+    /**
+     * JOINS
+     */
+    @Get('listar/productos')
+    async listarProductos() {
+        return this.servicio.listarProductos();
     }
 }

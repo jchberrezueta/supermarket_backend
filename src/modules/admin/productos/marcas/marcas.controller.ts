@@ -49,6 +49,10 @@ export class MarcasController {
     }
 
 
+    /**
+     * COMBOS
+     */
+
     @Get('listar/combo/nombre')
     async listarComboCategoriaNombre() {
         return this.servicio.listarComboNombre(); 

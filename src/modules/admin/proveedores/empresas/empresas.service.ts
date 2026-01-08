@@ -18,10 +18,6 @@ export class EmpresasService {
     return this.db.executeFunctionRead(`fn_listar_${this.fnName}`);
   }
 
-  async listarEstados(){
-    return ListEstadosEmpresa;
-  }
-
   async buscar(id:number){
     return this.db.executeFunctionRead(`fn_buscar_${this.fnName}`, [id]);
   }
@@ -42,6 +38,9 @@ export class EmpresasService {
     return this.db.executeFunctionWrite(`fn_eliminar_${this.fnName}`, [id]);
   }
 
+  /**
+   * COMBOS
+   */
 
   async listarComboEmpresas() {
     const query = 
@@ -64,6 +63,14 @@ export class EmpresasService {
     return result[0].json_build_object.data;
   }
 
+  async listarEstados(){
+    return ListEstadosEmpresa;
+  }
+
+
+  /**
+  *  EMPRESAS PRECIOS
+  */
 
   async listarPrecios(){
     return this.db.executeFunctionRead(`fn_listar_${this.fnName2}`);
@@ -78,29 +85,7 @@ export class EmpresasService {
   }
 
   async listarPreciosProductosEmpresa(id: number) {
-    const query = 
-    `
-      SELECT json_build_object(
-        'data', json_agg(
-          json_build_object(
-            'ide_empr_prod', ep.ide_empr_prod,
-            'ide_empr', ep.ide_empr,
-            'ide_prod', ep.ide_prod,
-            'precio_compra_prod', ep.precio_compra_prod,
-            'dcto_compra_prod', ep.dcto_compra_prod,
-            'dcto_caducidad_prod', ep.dcto_caducidad_prod,
-            'iva_prod', ep.iva_prod,
-            'nombre_prod', p.nombre_prod
-          )
-        ),
-        'response', '{"success": true, "message": "Listado de precios por empresa obtenido"}'
-      )
-      FROM empresa_precios ep
-      JOIN producto p ON p.ide_prod = ep.ide_prod
-      WHERE ep.ide_empr = ${id};
-    `;
-    const result = await this.db.executeQuery(query);
-    return result[0].json_build_object;
+    return this.db.executeFunctionRead(`fn_listar_precios_empresa`, [id]);
   }
   
 }

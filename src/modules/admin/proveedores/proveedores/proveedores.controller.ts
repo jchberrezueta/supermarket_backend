@@ -47,6 +47,10 @@ export class ProveedoresController {
         return this.servicio.eliminar(id); 
     }
 
+    /**
+     * JOINS
+     */
+
     @Get('listar/proveedores')
     async listarProveedores() {
         return this.servicio.listarProveedores();
@@ -62,6 +66,9 @@ export class ProveedoresController {
         return this.servicio.buscarProveedor(id); 
     }
 
+    /**
+     * COMBOS
+     */
 
     @Get('listar/proveedores/combo/cedula')
     async listarProveedoresComboCedula() {
