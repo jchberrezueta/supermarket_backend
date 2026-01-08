@@ -47,4 +47,41 @@ export class EmpleadosController {
     async eliminar(@Param('id') id:number) {
         return this.servicio.eliminar(id); 
     }
+
+    /**
+     * JOINS
+     */
+    @Get('listar/empleados')
+    async listarEmpleados() {
+        return this.servicio.listarEmpleados(); 
+    }
+    @Get('filtrar/empleados')
+    async filtrarEmpleados(@Query() queryParams: FilterEmpleadoDTO) {
+        return this.servicio.filtrarEmpleados(queryParams); 
+    }
+
+    /**
+     * COMBOS
+     */
+    @Get('listar/combo/cedulas')
+    async listarComboCedulas() {
+        return this.servicio.listarComboCedulas(); 
+    }
+    @Get('listar/combo/primer/nombre')
+    async listarComboPrimerNombre() {
+        return this.servicio.listarComboPrimerNombre(); 
+    }
+    @Get('listar/combo/apellido/paterno')
+    async listarComboApellidoPaterno() {
+        return this.servicio.listarComboApellidoPaterno(); 
+    }
+    @Get('listar/combo/titulos')
+    async listarComboTitulos() {
+        return this.servicio.listarComboTitulos(); 
+    }
+    @Get('listar/combo/estados')
+    async listarComboEstados() {
+        return this.servicio.listarComboEstados(); 
+    }
+
 }

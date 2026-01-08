@@ -9,7 +9,7 @@ import { UpdateRolDTO } from './dto/update_rol.dto';
 
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 @Roles('padmin', 'prrhh')
-@Controller('empleados')
+@Controller('roles')
 export class RolesController {
 
     constructor(private servicio: RolesService) {}
@@ -46,5 +46,21 @@ export class RolesController {
     @Delete('eliminar/:id')
     async eliminar(@Param('id') id:number) {
         return this.servicio.eliminar(id); 
+    }
+
+    /**
+     * COMBOS
+     */
+    @Get('listar/combo/roles')
+    async listarComboRoles() {
+        return this.servicio.listarComboRoles(); 
+    }
+    @Get('listar/combo/nombres')
+    async listarComboNombres() {
+        return this.servicio.listarComboNombres(); 
+    }
+    @Get('listar/combo/descripcion')
+    async listarComboDescripcion() {
+        return this.servicio.listarComboDescripciones(); 
     }
 }

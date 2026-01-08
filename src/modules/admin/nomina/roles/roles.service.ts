@@ -8,7 +8,7 @@ import { UpdateRolDTO } from './dto/update_rol.dto';
 @Injectable()
 export class RolesService {
   
-  private fnName: string = 'empleado';
+  private fnName: string = 'rol';
   constructor(private readonly db: DatabaseService){}
 
   async listar(){
@@ -33,6 +33,71 @@ export class RolesService {
 
   async eliminar(id:number){
     return this.db.executeFunctionWrite(`fn_eliminar_${this.fnName}`, [id]);
+  }
+
+  /**
+   * COMBOS
+   */
+  async listarComboRoles() {
+    const query = 
+    `
+      SELECT json_build_object(
+        'data',
+        json_agg(
+          json_build_object(
+            'label', nombre_rol,
+            'value', ide_rol
+          )
+          ORDER BY nombre_rol
+        )
+      )
+      FROM rol;
+    `;
+    const result = await this.db.executeQuery(query);
+    return result[0].json_build_object.data;
+  }
+
+  async listarComboNombres() {
+    const query = 
+    `
+      SELECT json_build_object(
+        'response', 'OK',
+        'data',
+        json_agg(
+          json_build_object(
+            'label', nombre_rol,
+            'value', ide_rol
+          )
+          ORDER BY nombre_rol
+        )
+      )
+      FROM rol;
+    `;
+    const result = await this.db.executeQuery(query);
+    return result[0].json_build_object.data;
+  }
+
+  async listarComboDescripciones() {
+    const query = 
+    `
+      SELECT json_build_object(
+        'response', 'OK',
+        'data',
+        json_agg(
+          json_build_object(
+            'label', descripcion_rol,
+            'value', descripcion_rol
+          )
+          ORDER BY descripcion_rol
+        )
+      )
+      FROM (
+        SELECT DISTINCT descripcion_rol
+        FROM rol
+      ) t;
+    `;
+    const result = await this.db.executeQuery(query);
+    return result[0].json_build_object.data;
   }
   
 }
