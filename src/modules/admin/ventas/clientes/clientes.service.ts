@@ -34,5 +34,16 @@ export class ClientesService {
   async eliminar(id:number){
     return this.db.executeFunctionWrite(`fn_eliminar_${this.fnName}`, [id]);
   }
+
+
+  /**
+   * JOINS
+   */
+  async listarClientes(){
+    return this.db.executeFunctionRead(`fn_listar_${this.fnName}_cuenta`);
+  }
+  async filtrarClientes(){
+    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}_cuenta`);
+  }
   
 }

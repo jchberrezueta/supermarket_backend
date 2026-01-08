@@ -48,4 +48,12 @@ export class ClientesController {
     async eliminar(@Param('id') id:number) {
         return this.servicio.eliminar(id); 
     }
+
+    /**
+     * JOINS
+     */
+    @Get('listar/clientes')
+    async listarClientes() {
+        return this.servicio.listarClientes(); 
+    }
 }
