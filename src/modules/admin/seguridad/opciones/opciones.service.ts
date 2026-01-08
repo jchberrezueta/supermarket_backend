@@ -22,16 +22,16 @@ export class OpcionesService {
     return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}`, queryParams.toArray());
   }
 
+  async eliminar(id:number){
+    return this.db.executeFunctionWrite(`fn_eliminar_${this.fnName}`, [id]);
+  }
+
   async insertar(body:CreateOpcionDto){
     return this.db.executeFunctionWrite(`fn_insertar_${this.fnName}`, body.toArray());
   }
 
   async actualizar(body:UpdateOpcionDto){
     return this.db.executeFunctionWrite(`fn_actualizar_${this.fnName}`, body.toArray());
-  }
-
-  async eliminar(id:number){
-    return this.db.executeFunctionWrite(`fn_eliminar_${this.fnName}`, [id]);
   }
   
 }
