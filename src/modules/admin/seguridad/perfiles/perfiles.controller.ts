@@ -49,6 +49,18 @@ export class PerfilesController {
         return this.servicio.eliminar(id); 
     }
 
+    /**
+     * JOINS
+     */
+    @Get('listar/perfiles')
+    async listarPerfiles() {
+        return this.servicio.listarPerfiles(); 
+    }
+    @Get('filtrar/perfiles')
+    async filtrarPerfiles() {
+        return this.servicio.filtrarPerfiles(); 
+    }
+
 
     /**
      * COMBOS
@@ -56,5 +68,13 @@ export class PerfilesController {
     @Get('listar/combo/perfiles')
     async listarComboPerfiles() {
         return this.servicio.listarComboPerfiles(); 
+    }
+    @Get('listar/combo/nombres')
+    async listarComboNombres() {
+        return this.servicio.listarComboNombres(); 
+    }
+    @Get('listar/combo/descripciones')
+    async listarComboDescripcion() {
+        return this.servicio.listarComboDescripcion(); 
     }
 }

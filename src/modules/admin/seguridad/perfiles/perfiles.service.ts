@@ -36,6 +36,16 @@ export class PerfilesService {
     return this.db.executeFunctionWrite(`fn_eliminar_${this.fnName}`, [id]);
   }
 
+  /**
+   * JOINS
+   */
+  async listarPerfiles(){
+    return this.db.executeFunctionRead(`fn_listar_${this.fnName}_rol`);
+  }
+  async filtrarPerfiles(){
+    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}_rol`);
+  }
+
 
   /**
    * COMBOS
@@ -52,6 +62,46 @@ export class PerfilesService {
             'value', ide_perf
           )
           ORDER BY nombre_perf
+        )
+      )
+      FROM perfil;
+    `;
+    const result = await this.db.executeQuery(query);
+    return result[0].json_build_object.data;
+  }
+
+  async listarComboNombres() {
+    const query = 
+    `
+      SELECT json_build_object(
+        'response', 'OK',
+        'data',
+        json_agg(
+          json_build_object(
+            'label', nombre_perf,
+            'value', ide_perf
+          )
+          ORDER BY nombre_perf
+        )
+      )
+      FROM perfil;
+    `;
+    const result = await this.db.executeQuery(query);
+    return result[0].json_build_object.data;
+  }
+
+  async listarComboDescripcion() {
+    const query = 
+    `
+      SELECT json_build_object(
+        'response', 'OK',
+        'data',
+        json_agg(
+          json_build_object(
+            'label', descripcion_perf,
+            'value', ide_perf
+          )
+          ORDER BY descripcion_perf
         )
       )
       FROM perfil;
