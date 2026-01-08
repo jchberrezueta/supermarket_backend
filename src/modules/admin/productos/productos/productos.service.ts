@@ -35,6 +35,14 @@ export class ProductosService {
   }
 
   /**
+   * JOINS
+   */
+  async listarProductos(){
+    return this.db.executeFunctionRead(`fn_listar_${this.fnName}_categoria_marca`);
+  }
+  
+
+  /**
    * COMBOS
    */
   async listarComboProductos() {
@@ -53,10 +61,4 @@ export class ProductosService {
     return result[0].productos;
   }
 
-  /**
-   * JOINS
-   */
-  async listarProductos(){
-    return this.db.executeFunctionRead(`fn_listar_${this.fnName}_categoria_marca`);
-  }
 }

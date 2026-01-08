@@ -49,6 +49,15 @@ export class ProductosController {
     }
 
     /**
+     * JOINS
+     */
+    @Get('listar/productos')
+    async listarProductos() {
+        return this.servicio.listarProductos();
+    }
+    
+
+    /**
      * COMBOS
      */
 
@@ -57,11 +66,5 @@ export class ProductosController {
         return this.servicio.listarComboProductos();
     }
 
-    /**
-     * JOINS
-     */
-    @Get('listar/productos')
-    async listarProductos() {
-        return this.servicio.listarProductos();
-    }
+    
 }
