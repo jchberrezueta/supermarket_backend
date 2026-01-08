@@ -10,12 +10,9 @@ export interface IProducto {
     ideMarc: number;
     codigoBarraProd: string;
     nombreProd: string;
-    precioCompraProd: number;
     precioVentaProd: number;
     ivaProd: number;
     dctoPromoProd: number;
-    dctoCaducProd: number;
-    precioFinalProd: number;
     stockProd: number;
     disponibleProd: 'si' | 'no';
     estadoProd: EnumEstadosProducto;

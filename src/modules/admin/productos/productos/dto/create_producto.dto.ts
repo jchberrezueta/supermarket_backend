@@ -42,10 +42,6 @@ export class CreateProductoDTO implements IProducto {
 
   @IsNumber()
   @Min(0)
-  precioCompraProd: number;
-
-  @IsNumber()
-  @Min(0)
   precioVentaProd: number;
 
   @IsNumber()
@@ -55,14 +51,6 @@ export class CreateProductoDTO implements IProducto {
   @IsNumber()
   @Min(0)
   dctoPromoProd: number;
-  
-  @IsNumber()
-  @Min(0)
-  dctoCaducProd: number;
-  
-  @IsNumber()
-  @Min(0)
-  precioFinalProd: number;
 
   @IsInt()
   @Min(0)
@@ -85,7 +73,7 @@ export class CreateProductoDTO implements IProducto {
   @IsString()
   @Length(1, 500)
   @Transform(({ value }) =>
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
+    (typeof value === 'string' && value.trim() !== '') ? value.trim() : null
   )
   urlImgProd: string;
 
@@ -96,12 +84,9 @@ export class CreateProductoDTO implements IProducto {
       this.codigoBarraProd,
       this.nombreProd,
       this.urlImgProd,
-      this.precioCompraProd,
       this.precioVentaProd,
       this.ivaProd,
       this.dctoPromoProd,
-      this.dctoCaducProd,
-      this.precioFinalProd,
       this.stockProd,
       this.disponibleProd,
       this.estadoProd,
