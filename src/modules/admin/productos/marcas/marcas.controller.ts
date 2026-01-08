@@ -65,4 +65,9 @@ export class MarcasController {
     async listarComboCategoriaCalidad() {
         return this.servicio.listarComboCalidad(); 
     }
+
+    @Get('listar/combo/marcas')
+    async listarComboMarcas() {
+        return this.servicio.listarComboMarcas(); 
+    }
 }

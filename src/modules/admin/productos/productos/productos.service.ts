@@ -48,17 +48,87 @@ export class ProductosService {
   async listarComboProductos() {
     const query = 
       `
-        SELECT json_agg(
-          json_build_object(
+        SELECT json_build_object(
+          'response', 'OK',
+          'data',
+          json_agg(
+            json_build_object(
               'label', nombre_prod,
               'value', ide_prod
+            )
+            ORDER BY nombre_prod
           )
-          ORDER BY nombre_prod
-        ) AS productos
+        )
         FROM producto;
     `;
     const result = await this.db.executeQuery(query);
-    return result[0].productos;
+    return result[0].json_build_object.data;
+  }
+
+  async listarComboCodigosBarras() {
+    const query = 
+      `
+        SELECT json_build_object(
+          'response', 'OK',
+          'data',
+          json_agg(
+            json_build_object(
+              'label', codigo_barra_prod,
+              'value', codigo_barra_prod
+            )
+            ORDER BY codigo_barra_prod
+          )
+        )
+        FROM (
+          SELECT DISTINCT codigo_barra_prod
+          FROM producto
+        ) t;
+    `;
+    const result = await this.db.executeQuery(query);
+    return result[0].json_build_object.data;
+  }
+
+  async listarComboEstados() {
+    const query = 
+      `
+        SELECT json_build_object(
+          'data', json_agg(
+            json_build_object(
+              'label', estado,
+              'value', estado
+            )
+          )
+        )
+        FROM (
+          SELECT 'activo' AS estado
+          UNION ALL
+          SELECT 'inactivo'
+        ) t;
+    `;
+    const result = await this.db.executeQuery(query);
+    return result[0].json_build_object.data;
+  }
+
+
+  async listarComboDisponibilidad() {
+    const query = 
+      `
+        SELECT json_build_object(
+          'data', json_agg(
+            json_build_object(
+              'label', disponible,
+              'value', disponible
+            )
+          )
+        )
+        FROM (
+          SELECT 'si' AS disponible
+          UNION ALL
+          SELECT 'no'
+        ) t;
+    `;
+    const result = await this.db.executeQuery(query);
+    return result[0].json_build_object.data;
   }
 
 }

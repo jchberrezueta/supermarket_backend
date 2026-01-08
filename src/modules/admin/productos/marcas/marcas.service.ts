@@ -103,5 +103,25 @@ export class MarcasService {
     const result = await this.db.executeQuery(query);
     return result[0].json_build_object.data;
   }
+
+  async listarComboMarcas(){
+    const query = 
+      `
+        SELECT json_build_object(
+          'response', 'OK',
+          'data',
+          json_agg(
+            json_build_object(
+              'label', nombre_marc,
+              'value', ide_marc
+            )
+            ORDER BY nombre_marc
+          )
+        )
+        FROM marca;
+    `;
+    const result = await this.db.executeQuery(query);
+    return result[0].json_build_object.data;
+  }
   
 }

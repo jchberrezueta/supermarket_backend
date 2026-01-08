@@ -62,4 +62,11 @@ export class CategoriasController {
     async listarComboCategoriaDescripcion() {
         return this.servicio.listarComboCategoriaDescripcion(); 
     }
+
+    @Get('listar/combo/categorias')
+    async listarComboCategoria() {
+        return this.servicio.listarComboCategorias(); 
+    }
+
+    
 }

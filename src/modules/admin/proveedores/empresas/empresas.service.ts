@@ -64,7 +64,25 @@ export class EmpresasService {
   }
 
   async listarEstados(){
-    return ListEstadosEmpresa;
+    const query = 
+    `
+      SELECT json_build_object(
+        'data',
+        json_agg(
+          json_build_object(
+            'label', estado,
+            'value', estado
+          )
+        )
+      )
+      FROM (
+        SELECT 'activo' AS estado
+        UNION ALL
+        SELECT 'inactivo'
+      ) t;
+    `;
+    const result = await this.db.executeQuery(query);
+    return result[0].json_build_object.data;
   }
 
 

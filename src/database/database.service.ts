@@ -27,7 +27,13 @@ export class DatabaseService implements OnModuleInit {
       `SELECT * FROM ${functionName}(${indexs})`,
       params,
     );
-    return result[0]; 
+    /*const res = {
+      result: result[0].p_result === 1 ? true : false,
+      id: result[0].p_id,
+      response: result[0].p_response
+    };*/
+    return result[0];
+
   }
 
   async executeFunctionRead(functionName:string, params:any[]=[]) {

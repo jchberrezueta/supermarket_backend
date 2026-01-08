@@ -65,6 +65,18 @@ export class ProductosController {
     async listarComboProductos() {
         return this.servicio.listarComboProductos();
     }
+    @Get('listar/combo/codigo/barras')
+    async listarComboCodigosBarras() {
+        return this.servicio.listarComboCodigosBarras();
+    }
+    @Get('listar/combo/estados')
+    async listarComboEstados() {
+        return this.servicio.listarComboEstados();
+    }
+    @Get('listar/combo/disponibilidad')
+    async listarComboDisponibilidad() {
+        return this.servicio.listarComboDisponibilidad();
+    }
 
     
 }
