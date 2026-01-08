@@ -57,8 +57,8 @@ export class PerfilesController {
         return this.servicio.listarPerfiles(); 
     }
     @Get('filtrar/perfiles')
-    async filtrarPerfiles() {
-        return this.servicio.filtrarPerfiles(); 
+    async filtrarPerfiles(@Query() queryParams: FilterPerfilDto) {
+        return this.servicio.filtrarPerfiles(queryParams); 
     }
 
 

@@ -12,32 +12,32 @@ export class CuentasService {
   constructor(private readonly db: DatabaseService){}
 
   async listar(){
-    this.db.executeFunctionRead(`fn_listar_${this.fnName}`);
+    return this.db.executeFunctionRead(`fn_listar_${this.fnName}`);
   }
 
   async buscar(id: number) {
-    this.db.executeFunctionRead(`fn_buscar_${this.fnName}`, [id]);
+    return this.db.executeFunctionRead(`fn_buscar_${this.fnName}`, [id]);
   }
 
   async filtrar(queryParams: FiltroCuentaDto) {
-    this.db.executeFunctionRead(`fn_filtrar_${this.fnName}`, queryParams.toArray());
+    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}`, queryParams.toArray());
   }
 
   async eliminar(id: number) {
-    this.db.executeFunctionRead(`fn_eliminar_${this.fnName}`, [id]);
+    return this.db.executeFunctionRead(`fn_eliminar_${this.fnName}`, [id]);
   }
 
   async insertar(body: CreateCuentaDto) {
     /*Encriptacion de passwords :)*/
     const hashedPassword = await this.encriptadorHash(body.passwordCuen);
     body.passwordCuen = hashedPassword;
-    this.db.executeFunctionWrite(`fn_insertar_${this.fnName}`, body.toArray());
+    return this.db.executeFunctionWrite(`fn_insertar_${this.fnName}`, body.toArray());
   }
 
   async actualizar(body: UpdateCuentaDto) {
     /*const hashedPassword = await this.encriptadorHash(body.passwordCuen);
     body.passwordCuen = hashedPassword;*/
-    this.db.executeFunctionWrite(`fn_actualizar_${this.fnName}`, body.toArray());
+    return this.db.executeFunctionWrite(`fn_actualizar_${this.fnName}`, body.toArray());
   }
 
   async encriptadorHash(value: string) {
@@ -99,10 +99,10 @@ export class CuentasService {
    * JOINS
    */
   async listarCuentas(){
-    this.db.executeFunctionRead(`fn_listar_${this.fnName}_perfil`);
+    return this.db.executeFunctionRead(`fn_listar_${this.fnName}_perfil`);
   }
-  async filtrarCuentas(){
-    this.db.executeFunctionRead(`fn_filtrar_${this.fnName}_perfil`);
+  async filtrarCuentas(queryParams: FiltroCuentaDto){
+    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}_perfil`, queryParams.toArray());
   }
 
 

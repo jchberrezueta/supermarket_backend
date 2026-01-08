@@ -11,19 +11,19 @@ export class AccesosUsuariosService {
   constructor(private readonly db: DatabaseService){}
 
   async listar(){
-    this.db.executeFunctionRead(`fn_listar_${this.fnName}`);
+    return this.db.executeFunctionRead(`fn_listar_${this.fnName}`);
   }
 
   async buscar(id: number) {
-    this.db.executeFunctionRead(`fn_buscar_${this.fnName}`, [id])
+    return this.db.executeFunctionRead(`fn_buscar_${this.fnName}`, [id])
   }
 
   async filtrar(queryParams: FilterAccesoUsuarioDto) {
-    this.db.executeFunctionRead(`fn_filtrar_${this.fnName}`, FilterAccesoUsuarioDtoToArray(queryParams));
+    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}`, FilterAccesoUsuarioDtoToArray(queryParams));
   }
 
   async insertarAccesoUsuario(data: CreateAccesoUsuarioDto) {
-    this.db.executeFunctionWrite(`fn_insertar_${this.fnName}`, CreateAccesoUsuarioToArray(data));
+    return this.db.executeFunctionWrite(`fn_insertar_${this.fnName}`, CreateAccesoUsuarioToArray(data));
   }
 
 

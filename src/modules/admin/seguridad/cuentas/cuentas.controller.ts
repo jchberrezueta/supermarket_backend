@@ -55,8 +55,8 @@ export class CuentasController {
         return this.servicio.listarCuentas(); 
     }
     @Get('filtrar/cuentas')
-    async filtrarCuentas() {
-        return this.servicio.filtrarCuentas(); 
+    async filtrarCuentas(@Query() queryParams: FiltroCuentaDto) {
+        return this.servicio.filtrarCuentas(queryParams); 
     }
 
 

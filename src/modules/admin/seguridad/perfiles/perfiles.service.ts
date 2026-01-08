@@ -42,8 +42,8 @@ export class PerfilesService {
   async listarPerfiles(){
     return this.db.executeFunctionRead(`fn_listar_${this.fnName}_rol`);
   }
-  async filtrarPerfiles(){
-    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}_rol`);
+  async filtrarPerfiles(queryParams: FilterPerfilDto){
+    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}_rol`, queryParams.toArray());
   }
 
 
