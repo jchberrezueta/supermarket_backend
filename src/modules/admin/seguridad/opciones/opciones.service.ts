@@ -33,5 +33,68 @@ export class OpcionesService {
   async actualizar(body:UpdateOpcionDto){
     return this.db.executeFunctionWrite(`fn_actualizar_${this.fnName}`, body.toArray());
   }
+
+
+  /**
+   * COMBOS
+   */
+  async listarComboNombres() {
+    const query = 
+    `
+      SELECT json_build_object(
+        'response', 'OK',
+        'data',
+        json_agg(
+          json_build_object(
+            'label', nombre_opci,
+            'value', ide_opci
+          )
+          ORDER BY nombre_opci
+        )
+      )
+      FROM opciones;
+    `;
+    const result = await this.db.executeQuery(query);
+    return result[0].json_build_object.data;
+  }
+
+  async listarComboRutas() {
+    const query = 
+    `
+      SELECT json_build_object(
+        'response', 'OK',
+        'data',
+        json_agg(
+          json_build_object(
+            'label', ruta_opci,
+            'value', ide_opci
+          )
+          ORDER BY ruta_opci
+        )
+      )
+      FROM opciones;
+    `;
+    const result = await this.db.executeQuery(query);
+    return result[0].json_build_object.data;
+  }
+
+  async listarComboEstados() {
+    const query = `
+      SELECT json_build_object(
+        'response', 'OK',
+        'data',
+        json_agg(
+          json_build_object('label', estado, 'value', estado)
+        )
+      )
+      FROM (
+        VALUES
+          ('si'),
+          ('no')
+      ) AS estados(estado);
+    `;
+    const result = await this.db.executeQuery(query);
+    return result[0].json_build_object.data;
+  }
   
 }

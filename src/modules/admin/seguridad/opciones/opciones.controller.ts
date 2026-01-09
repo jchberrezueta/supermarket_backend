@@ -47,4 +47,23 @@ export class OpcionesController {
     async eliminar(@Param('id') id: number) {
         return this.servicio.eliminar(id); 
     }
+
+    /**
+     * COMBOS
+     */
+    @Get('listar/combo/nombres')
+    async listarComboNombres() {
+        return this.servicio.listarComboNombres(); 
+    }
+
+    @Get('listar/combo/rutas')
+    async listarComboRutas() {
+        return this.servicio.listarComboRutas(); 
+    }
+
+    @Get('listar/combo/estados')
+    async listarComboEstados() {
+        return this.servicio.listarComboEstados(); 
+    }
+
 }
