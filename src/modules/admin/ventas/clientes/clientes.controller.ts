@@ -28,7 +28,6 @@ export class ClientesController {
 
     @Get('filtrar')
     async filtrar(@Query() queryParams: FilterClienteDTO) {
-        console.log('aqui :)');
         return this.servicio.filtrar(queryParams); 
     }
 

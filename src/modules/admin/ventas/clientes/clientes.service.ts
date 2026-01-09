@@ -20,7 +20,6 @@ export class ClientesService {
   }
 
   async filtrar(queryParams: FilterClienteDTO){
-    console.log(queryParams.toArray());
     return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}`, queryParams.toArray());
   }
 
