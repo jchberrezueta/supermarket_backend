@@ -28,6 +28,7 @@ export class ClientesController {
 
     @Get('filtrar')
     async filtrar(@Query() queryParams: FilterClienteDTO) {
+        console.log('aqui :)');
         return this.servicio.filtrar(queryParams); 
     }
 
@@ -63,6 +64,31 @@ export class ClientesController {
     @Get('listar/combo/clientes')
     async listarComboClientes() {
         return this.servicio.listarComboClientes(); 
+    }
+
+    @Get('listar/combo/cedulas')
+    async listarComboCedulas() {
+        return this.servicio.listarComboCedulas(); 
+    }
+
+    @Get('listar/combo/nombres')
+    async listarComboNombres() {
+        return this.servicio.listarComboNombres(); 
+    }
+
+    @Get('listar/combo/apellidos')
+    async listarComboApellidos() {
+        return this.servicio.listarComboApellidos(); 
+    }
+
+    @Get('listar/combo/socios')
+    async listarComboSocio() {
+        return this.servicio.listarComboSocio(); 
+    }
+
+    @Get('listar/combo/tercera/edad')
+    async listarComboTerceraEdad() {
+        return this.servicio.listarComboTerceraEdad(); 
     }
     
 }

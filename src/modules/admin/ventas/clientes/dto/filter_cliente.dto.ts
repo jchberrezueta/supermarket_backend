@@ -17,26 +17,24 @@ export class FilterClienteDTO implements IFiltroCliente {
     @IsString()
     @Length(1, 50)
     apellidoPaternoClie?: string;
-
+    
     @IsOptional()
-    @IsEmail()
-    @Length(1, 100)
-    emailClie?: string;
-        
     @IsString()
     @IsIn(['si', 'no'])
     esSocio: 'si' | 'no';
 
+    @IsOptional()
     @IsString()
     @IsIn(['si', 'no'])
     esTerceraEdad: 'si' | 'no';
 
     toArray(): any[] {
         return [
-        this.cedulaClie ?? null,
-        this.primerNombreClie ?? null,
-        this.apellidoPaternoClie ?? null,
-        this.emailClie ?? null
+            this.cedulaClie ?? null,
+            this.primerNombreClie ?? null,
+            this.apellidoPaternoClie ?? null,
+            this.esSocio ?? null,
+            this.esTerceraEdad ?? null,
         ];
     }
 }

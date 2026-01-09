@@ -20,6 +20,7 @@ export class ClientesService {
   }
 
   async filtrar(queryParams: FilterClienteDTO){
+    console.log(queryParams.toArray());
     return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}`, queryParams.toArray());
   }
 
@@ -71,6 +72,104 @@ export class ClientesService {
         )
       )
       FROM cliente;
+    `;
+    const result = await this.db.executeQuery(query);
+    return result[0].json_build_object.data;
+  }
+
+  async listarComboCedulas() {
+    const query = 
+    `
+      SELECT json_build_object(
+        'response', 'OK',
+        'data',
+        json_agg(
+          json_build_object(
+            'label', cedula_clie,
+            'value', ide_clie
+          )
+          ORDER BY cedula_clie
+        )
+      )
+      FROM cliente;
+    `;
+    const result = await this.db.executeQuery(query);
+    return result[0].json_build_object.data;
+  }
+
+  async listarComboNombres() {
+    const query = 
+    `
+      SELECT json_build_object(
+        'response', 'OK',
+        'data',
+        json_agg(
+          json_build_object(
+            'label', primer_nombre_clie,
+            'value', ide_clie
+          )
+          ORDER BY primer_nombre_clie
+        )
+      )
+      FROM cliente;
+    `;
+    const result = await this.db.executeQuery(query);
+    return result[0].json_build_object.data;
+  }
+
+  async listarComboApellidos() {
+    const query = 
+    `
+      SELECT json_build_object(
+        'response', 'OK',
+        'data',
+        json_agg(
+          json_build_object(
+            'label', apellido_paterno_clie,
+            'value', ide_clie
+          )
+          ORDER BY apellido_paterno_clie
+        )
+      )
+      FROM cliente;
+    `;
+    const result = await this.db.executeQuery(query);
+    return result[0].json_build_object.data;
+  }
+
+  async listarComboSocio() {
+    const query = `
+      SELECT json_build_object(
+        'response', 'OK',
+        'data',
+        json_agg(
+          json_build_object('label', estado, 'value', estado)
+        )
+      )
+      FROM (
+        VALUES
+          ('si'),
+          ('no')
+      ) AS estados(estado);
+    `;
+    const result = await this.db.executeQuery(query);
+    return result[0].json_build_object.data;
+  }
+
+  async listarComboTerceraEdad() {
+    const query = `
+      SELECT json_build_object(
+        'response', 'OK',
+        'data',
+        json_agg(
+          json_build_object('label', estado, 'value', estado)
+        )
+      )
+      FROM (
+        VALUES
+          ('si'),
+          ('no')
+      ) AS estados(estado);
     `;
     const result = await this.db.executeQuery(query);
     return result[0].json_build_object.data;
