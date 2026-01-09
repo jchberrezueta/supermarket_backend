@@ -33,7 +33,7 @@ export class VentasService {
   }
 
   async actualizar(body: UpdateVentaDTO){
-    const result = await this.db.executeFunctionWrite(`fn_actualizar_${this.fnName}`, body.cabecerVenta.toArray());
+    const result = await this.db.executeFunctionWrite(`fn_actualizar_${this.fnName}`, body.cabeceraVenta.toArray());
     body.detalleVenta.forEach( obj => {
       this.db.executeFunctionWrite(`fn_actualizar_${this.fnName2}`, obj.toArray());
     });

@@ -8,7 +8,7 @@ export class UpdateVentaDTO {
 
   @ValidateNested()
   @Type( () => UpdateVentaCabeceraDTO)
-  cabecerVenta: UpdateVentaCabeceraDTO;
+  cabeceraVenta: UpdateVentaCabeceraDTO;
 
   @IsArray()
   @ValidateNested({each: true})

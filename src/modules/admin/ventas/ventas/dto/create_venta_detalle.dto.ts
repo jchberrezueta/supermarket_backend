@@ -45,13 +45,14 @@ export class CreateVentaDetalleDTO implements IDetalleVenta {
   totalProd: number;
 
   toArray(): any[] {
+    // Orden: ide_prod, cantidad_prod, precio_unitario_prod, subtotal_prod, iva_prod, dcto_promo_prod, total_prod
     return [
       this.ideProd,
       this.cantidadProd,
       this.precioUnitarioProd,
-      this.dctoPromoProd,
-      this.ivaProd,
       this.subtotalProd,
+      this.ivaProd,
+      this.dctoPromoProd,
       this.totalProd,
     ]
   }
