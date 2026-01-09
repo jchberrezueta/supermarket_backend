@@ -7,6 +7,7 @@ import {
     SeguridadModule,
     VentasModule
 } from '@admin';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
     imports: [
@@ -15,7 +16,8 @@ import {
         ProductosModule,
         ProveedoresModule,
         SeguridadModule,
-        VentasModule
+        VentasModule,
+        DashboardModule
     ],
 })
 export class AdminModule {}
