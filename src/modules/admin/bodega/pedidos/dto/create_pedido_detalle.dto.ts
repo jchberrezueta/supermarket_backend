@@ -1,52 +1,59 @@
-import { EnumEstadoDetallePedido, IDetallePedido } from '@models';
+import { EnumEstadoDetallePedido } from '@models';
+import { Transform } from 'class-transformer';
 import { 
-  Equals,
   IsEnum,
   IsInt,
-    IsNumber,
-    Min
+  IsNumber,
+  IsOptional,
+  Min
 } from 'class-validator';
 
-export class CreatePedidoDetalleDTO implements IDetallePedido{
+export class CreatePedidoDetalleDTO {
 
-  @IsInt()
-  @Equals(-1)
-  ideDetaPedi: number;
+  @IsOptional()
+  ideDetaPedi?: number;
 
-  @IsInt()
-  @Equals(-1)
-  idePedi: number;
+  @IsOptional()
+  idePedi?: number;
 
   @IsInt()
   @Min(0)
+  @Transform(({ value }) => parseInt(value))
   ideProd: number;
 
   @IsInt()
   @Min(1)
+  @Transform(({ value }) => parseInt(value))
   cantidadProd: number;
 
   @IsNumber()
   @Min(0)
+  @Transform(({ value }) => parseFloat(value))
   precioUnitarioProd: number;
 
   @IsNumber()
   @Min(0)
+  @Transform(({ value }) => parseFloat(value))
   subtotalProd: number;
 
   @IsNumber()
   @Min(0)
+  @Transform(({ value }) => parseFloat(value))
   dctoCompraProd: number;
 
   @IsNumber()
   @Min(0)
+  @Transform(({ value }) => parseFloat(value))
   ivaProd: number;
 
   @IsNumber()
   @Min(0)
+  @Transform(({ value }) => parseFloat(value))
   totalProd: number;
 
   @IsNumber()
   @Min(0)
+  @Transform(({ value }) => parseFloat(value))
   dctoCaducProd: number;
 
   @IsEnum(EnumEstadoDetallePedido)
@@ -58,10 +65,10 @@ export class CreatePedidoDetalleDTO implements IDetallePedido{
       this.cantidadProd,
       this.precioUnitarioProd,
       this.subtotalProd,
-      this.dctoCompraProd,
       this.ivaProd,
-      this.totalProd,
+      this.dctoCompraProd,
       this.dctoCaducProd,
+      this.totalProd,
       this.estadoDetaPedi
     ]
   }

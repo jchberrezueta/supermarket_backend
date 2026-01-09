@@ -58,6 +58,10 @@ export class PedidosController {
     async filtrarPedidos(@Query() queryParams: FilterPedidoDTO) {
         return this.servicio.filtrarPedidos(queryParams); 
     }
+    @Get('listar/detalles/:id')
+    async listarDetallesPedido(@Param('id') id: number) {
+        return this.servicio.listarDetallesPedido(id); 
+    }
 
     /**
      * COMBOS

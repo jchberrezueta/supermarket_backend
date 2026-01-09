@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { FilterPedidoDTO } from './dto/filter_pedido.dto';
 import { CreatePedidoDTO } from './dto/create_pedido.dto';
 import { UpdatePedidoDTO } from './dto/update_pedido.dto';
+import { CreatePedidoDetalleDTO } from './dto/create_pedido_detalle.dto';
 
 @Injectable()
 export class PedidosService {
@@ -12,7 +13,7 @@ export class PedidosService {
   constructor(private readonly db: DatabaseService){}
 
   async listar(){
-    return this.db.executeFunctionRead(`fn_listar_${this.fnName}`);
+    return this.db.executeFunctionRead(`fn_listar_${this.fnName}_empresa`);
   }
 
   async buscar(id:number){
@@ -33,10 +34,19 @@ export class PedidosService {
   }
 
   async actualizar(body: UpdatePedidoDTO){
+    const idPedi = body.cabeceraPedido.idePedi;
+    // Actualizar cabecera
     const result = await this.db.executeFunctionWrite(`fn_actualizar_${this.fnName}`, body.cabeceraPedido.toArray());
-    body.detallePedido.forEach( obj => {
-      this.db.executeFunctionWrite(`fn_actualizar_${this.fnName2}`, obj.toArray());
-    });
+    // Eliminar detalles anteriores
+    await this.db.executeQuery(`DELETE FROM detalle_pedido WHERE ide_pedi = $1`, [idPedi]);
+    // Insertar nuevos detalles
+    for (const obj of body.detallePedido) {
+      const detalle = new CreatePedidoDetalleDTO();
+      Object.assign(detalle, obj);
+      const data = detalle.toArray();
+      data.unshift(idPedi);
+      await this.db.executeFunctionWrite(`fn_insertar_${this.fnName2}`, data);
+    }
     return result;
   }
 
@@ -53,6 +63,10 @@ export class PedidosService {
   }
   async filtrarPedidos(queryParams: FilterPedidoDTO){
     return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}_empresa`, queryParams.toArray());
+  }
+
+  async listarDetallesPedido(idPedido: number){
+    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName2}`, [idPedido, null]);
   }
 
   /**
