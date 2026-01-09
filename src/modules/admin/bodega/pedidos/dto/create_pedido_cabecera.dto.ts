@@ -6,7 +6,8 @@ import {
   IsNumber,
   Min,
   IsInt,
-  Equals
+  Equals,
+  IsOptional
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { EnumEstadosPedido, EnumMotivosPedido, IPedido } from '@models';
@@ -28,7 +29,7 @@ export class CreatePedidoCabeceraDTO implements IPedido {
   fechaEntrPedi: string;
 
   @IsInt()
-  @Min(1)
+  @Min(0)
   cantidadTotalPedi: number;
 
   @IsNumber()
@@ -41,8 +42,9 @@ export class CreatePedidoCabeceraDTO implements IPedido {
   @IsEnum(EnumMotivosPedido)
   motivoPedi: EnumMotivosPedido;
 
+  @IsOptional()
   @IsString()
-  @Length(1, 250)
+  @Length(0, 250)
   @Transform(({value}) => 
     (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : 'ninguna'
   )
@@ -57,7 +59,8 @@ export class CreatePedidoCabeceraDTO implements IPedido {
       this.totalPedi,
       this.estadoPedi,
       this.motivoPedi,
-      this.observacionPedi
+      this.observacionPedi,
+      null // p_usua_ingre
     ]
   }
 }

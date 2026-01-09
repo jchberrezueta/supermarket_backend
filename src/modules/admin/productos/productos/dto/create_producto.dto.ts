@@ -91,6 +91,7 @@ export class CreateProductoDTO implements IProducto {
       this.disponibleProd,
       this.estadoProd,
       this.descripcionProd,
+      null,
     ];
   }
 }

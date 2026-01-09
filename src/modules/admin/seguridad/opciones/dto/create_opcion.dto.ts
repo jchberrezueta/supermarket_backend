@@ -57,7 +57,8 @@ export class CreateOpcionDto implements IOpciones {
         this.padreOpci?? null,
         this.iconoOpci?? null,
         this.activoOpci,
-        this.descripcionOpci
+        this.descripcionOpci,
+        null // p_usua_ingre
     ]
   }
 }

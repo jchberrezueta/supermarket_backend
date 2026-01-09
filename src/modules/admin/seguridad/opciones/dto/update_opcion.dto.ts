@@ -8,7 +8,10 @@ export class UpdateOpcionDto extends CreateOpcionDto {
 
     toArray (): any[]  {
         const lista = super.toArray();
+        // Remover el último elemento (null de p_usua_ingre) antes de agregar elementos
+        lista.pop();
         lista.unshift(this.ideOpci);
+        lista.push(null); // p_usua_actua
         return lista;
     };
 }

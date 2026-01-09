@@ -11,6 +11,8 @@ export class UpdateProductoDTO extends (CreateProductoDTO) {
     toArray(): any[] {
         const lista = super.toArray();
         lista.unshift(this.ideProd);
+        // La función SQL espera un último parámetro de usuario (p_usua_ingre)
+        // Ya viene como null desde super.toArray()
         return lista;
     }
 }
