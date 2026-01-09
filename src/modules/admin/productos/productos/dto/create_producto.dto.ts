@@ -42,14 +42,17 @@ export class CreateProductoDTO implements IProducto {
 
   @IsNumber()
   @Min(0)
+  @Transform(({ value }) => parseFloat(value))
   precioVentaProd: number;
 
   @IsNumber()
   @Min(0)
+  @Transform(({ value }) => parseFloat(value))
   ivaProd: number;
 
   @IsNumber()
   @Min(0)
+  @Transform(({ value }) => parseFloat(value))
   dctoPromoProd: number;
 
   @IsInt()
