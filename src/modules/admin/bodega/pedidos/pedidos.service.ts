@@ -115,4 +115,22 @@ export class PedidosService {
     const result = await this.db.executeQuery(query);
     return result[0].json_build_object.data;
   }
+
+  async listarComboPedidos() {
+    const query = 
+    `
+      SELECT json_build_object(
+        'data', COALESCE(json_agg(
+          json_build_object(
+            'label', CONCAT('Pedido #', p.ide_pedi, ' - ', e.nombre_empr),
+            'value', p.ide_pedi
+          ) ORDER BY p.ide_pedi DESC
+        ), '[]'::json)
+      )
+      FROM pedido p
+      INNER JOIN empresa e ON p.ide_empr = e.ide_empr;
+    `;
+    const result = await this.db.executeQuery(query);
+    return result[0].json_build_object.data;
+  }
 }

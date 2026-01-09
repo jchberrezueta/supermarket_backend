@@ -74,4 +74,8 @@ export class PedidosController {
     async listarComboMotivos() {
         return this.servicio.listarComboMotivos(); 
     }
+    @Get('listar/combo/pedidos')
+    async listarComboPedidos() {
+        return this.servicio.listarComboPedidos(); 
+    }
 }
