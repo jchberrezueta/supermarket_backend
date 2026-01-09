@@ -1,15 +1,68 @@
-import { IsInt, Min } from 'class-validator';
-import { CreateVentaCabeceraDTO } from './create_venta_cabecera.dto';
+import { IsInt, Min, IsOptional, IsString, IsNumber, IsEnum, IsDateString, Length, Equals } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { EnumEstadoVenta, IVenta } from '@models';
 
-export class UpdateVentaCabeceraDTO extends (CreateVentaCabeceraDTO) {
+export class UpdateVentaCabeceraDTO implements IVenta {
 
     @IsInt()
     @Min(0)
     ideVent: number;
 
-    toArray(): any[]  {
-        const lista = super.toArray();
-        lista.unshift(this.ideVent);
-        return lista;
-    };
+    @IsInt()
+    @Min(0)
+    ideEmpl: number;
+
+    @IsInt()
+    @Min(0)
+    ideClie: number;
+
+    @IsString()
+    @Length(1, 25)
+    @Transform(({value}) => (
+      (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
+    ))
+    numFacturaVent: string;
+
+    @IsDateString()
+    fechaVent: string;
+
+    @IsInt()
+    @Min(1)
+    cantidadVent: number;
+
+    @IsNumber()
+    @Min(0)
+    subTotalVent: number;
+
+    @IsNumber()
+    @Min(0)
+    totalVent: number;
+
+    @IsNumber()
+    @Min(0)
+    dctoSocioVent: number;
+
+    @IsEnum(EnumEstadoVenta)
+    estadoVent: EnumEstadoVenta;
+
+    @IsNumber()
+    @Min(0)
+    dctoEdadVent: number;
+
+    toArray(): any[] {
+      return [
+        this.ideVent,
+        this.ideEmpl,
+        this.ideClie,
+        this.numFacturaVent,
+        this.fechaVent,
+        this.cantidadVent,
+        this.subTotalVent,
+        this.dctoSocioVent,
+        this.dctoEdadVent,
+        this.totalVent,
+        this.estadoVent,
+        null // p_usua_actua
+      ]
+    }
 }

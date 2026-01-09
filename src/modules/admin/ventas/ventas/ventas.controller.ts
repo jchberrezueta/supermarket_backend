@@ -48,4 +48,9 @@ export class VentasController {
     async eliminar(@Param('id') id:number) {
         return this.servicio.eliminar(id); 
     }
+
+    @Get('detalles/:id')
+    async buscarDetallesVenta(@Param('id') id: number) {
+        return this.servicio.buscarDetallesVenta(id);
+    }
 }

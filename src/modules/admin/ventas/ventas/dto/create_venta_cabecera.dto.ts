@@ -49,6 +49,14 @@ export class CreateVentaCabeceraDTO implements IVenta {
   @Min(0)
   dctoEdadVent: number;
 
+  @IsOptional()
+  @IsString()
+  tipoPagoVent?: string;
+
+  @IsOptional()
+  @IsInt()
+  ideMetoPago?: number;
+
   toArray(): any[] {
     return [
       this.ideEmpl,
@@ -58,9 +66,12 @@ export class CreateVentaCabeceraDTO implements IVenta {
       this.cantidadVent,
       this.subTotalVent,
       this.dctoSocioVent,
+      this.dctoEdadVent,
       this.totalVent,
       this.estadoVent,
-      this.dctoEdadVent,
+      null, // p_usua_ingre
+      this.tipoPagoVent || 'efectivo', // p_tipo_pago_vent
+      this.ideMetoPago || null // p_ide_meto_pago
     ]
   }
 }

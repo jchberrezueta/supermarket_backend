@@ -45,6 +45,7 @@ export class ClientesService {
   async filtrarClientes(){
     return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}_cuenta`);
   }
+  
 
   /**
    * COMBOS
@@ -74,5 +75,4 @@ export class ClientesService {
     const result = await this.db.executeQuery(query);
     return result[0].json_build_object.data;
   }
-  
 }

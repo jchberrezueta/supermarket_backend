@@ -43,4 +43,9 @@ export class VentasService {
   async eliminar(id: number){
     return this.db.executeFunctionWrite(`fn_eliminar_${this.fnName}`, [id]);
   }
+
+  // Obtener detalles de una venta
+  async buscarDetallesVenta(ideVent: number){
+    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName2}`, [ideVent, null]);
+  }
 }
