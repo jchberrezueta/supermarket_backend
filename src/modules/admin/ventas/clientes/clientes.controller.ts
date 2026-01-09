@@ -56,4 +56,13 @@ export class ClientesController {
     async listarClientes() {
         return this.servicio.listarClientes(); 
     }
+
+    /**
+     * COMBOS
+     */
+    @Get('listar/combo/clientes')
+    async listarComboClientes() {
+        return this.servicio.listarComboClientes(); 
+    }
+
 }
