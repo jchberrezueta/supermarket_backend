@@ -14,5 +14,4 @@ export class AppController {
   vamos() {
     return this.appService.vamos();
   }
-
 }

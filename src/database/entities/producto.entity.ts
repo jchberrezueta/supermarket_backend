@@ -1,80 +1,95 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from 'typeorm';
-import { Categoria } from './categoria.entity';
-import { Marca } from './marca.entity';
-import { DetallePedido } from './detalle_pedido.entity';
-import { DetalleEntrega } from './detalle_entrega.entity';
-import { DetalleVenta } from './detalle_venta.entity';
-import { Lote } from './lote.entity';
-import { EmpresaPrecios } from './empresa_precios.entity';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity('producto')
-export class Producto {
+@Entity({ name: 'producto' })
+export class ProductoEntity {
   @PrimaryGeneratedColumn({ name: 'ide_prod' })
-  id: number;
+  ideProd!: number;
 
-  @ManyToOne(() => Categoria, (categoria) => categoria.productos)
-  categoria: Categoria;
+  @Column({ name: 'ide_cate', type: 'int' })
+  ideCate!: number;
 
-  @ManyToOne(() => Marca, (marca) => marca.productos)
-  marca: Marca;
+  @Column({ name: 'ide_marc', type: 'int' })
+  ideMarc!: number;
 
-  @Column({ name: 'codigo_barra_prod', length: 30 })
-  codigoBarra: string;
+  @Column({ name: 'codigo_barra_prod', type: 'varchar', length: 30 })
+  codigoBarraProd!: string;
 
-  @Column({ name: 'nombre_prod', length: 250 })
-  nombre: string;
+  @Column({ name: 'nombre_prod', type: 'varchar', length: 100 })
+  nombreProd!: string;
 
-  @Column({ name: 'precio_compra_prod', type: 'numeric', precision: 10, scale: 2 })
-  precioCompra: number;
+  @Column({
+    name: 'precio_venta_prod',
+    type: 'numeric',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
+  precioVentaProd!: string;
 
-  @Column({ name: 'precio_venta_prod', type: 'numeric', precision: 10, scale: 2 })
-  precioVenta: number;
+  @Column({
+    name: 'iva_prod',
+    type: 'numeric',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
+  ivaProd!: string;
 
-  @Column({ name: 'iva_prod', type: 'numeric', precision: 10, scale: 2 })
-  iva: number;
+  @Column({
+    name: 'dcto_promo_prod',
+    type: 'numeric',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
+  dctoPromoProd!: string;
 
-  @Column({ name: 'dcto_caduc_prod', type: 'numeric', precision: 10, scale: 2 })
-  descuentoCaducidad: number;
+  @Column({ name: 'stock_prod', type: 'int', default: 0 })
+  stockProd!: number;
 
-  @Column({ name: 'stock_prod' })
-  stock: number;
+  @Column({
+    name: 'disponible_prod',
+    type: 'varchar',
+    length: 25,
+    default: 'no',
+  })
+  disponibleProd!: 'si' | 'no';
 
-  @Column({ name: 'dcto_promo_prod', type: 'numeric', precision: 10, scale: 2 })
-  descuentoPromocion: number;
+  @Column({
+    name: 'estado_prod',
+    type: 'varchar',
+    length: 25,
+    default: 'inactivo',
+  })
+  estadoProd!: 'activo' | 'inactivo';
 
-  @Column({ name: 'disponible_prod', length: 25 })
-  disponible: string;
+  @Column({
+    name: 'descripcion_prod',
+    type: 'varchar',
+    length: 250,
+    default: 'Ninguna',
+  })
+  descripcionProd!: string;
 
-  @Column({ name: 'estado_prod', length: 25 })
-  estado: string;
+  @Column({ name: 'usua_ingre', type: 'varchar', length: 25, nullable: true })
+  usuaIngre?: string;
 
-  @Column({ name: 'descripcion_prod', length: 250 })
-  descripcion: string;
+  @Column({
+    name: 'fecha_ingre',
+    type: 'timestamp',
+    nullable: true,
+    default: () => 'CURRENT_TIMESTAMP',
+  })
+  fechaIngre?: Date;
 
-  @Column({ name: 'usua_ingre', length: 25, nullable: true })
-  usuarioIngreso: string;
+  @Column({ name: 'usua_actua', type: 'varchar', length: 25, nullable: true })
+  usuaActua?: string;
 
-  @Column({ name: 'fecha_ingre', nullable: true })
-  fechaIngreso: Date;
+  @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
+  fechaActua?: Date;
 
-  @Column({ name: 'usua_actua', length: 25, nullable: true })
-  usuarioActualiza: string;
-
-  @Column({ name: 'fecha_actua', nullable: true })
-  fechaActualiza: Date;
-
-  @OneToMany(() => DetallePedido, (detalle) => detalle.producto)
-  detallesPedido: DetallePedido[];
-
-  @OneToMany(() => DetalleEntrega, (detalle) => detalle.producto)
-  detallesEntrega: DetalleEntrega[];
-
-  @OneToMany(() => DetalleVenta, (detalle) => detalle.producto)
-  detallesVenta: DetalleVenta[];
-
-  @OneToMany(() => Lote, (lote) => lote.producto)
-  lotes: Lote[];
-
-  @OneToMany(() => EmpresaPrecios, (empresaPrecio) => empresaPrecio.producto)
-  preciosEmpresas: EmpresaPrecios[];
+  @Column({ name: 'url_img_prod', type: 'varchar', length: 500 })
+  urlImgProd!: string;
 }
+
+export { ProductoEntity as Producto };

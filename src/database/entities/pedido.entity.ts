@@ -1,52 +1,71 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from 'typeorm';
-import { Empresa } from './empresas.entity';
-import { DetallePedido } from './detalle_pedido.entity';
-import { Entrega } from './entrega.entity';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity('pedido')
-export class Pedido {
+@Entity({ name: 'pedido' })
+export class PedidoEntity {
   @PrimaryGeneratedColumn({ name: 'ide_pedi' })
-  id: number;
+  idePedi!: number;
 
-  @ManyToOne(() => Empresa, (empresa) => empresa.pedidos)
-  empresa: Empresa;
+  @Column({ name: 'ide_empr', type: 'int' })
+  ideEmpr!: number;
 
-  @Column({ name: 'fecha_pedi' })
-  fecha: Date;
+  @Column({ name: 'fecha_pedi', type: 'timestamp' })
+  fechaPedi!: Date;
 
-  @Column({ name: 'fecha_entr_pedi' })
-  fechaEntrega: Date;
+  @Column({ name: 'fecha_entr_pedi', type: 'timestamp' })
+  fechaEntrPedi!: Date;
 
-  @Column({ name: 'cantidad_total_pedi' })
-  cantidadTotal: number;
+  @Column({ name: 'cantidad_total_pedi', type: 'int' })
+  cantidadTotalPedi!: number;
 
-  @Column({ name: 'total_pedi', type: 'numeric', precision: 10, scale: 2 })
-  total: number;
+  @Column({
+    name: 'total_pedi',
+    type: 'numeric',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
+  totalPedi!: string;
 
-  @Column({ name: 'estado_pedi', length: 25 })
-  estado: string;
+  @Column({
+    name: 'estado_pedi',
+    type: 'varchar',
+    length: 25,
+    default: 'progreso',
+  })
+  estadoPedi!: 'progreso' | 'completado' | 'incompleto' | 'emitido';
 
-  @Column({ name: 'motivo_pedi', length: 250 })
-  motivo: string;
+  @Column({
+    name: 'motivo_pedi',
+    type: 'varchar',
+    length: 25,
+    default: 'peticion',
+  })
+  motivoPedi!: 'peticion' | 'devolucion';
 
-  @Column({ name: 'observacion_pedi', length: 250 })
-  observacion: string;
+  @Column({
+    name: 'observacion_pedi',
+    type: 'varchar',
+    length: 250,
+    default: 'Ninguna',
+  })
+  observacionPedi!: string;
 
-  @Column({ name: 'usua_ingre', length: 25, nullable: true })
-  usuarioIngreso: string;
+  @Column({ name: 'usua_ingre', type: 'varchar', length: 25, nullable: true })
+  usuaIngre?: string;
 
-  @Column({ name: 'fecha_ingre', nullable: true })
-  fechaIngreso: Date;
+  @Column({
+    name: 'fecha_ingre',
+    type: 'timestamp',
+    nullable: true,
+    default: () => 'CURRENT_TIMESTAMP',
+  })
+  fechaIngre?: Date;
 
-  @Column({ name: 'usua_actua', length: 25, nullable: true })
-  usuarioActualiza: string;
+  @Column({ name: 'usua_actua', type: 'varchar', length: 25, nullable: true })
+  usuaActua?: string;
 
-  @Column({ name: 'fecha_actua', nullable: true })
-  fechaActualiza: Date;
-
-  @OneToMany(() => DetallePedido, (detalle) => detalle.pedido)
-  detalles: DetallePedido[];
-
-  @OneToMany(() => Entrega, (entrega) => entrega.pedido)
-  entregas: Entrega[];
+  @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
+  fechaActua?: Date;
 }
+
+export { PedidoEntity as Pedido };

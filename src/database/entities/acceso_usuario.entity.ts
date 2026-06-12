@@ -1,29 +1,52 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
-import { Cuenta } from './cuenta.entity';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity('acceso_usuario')
-export class AccesoUsuario {
+@Entity({ name: 'acceso_usuario' })
+export class AccesoUsuarioEntity {
   @PrimaryGeneratedColumn({ name: 'ide_acce' })
-  id: number;
+  ideAcce!: number;
 
-  @ManyToOne(() => Cuenta, (cuenta) => cuenta.accesos)
-  cuenta: Cuenta;
+  @Column({ name: 'ide_cuen', type: 'int' })
+  ideCuen!: number;
 
-  @Column({ name: 'fecha_acce' })
-  fecha: Date;
+  @Column({ name: 'navegador_acce', type: 'varchar', length: 250 })
+  navegadorAcce!: string;
 
-  @Column({ name: 'num_intentos_acce' })
-  intentos: number;
+  @Column({
+    name: 'fecha_acce',
+    type: 'timestamp',
+    nullable: true,
+    default: () => 'CURRENT_TIMESTAMP',
+  })
+  fechaAcce?: Date;
 
-  @Column({ name: 'ip_acce', length: 50 })
-  ip: string;
+  @Column({ name: 'num_int_fall_acce', type: 'int', default: 0 })
+  numIntFallAcce!: number;
 
-  @Column({ name: 'navegador_acce', length: 250 })
-  navegador: string;
+  @Column({
+    name: 'ip_acce',
+    type: 'varchar',
+    length: 15,
+    default: '999.999.999.999',
+  })
+  ipAcce!: string;
 
-  @Column({ name: 'latitud_acce', nullable: true })
-  latitud: number;
+  @Column({
+    name: 'latitud_acce',
+    type: 'numeric',
+    precision: 10,
+    scale: 6,
+    nullable: true,
+  })
+  latitudAcce?: string;
 
-  @Column({ name: 'longitud_acce', nullable: true })
-  longitud: number;
+  @Column({
+    name: 'longitud_acce',
+    type: 'numeric',
+    precision: 10,
+    scale: 6,
+    nullable: true,
+  })
+  longitudAcce?: string;
 }
+
+export { AccesoUsuarioEntity as AccesoUsuario };

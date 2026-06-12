@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Patch, Delete, Body, UseGuards, Put, Param, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Body,
+  UseGuards,
+  Put,
+  Param,
+  Query,
+} from '@nestjs/common';
 import { Roles } from 'src/modules/auth/roles.decorator';
 import { RolesGuard } from 'src/modules/auth/roles.guard';
 import { AuthGuard } from '@nestjs/passport';
@@ -11,76 +21,73 @@ import { ProductosService } from './productos.service';
 @Roles('padmin', 'pinventario')
 @Controller('productos')
 export class ProductosController {
+  constructor(private servicio: ProductosService) {}
 
-    constructor(private servicio: ProductosService) {}
+  @Get()
+  async listar() {
+    console.log('lo logramos :)');
+    return this.servicio.listar();
+  }
+  @Get('codigo/:codigo')
+  async buscarActivoPorCodigo(@Param('codigo') codigo: string) {
+    return this.servicio.buscarActivoPorCodigo(codigo);
+  }
 
-    @Get()
-    async listar() {
-        console.log('lo logramos :)');
-        return this.servicio.listar(); 
-    }
+  @Get('buscar/:id')
+  async buscar(@Param('id') id: number) {
+    return this.servicio.buscar(id);
+  }
 
-    @Get('buscar/:id')
-    async buscar(@Param('id') id:number) {
-        return this.servicio.buscar(id); 
-    }
+  @Get('filtrar')
+  async filtrar(@Query() queryParams: FilterProductoDTO) {
+    return this.servicio.filtrar(queryParams);
+  }
 
-    @Get('filtrar')
-    async filtrar(@Query() queryParams: FilterProductoDTO) {
-        return this.servicio.filtrar(queryParams); 
-    }
+  @Post('insertar')
+  async insertar(@Body() body: CreateProductoDTO) {
+    return this.servicio.insertar(body);
+  }
 
-    @Post('insertar')
-    async insertar(@Body() body: CreateProductoDTO) {
-        return this.servicio.insertar(body); 
-    }
+  @Put('actualizar/:id')
+  async actualizar(@Param('id') id: number, @Body() body: UpdateProductoDTO) {
+    return this.servicio.actualizar(body);
+  }
 
-    @Put('actualizar/:id')
-    async actualizar(
-        @Param('id') id: number, 
-        @Body() body: UpdateProductoDTO
-    ) {
-        return this.servicio.actualizar(body); 
-    }
+  @Delete('eliminar/:id')
+  async eliminar(@Param('id') id: number) {
+    return this.servicio.eliminar(id);
+  }
 
-    @Delete('eliminar/:id')
-    async eliminar(@Param('id') id:number) {
-        return this.servicio.eliminar(id); 
-    }
+  /**
+   * JOINS
+   */
+  @Get('listar/productos')
+  async listarProductos() {
+    return this.servicio.listarProductos();
+  }
+  @Get('filtrar/productos')
+  async filtrarProductos(@Query() queryParams: FilterProductoDTO) {
+    return this.servicio.filtrarProductos(queryParams);
+  }
 
-    /**
-     * JOINS
-     */
-    @Get('listar/productos')
-    async listarProductos() {
-        return this.servicio.listarProductos();
-    }
-    @Get('filtrar/productos')
-    async filtrarProductos(@Query() queryParams: FilterProductoDTO) {
-        return this.servicio.filtrarProductos(queryParams);
-    }
-    
+  /**
+   * COMBOS
+   */
 
-    /**
-     * COMBOS
-     */
-
-    @Get('listar/combo/productos')
-    async listarComboProductos() {
-        return this.servicio.listarComboProductos();
-    }
-    @Get('listar/combo/codigo/barras')
-    async listarComboCodigosBarras() {
-        return this.servicio.listarComboCodigosBarras();
-    }
-    @Get('listar/combo/estados')
-    async listarComboEstados() {
-        return this.servicio.listarComboEstados();
-    }
-    @Get('listar/combo/disponibilidad')
-    async listarComboDisponibilidad() {
-        return this.servicio.listarComboDisponibilidad();
-    }
-
-    
+  @Get('listar/combo/productos')
+  async listarComboProductos() {
+    return this.servicio.listarComboProductos();
+  }
+  @Get('listar/combo/codigo/barras')
+  async listarComboCodigosBarras() {
+    return this.servicio.listarComboCodigosBarras();
+  }
+  @Get('listar/combo/estados')
+  async listarComboEstados() {
+    return this.servicio.listarComboEstados();
+  }
+  @Get('listar/combo/disponibilidad')
+  async listarComboDisponibilidad() {
+    return this.servicio.listarComboDisponibilidad();
+  }
 }

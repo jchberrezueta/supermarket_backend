@@ -1,35 +1,52 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { PerfilOpciones } from './perfil_opciones.entity';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity('opciones')
-export class Opciones {
+@Entity({ name: 'opciones' })
+export class OpcionesEntity {
   @PrimaryGeneratedColumn({ name: 'ide_opci' })
-  id: number;
+  ideOpci!: number;
 
-  @Column({ name: 'nombre_opci', length: 500 })
-  nombre: string;
+  @Column({ name: 'nombre_opci', type: 'varchar', length: 100 })
+  nombreOpci!: string;
 
-  @Column({ name: 'ruta_opci', length: 500 })
-  ruta: string;
+  @Column({ name: 'ruta_opci', type: 'varchar', length: 500 })
+  rutaOpci!: string;
 
-  @Column({ name: 'activo_opci', length: 2 })
-  activo: string;
+  @Column({ name: 'activo_opci', type: 'varchar', length: 2, default: 'no' })
+  activoOpci!: 'si' | 'no';
 
-  @Column({ name: 'descripcion_opci', length: 1000 })
-  descripcion: string;
+  @Column({
+    name: 'descripcion_opci',
+    type: 'varchar',
+    length: 250,
+    default: 'Ninguna',
+  })
+  descripcionOpci!: string;
 
-  @Column({ name: 'usua_ingre', length: 25, nullable: true })
-  usuarioIngreso: string;
+  @Column({ name: 'usua_ingre', type: 'varchar', length: 25, nullable: true })
+  usuaIngre?: string;
 
-  @Column({ name: 'fecha_ingre', nullable: true })
-  fechaIngreso: Date;
+  @Column({
+    name: 'fecha_ingre',
+    type: 'timestamp',
+    nullable: true,
+    default: () => 'CURRENT_TIMESTAMP',
+  })
+  fechaIngre?: Date;
 
-  @Column({ name: 'usua_actua', length: 25, nullable: true })
-  usuarioActualiza: string;
+  @Column({ name: 'usua_actua', type: 'varchar', length: 25, nullable: true })
+  usuaActua?: string;
 
-  @Column({ name: 'fecha_actua', nullable: true })
-  fechaActualiza: Date;
+  @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
+  fechaActua?: Date;
 
-  @OneToMany(() => PerfilOpciones, (perfilOpcion) => perfilOpcion.opcion)
-  perfiles: PerfilOpciones[];
+  @Column({ name: 'nivel_opci', type: 'int' })
+  nivelOpci!: number;
+
+  @Column({ name: 'padre_opci', type: 'int', nullable: true })
+  padreOpci?: number;
+
+  @Column({ name: 'icono_opci', type: 'varchar', length: 50, nullable: true })
+  iconoOpci?: string;
 }
+
+export { OpcionesEntity as Opciones };

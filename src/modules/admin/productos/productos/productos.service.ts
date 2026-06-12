@@ -1,56 +1,71 @@
-import { Injectable } from '@nestjs/common';
-import {DatabaseService} from '@database';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { DatabaseService } from '@database';
+import { ProductosRepository } from './productos.repository';
 import { CreateProductoDTO } from './dto/create_producto.dto';
 import { UpdateProductoDTO } from './dto/update_producto.dto';
 import { FilterProductoDTO } from './dto/filter_producto.dto';
 
 @Injectable()
 export class ProductosService {
-  
   private fnName: string = 'producto';
-  constructor(private readonly db: DatabaseService){}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly productosRepository: ProductosRepository,
+  ) {}
 
-  async listar(){
+  async listar() {
     return this.db.executeFunctionRead(`fn_listar_${this.fnName}`);
   }
 
-  async buscar(id:number){
+  async buscar(id: number) {
     return this.db.executeFunctionRead(`fn_buscar_${this.fnName}`, [id]);
   }
 
-  async filtrar(queryParams: FilterProductoDTO){
-    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}`, queryParams.toArray());
+  async filtrar(queryParams: FilterProductoDTO) {
+    return this.db.executeFunctionRead(
+      `fn_filtrar_${this.fnName}`,
+      queryParams.toArray(),
+    );
   }
 
-  async insertar(body:CreateProductoDTO){
-    return this.db.executeFunctionWrite(`fn_insertar_${this.fnName}`, body.toArray());
+  async insertar(body: CreateProductoDTO) {
+    return this.db.executeFunctionWrite(
+      `fn_insertar_${this.fnName}`,
+      body.toArray(),
+    );
   }
 
-  async actualizar(body:UpdateProductoDTO){
-    return this.db.executeFunctionWrite(`fn_actualizar_${this.fnName}`, body.toArray());
+  async actualizar(body: UpdateProductoDTO) {
+    return this.db.executeFunctionWrite(
+      `fn_actualizar_${this.fnName}`,
+      body.toArray(),
+    );
   }
 
-  async eliminar(id:number){
+  async eliminar(id: number) {
     return this.db.executeFunctionWrite(`fn_eliminar_${this.fnName}`, [id]);
   }
 
   /**
    * JOINS
    */
-  async listarProductos(){
-    return this.db.executeFunctionRead(`fn_listar_${this.fnName}_categoria_marca`);
+  async listarProductos() {
+    return this.db.executeFunctionRead(
+      `fn_listar_${this.fnName}_categoria_marca`,
+    );
   }
-  async filtrarProductos(queryParams: FilterProductoDTO){
-    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}_categoria_marca`, queryParams.toArray());
+  async filtrarProductos(queryParams: FilterProductoDTO) {
+    return this.db.executeFunctionRead(
+      `fn_filtrar_${this.fnName}_categoria_marca`,
+      queryParams.toArray(),
+    );
   }
-  
 
   /**
    * COMBOS
    */
   async listarComboProductos() {
-    const query = 
-      `
+    const query = `
         SELECT json_build_object(
           'response', 'OK',
           'data',
@@ -69,8 +84,7 @@ export class ProductosService {
   }
 
   async listarComboCodigosBarras() {
-    const query = 
-      `
+    const query = `
         SELECT json_build_object(
           'response', 'OK',
           'data',
@@ -92,8 +106,7 @@ export class ProductosService {
   }
 
   async listarComboEstados() {
-    const query = 
-      `
+    const query = `
         SELECT json_build_object(
           'data', json_agg(
             json_build_object(
@@ -112,10 +125,8 @@ export class ProductosService {
     return result[0].json_build_object.data;
   }
 
-
   async listarComboDisponibilidad() {
-    const query = 
-      `
+    const query = `
         SELECT json_build_object(
           'data', json_agg(
             json_build_object(
@@ -134,4 +145,21 @@ export class ProductosService {
     return result[0].json_build_object.data;
   }
 
+  async buscarActivoPorCodigo(codigo: string) {
+    const producto = await this.productosRepository.findActivoByCodigo(codigo);
+
+    if (!producto) {
+      throw new NotFoundException(
+        'No se encontró un producto activo con ese código.',
+      );
+    }
+
+    return {
+      data: producto,
+      response: {
+        success: true,
+        message: 'Producto encontrado correctamente.',
+      },
+    };
+  }
 }

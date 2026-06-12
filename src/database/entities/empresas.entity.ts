@@ -1,52 +1,60 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { Proveedor } from './proveedor.entity';
-import { Pedido } from './pedido.entity';
-import { EmpresaPrecios } from './empresa_precios.entity';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity('empresa')
-export class Empresa {
+@Entity({ name: 'empresa' })
+export class EmpresaEntity {
   @PrimaryGeneratedColumn({ name: 'ide_empr' })
-  id: number;
+  ideEmpr!: number;
 
-  @Column({ name: 'nombre_empr', length: 500 })
-  nombre: string;
+  @Column({ name: 'nombre_empr', type: 'varchar', length: 250 })
+  nombreEmpr!: string;
 
-  @Column({ name: 'responsable_empr', length: 250 })
-  responsable: string;
+  @Column({ name: 'responsable_empr', type: 'varchar', length: 250 })
+  responsableEmpr!: string;
 
-  @Column({ name: 'direccion_empr', length: 1000 })
-  direccion: string;
+  @Column({ name: 'fecha_contrato_empr', type: 'timestamp' })
+  fechaContratoEmpr!: Date;
 
-  @Column({ name: 'telefono_empr', length: 15 })
-  telefono: string;
+  @Column({ name: 'direccion_empr', type: 'varchar', length: 250 })
+  direccionEmpr!: string;
 
-  @Column({ name: 'email_empr', length: 50 })
-  email: string;
+  @Column({ name: 'telefono_empr', type: 'varchar', length: 15 })
+  telefonoEmpr!: string;
 
-  @Column({ name: 'fecha_contrato_empr' })
-  fechaContrato: Date;
+  @Column({ name: 'email_empr', type: 'varchar', length: 100 })
+  emailEmpr!: string;
 
-  @Column({ name: 'estado_empr', length: 25 })
-  estado: string;
+  @Column({
+    name: 'estado_empr',
+    type: 'varchar',
+    length: 25,
+    default: 'inactivo',
+  })
+  estadoEmpr!: 'activo' | 'inactivo';
 
-  @Column({ name: 'usua_ingre', length: 25, nullable: true })
-  usuarioIngreso: string;
+  @Column({
+    name: 'descripcion_empr',
+    type: 'varchar',
+    length: 250,
+    default: 'Ninguna',
+  })
+  descripcionEmpr!: string;
 
-  @Column({ name: 'fecha_ingre', nullable: true })
-  fechaIngreso: Date;
+  @Column({ name: 'usua_ingre', type: 'varchar', length: 25, nullable: true })
+  usuaIngre?: string;
 
-  @Column({ name: 'usua_actua', length: 25, nullable: true })
-  usuarioActualiza: string;
+  @Column({
+    name: 'fecha_ingre',
+    type: 'timestamp',
+    nullable: true,
+    default: () => 'CURRENT_TIMESTAMP',
+  })
+  fechaIngre?: Date;
 
-  @Column({ name: 'fecha_actua', nullable: true })
-  fechaActualiza: Date;
+  @Column({ name: 'usua_actua', type: 'varchar', length: 25, nullable: true })
+  usuaActua?: string;
 
-  @OneToMany(() => Proveedor, (proveedor) => proveedor.empresa)
-  proveedores: Proveedor[];
-
-  @OneToMany(() => Pedido, (pedido) => pedido.empresa)
-  pedidos: Pedido[];
-
-  @OneToMany(() => EmpresaPrecios, (empresaPrecio) => empresaPrecio.empresa)
-  preciosProductos: EmpresaPrecios[];
+  @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
+  fechaActua?: Date;
 }
+
+export { EmpresaEntity as Empresa };

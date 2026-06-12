@@ -1,33 +1,63 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
-import { Venta } from './venta.entity';
-import { Producto } from './producto.entity';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity('detalle_venta')
-export class DetalleVenta {
+@Entity({ name: 'detalle_venta' })
+export class DetalleVentaEntity {
   @PrimaryGeneratedColumn({ name: 'ide_deta_vent' })
-  id: number;
+  ideDetaVent!: number;
 
-  @ManyToOne(() => Venta, (venta) => venta.detalles)
-  venta: Venta;
+  @Column({ name: 'ide_vent', type: 'int' })
+  ideVent!: number;
 
-  @ManyToOne(() => Producto, (producto) => producto.detallesVenta)
-  producto: Producto;
+  @Column({ name: 'ide_prod', type: 'int' })
+  ideProd!: number;
 
-  @Column({ name: 'cantidad_prod' })
-  cantidad: number;
+  @Column({ name: 'cantidad_prod', type: 'int' })
+  cantidadProd!: number;
 
-  @Column({ name: 'precio_unitario_prod', type: 'numeric', precision: 10, scale: 2 })
-  precioUnitario: number;
+  @Column({
+    name: 'precio_unitario_prod',
+    type: 'numeric',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
+  precioUnitarioProd!: string;
 
-  @Column({ name: 'dcto_prod', type: 'numeric', precision: 10, scale: 2 })
-  descuento: number;
+  @Column({
+    name: 'subtotal_prod',
+    type: 'numeric',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
+  subtotalProd!: string;
 
-  @Column({ name: 'dcto_promo', type: 'numeric', precision: 10, scale: 2 })
-  descuentoPromocion: number;
+  @Column({
+    name: 'dcto_promo_prod',
+    type: 'numeric',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
+  dctoPromoProd!: string;
 
-  @Column({ name: 'iva_prod', type: 'numeric', precision: 10, scale: 2 })
-  iva: number;
+  @Column({
+    name: 'iva_prod',
+    type: 'numeric',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
+  ivaProd!: string;
 
-  @Column({ name: 'subtotal_prod', type: 'numeric', precision: 10, scale: 2 })
-  subtotal: number;
+  @Column({
+    name: 'total_prod',
+    type: 'numeric',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
+  totalProd!: string;
 }
+
+export { DetalleVentaEntity as DetalleVenta };

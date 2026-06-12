@@ -1,40 +1,46 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from 'typeorm';
-import { Empleado } from './empleado.entity';
-import { Perfil } from './perfil.entity';
-import { AccesoUsuario } from './acceso_usuario.entity';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity('cuenta')
-export class Cuenta {
+@Entity({ name: 'cuenta' })
+export class CuentaEntity {
   @PrimaryGeneratedColumn({ name: 'ide_cuen' })
-  id: number;
+  ideCuen!: number;
 
-  @ManyToOne(() => Empleado, (empleado) => empleado.cuentas)
-  empleado: Empleado;
+  @Column({ name: 'ide_empl', type: 'int' })
+  ideEmpl!: number;
 
-  @ManyToOne(() => Perfil, (perfil) => perfil.cuentas)
-  perfil: Perfil;
+  @Column({ name: 'ide_perf', type: 'int' })
+  idePerf!: number;
 
-  @Column({ name: 'usuario_cuen', length: 25 })
-  usuario: string;
+  @Column({ name: 'usuario_cuen', type: 'varchar', length: 25 })
+  usuarioCuen!: string;
 
-  @Column({ name: 'password_cuen', length: 25 })
-  password: string;
+  @Column({ name: 'password_cuen', type: 'varchar', length: 250 })
+  passwordCuen!: string;
 
-  @Column({ name: 'estado_cuen', length: 25 })
-  estado: string;
+  @Column({
+    name: 'estado_cuen',
+    type: 'varchar',
+    length: 25,
+    default: 'inactivo',
+  })
+  estadoCuen!: 'activo' | 'inactivo' | 'bloqueado';
 
-  @Column({ name: 'usua_ingre', length: 25, nullable: true })
-  usuarioIngreso: string;
+  @Column({ name: 'usua_ingre', type: 'varchar', length: 25, nullable: true })
+  usuaIngre?: string;
 
-  @Column({ name: 'fecha_ingre', nullable: true })
-  fechaIngreso: Date;
+  @Column({
+    name: 'fecha_ingre',
+    type: 'timestamp',
+    nullable: true,
+    default: () => 'CURRENT_TIMESTAMP',
+  })
+  fechaIngre?: Date;
 
-  @Column({ name: 'usua_actua', length: 25, nullable: true })
-  usuarioActualiza: string;
+  @Column({ name: 'usua_actua', type: 'varchar', length: 25, nullable: true })
+  usuaActua?: string;
 
-  @Column({ name: 'fecha_actua', nullable: true })
-  fechaActualiza: Date;
-
-  @OneToMany(() => AccesoUsuario, (acceso) => acceso.cuenta)
-  accesos: AccesoUsuario[];
+  @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
+  fechaActua?: Date;
 }
+
+export { CuentaEntity as Cuenta };

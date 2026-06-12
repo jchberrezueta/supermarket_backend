@@ -1,56 +1,79 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { Venta } from './venta.entity';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity('cliente')
-export class Cliente {
+@Entity({ name: 'cliente' })
+export class ClienteEntity {
   @PrimaryGeneratedColumn({ name: 'ide_clie' })
-  id: number;
+  ideClie!: number;
 
-  @Column({ name: 'cedula_clie', length: 15 })
-  cedula: string;
+  @Column({ name: 'cedula_clie', type: 'varchar', length: 15 })
+  cedulaClie!: string;
 
-  @Column({ name: 'primer_nombre_clie', length: 50 })
-  primerNombre: string;
+  @Column({ name: 'fecha_nacimiento_clie', type: 'date' })
+  fechaNacimientoClie!: Date;
 
-  @Column({ name: 'segundo_nombre_clie', length: 50 })
-  segundoNombre: string;
+  @Column({ name: 'edad_clie', type: 'int' })
+  edadClie!: number;
 
-  @Column({ name: 'apellido_paterno_clie', length: 50 })
-  apellidoPaterno: string;
+  @Column({ name: 'telefono_clie', type: 'varchar', length: 15 })
+  telefonoClie!: string;
 
-  @Column({ name: 'apellido_materno_clie', length: 50 })
-  apellidoMaterno: string;
+  @Column({ name: 'primer_nombre_clie', type: 'varchar', length: 50 })
+  primerNombreClie!: string;
 
-  @Column({ name: 'fecha_nacimiento_clie' })
-  fechaNacimiento: Date;
+  @Column({ name: 'apellido_paterno_clie', type: 'varchar', length: 50 })
+  apellidoPaternoClie!: string;
 
-  @Column({ name: 'edad_clie' })
-  edad: number;
+  @Column({
+    name: 'email_clie',
+    type: 'varchar',
+    length: 100,
+    default: 'Ninguno',
+  })
+  emailClie!: string;
 
-  @Column({ name: 'telefono_clie', length: 15 })
-  telefono: string;
+  @Column({ name: 'es_socio', type: 'varchar', length: 2, default: 'no' })
+  esSocio!: 'si' | 'no';
 
-  @Column({ name: 'email_clie', length: 50 })
-  email: string;
+  @Column({
+    name: 'es_tercera_edad',
+    type: 'varchar',
+    length: 2,
+    default: 'no',
+  })
+  esTerceraEdad!: 'si' | 'no';
 
-  @Column({ name: 'es_socio', length: 2 })
-  esSocio: string;
+  @Column({
+    name: 'segundo_nombre_clie',
+    type: 'varchar',
+    length: 50,
+    nullable: true,
+  })
+  segundoNombreClie?: string;
 
-  @Column({ name: 'es_tercera_edad', length: 2 })
-  esTerceraEdad: string;
+  @Column({
+    name: 'apellido_materno_clie',
+    type: 'varchar',
+    length: 50,
+    nullable: true,
+  })
+  apellidoMaternoClie?: string;
 
-  @Column({ name: 'usua_ingre', length: 25, nullable: true })
-  usuarioIngreso: string;
+  @Column({ name: 'usua_ingre', type: 'varchar', length: 25, nullable: true })
+  usuaIngre?: string;
 
-  @Column({ name: 'fecha_ingre', nullable: true })
-  fechaIngreso: Date;
+  @Column({
+    name: 'fecha_ingre',
+    type: 'timestamp',
+    nullable: true,
+    default: () => 'CURRENT_TIMESTAMP',
+  })
+  fechaIngre?: Date;
 
-  @Column({ name: 'usua_actua', length: 15, nullable: true })
-  usuarioActualiza: string;
+  @Column({ name: 'usua_actua', type: 'varchar', length: 25, nullable: true })
+  usuaActua?: string;
 
-  @Column({ name: 'fecha_actua', nullable: true })
-  fechaActualiza: Date;
-
-  @OneToMany(() => Venta, (venta) => venta.cliente)
-  ventas: Venta[];
+  @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
+  fechaActua?: Date;
 }
+
+export { ClienteEntity as Cliente };

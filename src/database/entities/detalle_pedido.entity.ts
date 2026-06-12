@@ -1,30 +1,80 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
-import { Pedido } from './pedido.entity';
-import { Producto } from './producto.entity';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity('detalle_pedido')
-export class DetallePedido {
+@Entity({ name: 'detalle_pedido' })
+export class DetallePedidoEntity {
   @PrimaryGeneratedColumn({ name: 'ide_deta_pedi' })
-  id: number;
+  ideDetaPedi!: number;
 
-  @ManyToOne(() => Producto, (producto) => producto.detallesPedido)
-  producto: Producto;
+  @Column({ name: 'ide_pedi', type: 'int' })
+  idePedi!: number;
 
-  @ManyToOne(() => Pedido, (pedido) => pedido.detalles)
-  pedido: Pedido;
+  @Column({ name: 'ide_prod', type: 'int' })
+  ideProd!: number;
 
-  @Column({ name: 'cantidad_prod' })
-  cantidad: number;
+  @Column({ name: 'cantidad_prod', type: 'int' })
+  cantidadProd!: number;
 
-  @Column({ name: 'precio_unitario_prod', type: 'numeric', precision: 10, scale: 2 })
-  precioUnitario: number;
+  @Column({
+    name: 'precio_unitario_prod',
+    type: 'numeric',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
+  precioUnitarioProd!: string;
 
-  @Column({ name: 'dcto_prod', type: 'numeric', precision: 10, scale: 2 })
-  descuento: number;
+  @Column({
+    name: 'subtotal_prod',
+    type: 'numeric',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
+  subtotalProd!: string;
 
-  @Column({ name: 'iva_prod', type: 'numeric', precision: 10, scale: 2 })
-  iva: number;
+  @Column({
+    name: 'dcto_compra_prod',
+    type: 'numeric',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
+  dctoCompraProd!: string;
 
-  @Column({ name: 'subtotal_prod', type: 'numeric', precision: 10, scale: 2 })
-  subtotal: number;
+  @Column({
+    name: 'iva_prod',
+    type: 'numeric',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
+  ivaProd!: string;
+
+  @Column({
+    name: 'total_prod',
+    type: 'numeric',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
+  totalProd!: string;
+
+  @Column({
+    name: 'dcto_caduc_prod',
+    type: 'numeric',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
+  dctoCaducProd!: string;
+
+  @Column({
+    name: 'estado_deta_pedi',
+    type: 'varchar',
+    length: 25,
+    default: 'incompleto',
+  })
+  estadoDetaPedi!: 'progreso' | 'completado' | 'incompleto' | 'emitido';
 }
+
+export { DetallePedidoEntity as DetallePedido };

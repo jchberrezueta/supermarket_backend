@@ -1,39 +1,44 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
-import { Perfil } from './perfil.entity';
-import { Opciones } from './opciones.entity';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity('perfil_opciones')
-export class PerfilOpciones {
+@Entity({ name: 'perfil_opciones' })
+export class PerfilOpcionesEntity {
   @PrimaryGeneratedColumn({ name: 'ide_perf_opci' })
-  id: number;
+  idePerfOpci!: number;
 
-  @ManyToOne(() => Perfil, (perfil) => perfil.opciones)
-  perfil: Perfil;
+  @Column({ name: 'ide_perf', type: 'int' })
+  idePerf!: number;
 
-  @ManyToOne(() => Opciones, (opcion) => opcion.perfiles)
-  opcion: Opciones;
+  @Column({ name: 'ide_opci', type: 'int' })
+  ideOpci!: number;
 
-  @Column({ name: 'listar', length: 2 })
-  listar: string;
+  @Column({ name: 'listar', type: 'varchar', length: 2, default: 'no' })
+  listar!: 'si' | 'no';
 
-  @Column({ name: 'insertar', length: 2 })
-  insertar: string;
+  @Column({ name: 'insertar', type: 'varchar', length: 2, default: 'no' })
+  insertar!: 'si' | 'no';
 
-  @Column({ name: 'modificar', length: 2 })
-  modificar: string;
+  @Column({ name: 'modificar', type: 'varchar', length: 2, default: 'no' })
+  modificar!: 'si' | 'no';
 
-  @Column({ name: 'eliminar', length: 2 })
-  eliminar: string;
+  @Column({ name: 'eliminar', type: 'varchar', length: 2, default: 'no' })
+  eliminar!: 'si' | 'no';
 
-  @Column({ name: 'usua_ingre', length: 25, nullable: true })
-  usuarioIngreso: string;
+  @Column({ name: 'usua_ingre', type: 'varchar', length: 25, nullable: true })
+  usuaIngre?: string;
 
-  @Column({ name: 'fecha_ingre', nullable: true })
-  fechaIngreso: Date;
+  @Column({
+    name: 'fecha_ingre',
+    type: 'timestamp',
+    nullable: true,
+    default: () => 'CURRENT_TIMESTAMP',
+  })
+  fechaIngre?: Date;
 
-  @Column({ name: 'usua_actua', length: 25, nullable: true })
-  usuarioActualiza: string;
+  @Column({ name: 'usua_actua', type: 'varchar', length: 25, nullable: true })
+  usuaActua?: string;
 
-  @Column({ name: 'fecha_actua', nullable: true })
-  fechaActualiza: Date;
+  @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
+  fechaActua?: Date;
 }
+
+export { PerfilOpcionesEntity as PerfilOpciones };

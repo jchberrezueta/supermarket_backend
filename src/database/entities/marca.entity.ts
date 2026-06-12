@@ -1,32 +1,43 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { Producto } from './producto.entity';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity('marca')
-export class Marca {
+@Entity({ name: 'marca' })
+export class MarcaEntity {
   @PrimaryGeneratedColumn({ name: 'ide_marc' })
-  id: number;
+  ideMarc!: number;
 
-  @Column({ name: 'nombre_marc', length: 100 })
-  nombre: string;
+  @Column({ name: 'nombre_marc', type: 'varchar', length: 100 })
+  nombreMarc!: string;
 
-  @Column({ name: 'pais_origen_marc', length: 100 })
-  paisOrigen: string;
+  @Column({ name: 'pais_origen_marc', type: 'varchar', length: 100 })
+  paisOrigenMarc!: string;
 
-  @Column({ name: 'descripcion_marc', length: 250 })
-  descripcion: string;
+  @Column({ name: 'calidad_marc', type: 'int', default: 1 })
+  calidadMarc!: number;
 
-  @Column({ name: 'usua_ingre', length: 25, nullable: true })
-  usuarioIngreso: string;
+  @Column({
+    name: 'descripcion_marc',
+    type: 'varchar',
+    length: 250,
+    default: 'Ninguna',
+  })
+  descripcionMarc!: string;
 
-  @Column({ name: 'fecha_ingre', nullable: true })
-  fechaIngreso: Date;
+  @Column({ name: 'usua_ingre', type: 'varchar', length: 25, nullable: true })
+  usuaIngre?: string;
 
-  @Column({ name: 'usua_actua', length: 25, nullable: true })
-  usuarioActualiza: string;
+  @Column({
+    name: 'fecha_ingre',
+    type: 'timestamp',
+    nullable: true,
+    default: () => 'CURRENT_TIMESTAMP',
+  })
+  fechaIngre?: Date;
 
-  @Column({ name: 'fecha_actua', nullable: true })
-  fechaActualiza: Date;
+  @Column({ name: 'usua_actua', type: 'varchar', length: 25, nullable: true })
+  usuaActua?: string;
 
-  @OneToMany(() => Producto, (producto) => producto.marca)
-  productos: Producto[];
+  @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
+  fechaActua?: Date;
 }
+
+export { MarcaEntity as Marca };

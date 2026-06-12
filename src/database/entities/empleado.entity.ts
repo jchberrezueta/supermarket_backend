@@ -1,61 +1,91 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from 'typeorm';
-import { Rol } from './rol.entity';
-import { Cuenta } from './cuenta.entity';
-import { Venta } from './venta.entity';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity('empleado')
-export class Empleado {
+@Entity({ name: 'empleado' })
+export class EmpleadoEntity {
   @PrimaryGeneratedColumn({ name: 'ide_empl' })
-  id: number;
+  ideEmpl!: number;
 
-  @ManyToOne(() => Rol, (rol) => rol.empleados)
-  rol: Rol;
+  @Column({ name: 'ide_rol', type: 'int' })
+  ideRol!: number;
 
-  @Column({ name: 'cedula_empl', length: 15 })
-  cedula: string;
+  @Column({ name: 'cedula_empl', type: 'varchar', length: 15 })
+  cedulaEmpl!: string;
 
-  @Column({ name: 'primer_nombre_empl', length: 50 })
-  primerNombre: string;
+  @Column({ name: 'fecha_nacimiento_empl', type: 'date' })
+  fechaNacimientoEmpl!: Date;
 
-  @Column({ name: 'segundo_nombre_empl', length: 50 })
-  segundoNombre: string;
+  @Column({ name: 'edad_empl', type: 'int' })
+  edadEmpl!: number;
 
-  @Column({ name: 'apellido_paterno_empl', length: 50 })
-  apellidoPaterno: string;
+  @Column({ name: 'fecha_inicio_empl', type: 'date' })
+  fechaInicioEmpl!: Date;
 
-  @Column({ name: 'apellido_materno_empl', length: 50 })
-  apellidoMaterno: string;
+  @Column({ name: 'primer_nombre_empl', type: 'varchar', length: 50 })
+  primerNombreEmpl!: string;
 
-  @Column({ name: 'fecha_nacimiento_empl' })
-  fechaNacimiento: Date;
+  @Column({ name: 'apellido_paterno_empl', type: 'varchar', length: 50 })
+  apellidoPaternoEmpl!: string;
 
-  @Column({ name: 'edad_empl' })
-  edad: number;
+  @Column({
+    name: 'rmu_empl',
+    type: 'numeric',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
+  rmuEmpl!: string;
 
-  @Column({ name: 'fecha_inicio_empl' })
-  fechaInicio: Date;
+  @Column({
+    name: 'titulo_empl',
+    type: 'varchar',
+    length: 250,
+    default: 'libre',
+  })
+  tituloEmpl!: string;
 
-  @Column({ name: 'rmu_empl', type: 'numeric', precision: 10, scale: 2 })
-  rmu: number;
+  @Column({
+    name: 'estado_empl',
+    type: 'varchar',
+    length: 25,
+    default: 'inactivo',
+  })
+  estadoEmpl!: 'activo' | 'inactivo';
 
-  @Column({ name: 'fecha_termino_empl', nullable: true })
-  fechaTermino: Date;
+  @Column({
+    name: 'segundo_nombre_empl',
+    type: 'varchar',
+    length: 50,
+    nullable: true,
+  })
+  segundoNombreEmpl?: string;
 
-  @Column({ name: 'usua_ingre', length: 25, nullable: true })
-  usuarioIngreso: string;
+  @Column({
+    name: 'apellido_materno_empl',
+    type: 'varchar',
+    length: 50,
+    nullable: true,
+  })
+  apellidoMaternoEmpl?: string;
 
-  @Column({ name: 'fecha_ingre', nullable: true })
-  fechaIngreso: Date;
+  @Column({ name: 'fecha_termino_empl', type: 'date', nullable: true })
+  fechaTerminoEmpl?: Date;
 
-  @Column({ name: 'usua_actua', length: 25, nullable: true })
-  usuarioActualiza: string;
+  @Column({ name: 'usua_ingre', type: 'varchar', length: 25, nullable: true })
+  usuaIngre?: string;
 
-  @Column({ name: 'fecha_actua', nullable: true })
-  fechaActualiza: Date;
+  @Column({
+    name: 'fecha_ingre',
+    type: 'timestamp',
+    nullable: true,
+    default: () => 'CURRENT_TIMESTAMP',
+  })
+  fechaIngre?: Date;
 
-  @OneToMany(() => Cuenta, (cuenta) => cuenta.empleado)
-  cuentas: Cuenta[];
+  @Column({ name: 'usua_actua', type: 'varchar', length: 25, nullable: true })
+  usuaActua?: string;
 
-  @OneToMany(() => Venta, (venta) => venta.empleado)
-  ventas: Venta[];
+  @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
+  fechaActua?: Date;
 }
+
+export { EmpleadoEntity as Empleado };

@@ -7,11 +7,10 @@ import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class CuentasService {
-  
   private fnName: string = 'cuenta';
-  constructor(private readonly db: DatabaseService){}
+  constructor(private readonly db: DatabaseService) {}
 
-  async listar(){
+  async listar() {
     return this.db.executeFunctionRead(`fn_listar_${this.fnName}`);
   }
 
@@ -20,7 +19,10 @@ export class CuentasService {
   }
 
   async filtrar(queryParams: FiltroCuentaDto) {
-    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}`, queryParams.toArray());
+    return this.db.executeFunctionRead(
+      `fn_filtrar_${this.fnName}`,
+      queryParams.toArray(),
+    );
   }
 
   async eliminar(id: number) {
@@ -31,7 +33,10 @@ export class CuentasService {
     /*Encriptacion de passwords :)*/
     const hashedPassword = await this.encriptadorHash(body.passwordCuen);
     body.passwordCuen = hashedPassword;
-    return this.db.executeFunctionWrite(`fn_insertar_${this.fnName}`, body.toArray());
+    return this.db.executeFunctionWrite(
+      `fn_insertar_${this.fnName}`,
+      body.toArray(),
+    );
   }
 
   async actualizar(body: UpdateCuentaDto) {
@@ -40,46 +45,52 @@ export class CuentasService {
       const hashedPassword = await this.encriptadorHash(body.passwordCuen);
       body.passwordCuen = hashedPassword;
     }
-    return this.db.executeFunctionWrite(`fn_actualizar_${this.fnName}`, body.toArray());
+    return this.db.executeFunctionWrite(
+      `fn_actualizar_${this.fnName}`,
+      body.toArray(),
+    );
   }
 
   async encriptadorHash(value: string) {
-     const saltRounds = 10;
-     return await bcrypt.hash(value, saltRounds);
+    const saltRounds = 10;
+    return await bcrypt.hash(value, saltRounds);
   }
 
   async buscarUsuario(usuario: string) {
-    const result = await this.db.executeQuery(`SELECT * FROM CUENTA WHERE usuario_cuen LIKE '${usuario}'`);
+    const result = await this.db.executeQuery(
+      `SELECT * FROM CUENTA WHERE usuario_cuen LIKE '${usuario}'`,
+    );
     return result[0];
   }
 
-  async getPerfilPermisos(idCuenta: string){
+  async getPerfilPermisos(idCuenta: string) {
     const query = `
-      SELECT 
-        a.IDE_CUEN,
-        a.USUARIO_CUEN,
-        a.ESTADO_CUEN,
-        b.NOMBRE_PERF,
-        d.NOMBRE_OPCI,
-        d.ACTIVO_OPCI,
-        c.LISTAR,
-        c.INSERTAR,
-        c.MODIFICAR,
-        c.ELIMINAR,
-        d.RUTA_OPCI,
-        d.NOMBRE_OPCI,
-        d.NIVEL_OPCI,
-        d.PADRE_OPCI
-      FROM CUENTA a
-      LEFT JOIN PERFIL b ON (b.IDE_PERF = a.IDE_PERF)
-      LEFT JOIN PERFIL_OPCIONES c ON(c.IDE_PERF = b.IDE_PERF)
-      LEFT JOIN OPCIONES d ON(d.IDE_OPCI = c.IDE_OPCI)
-      WHERE a.IDE_CUEN = ${idCuenta}
-    `;
-    const result = await this.db.executeQuery(query);
+    SELECT 
+      a.ide_cuen,
+      a.ide_empl,
+      a.usuario_cuen,
+      a.estado_cuen,
+      b.nombre_perf,
+      d.nombre_opci,
+      d.activo_opci,
+      c.listar,
+      c.insertar,
+      c.modificar,
+      c.eliminar,
+      d.ruta_opci,
+      d.nivel_opci,
+      d.padre_opci
+    FROM cuenta a
+    LEFT JOIN perfil b ON b.ide_perf = a.ide_perf
+    LEFT JOIN perfil_opciones c ON c.ide_perf = b.ide_perf
+    LEFT JOIN opciones d ON d.ide_opci = c.ide_opci
+    WHERE a.ide_cuen = $1
+  `;
+
+    const result = await this.db.executeQuery(query, [idCuenta]);
+
     return result;
   }
-
 
   async getSidebarRutas(idCuenta: string) {
     const query = `
@@ -101,13 +112,15 @@ export class CuentasService {
   /**
    * JOINS
    */
-  async listarCuentas(){
+  async listarCuentas() {
     return this.db.executeFunctionRead(`fn_listar_${this.fnName}_perfil`);
   }
-  async filtrarCuentas(queryParams: FiltroCuentaDto){
-    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}_perfil`, queryParams.toArray());
+  async filtrarCuentas(queryParams: FiltroCuentaDto) {
+    return this.db.executeFunctionRead(
+      `fn_filtrar_${this.fnName}_perfil`,
+      queryParams.toArray(),
+    );
   }
-
 
   /**
    * COMBOS
@@ -169,5 +182,4 @@ export class CuentasService {
     const result = await this.db.executeQuery(query);
     return result[0].json_build_object.data;
   }
-
 }

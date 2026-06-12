@@ -1,33 +1,37 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { Empleado } from './empleado.entity';
-import { Perfil } from './perfil.entity';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity('rol')
-export class Rol {
+@Entity({ name: 'rol' })
+export class RolEntity {
   @PrimaryGeneratedColumn({ name: 'ide_rol' })
-  id: number;
+  ideRol!: number;
 
-  @Column({ name: 'nombre_rol', length: 250 })
-  nombre: string;
+  @Column({ name: 'nombre_rol', type: 'varchar', length: 100 })
+  nombreRol!: string;
 
-  @Column({ name: 'descripcion_rol', length: 250 })
-  descripcion: string;
+  @Column({
+    name: 'descripcion_rol',
+    type: 'varchar',
+    length: 250,
+    default: 'Ninguna',
+  })
+  descripcionRol!: string;
 
-  @Column({ name: 'usua_ingre', length: 25, nullable: true })
-  usuarioIngreso: string;
+  @Column({ name: 'usua_ingre', type: 'varchar', length: 25, nullable: true })
+  usuaIngre?: string;
 
-  @Column({ name: 'fecha_ingre', nullable: true })
-  fechaIngreso: Date;
+  @Column({
+    name: 'fecha_ingre',
+    type: 'timestamp',
+    nullable: true,
+    default: () => 'CURRENT_TIMESTAMP',
+  })
+  fechaIngre?: Date;
 
-  @Column({ name: 'usua_actua', length: 25, nullable: true })
-  usuarioActualiza: string;
+  @Column({ name: 'usua_actua', type: 'varchar', length: 25, nullable: true })
+  usuaActua?: string;
 
-  @Column({ name: 'fecha_actua', nullable: true })
-  fechaActualiza: Date;
-
-  @OneToMany(() => Empleado, (empleado) => empleado.rol)
-  empleados: Empleado[];
-
-  @OneToMany(() => Perfil, (perfil) => perfil.rol)
-  perfiles: Perfil[];
+  @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
+  fechaActua?: Date;
 }
+
+export { RolEntity as Rol };

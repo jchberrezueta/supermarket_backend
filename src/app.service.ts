@@ -3,8 +3,7 @@ import { DatabaseService } from '@database';
 
 @Injectable()
 export class AppService {
-
-  constructor(private db:DatabaseService){}
+  constructor(private db: DatabaseService) {}
 
   getHello(): string {
     return 'Hola, lo vamos a lograr :)';
@@ -22,5 +21,4 @@ export class AppService {
       </html>
     `;
   }
-
 }

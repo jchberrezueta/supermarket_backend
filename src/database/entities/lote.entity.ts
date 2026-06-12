@@ -1,20 +1,26 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
-import { Producto } from './producto.entity';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity('lote')
-export class Lote {
+@Entity({ name: 'lote' })
+export class LoteEntity {
   @PrimaryGeneratedColumn({ name: 'ide_lote' })
-  id: number;
+  ideLote!: number;
 
-  @ManyToOne(() => Producto, (producto) => producto.lotes)
-  producto: Producto;
+  @Column({ name: 'ide_prod', type: 'int' })
+  ideProd!: number;
 
-  @Column({ name: 'stock_lote' })
-  stock: number;
+  @Column({ name: 'fecha_caducidad_lote', type: 'date' })
+  fechaCaducidadLote!: Date;
 
-  @Column({ name: 'estado_lote', length: 100 })
-  estado: string;
+  @Column({ name: 'stock_lote', type: 'int', default: 0 })
+  stockLote!: number;
 
-  @Column({ name: 'fecha_caducidad_lote' })
-  fechaCaducidad: Date;
+  @Column({
+    name: 'estado_lote',
+    type: 'varchar',
+    length: 25,
+    default: 'correcto',
+  })
+  estadoLote!: 'correcto' | 'proximo' | 'caducado' | 'devuelto';
 }
+
+export { LoteEntity as Lote };

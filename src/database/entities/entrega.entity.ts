@@ -1,46 +1,63 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from 'typeorm';
-import { Proveedor } from './proveedor.entity';
-import { Pedido } from './pedido.entity';
-import { DetalleEntrega } from './detalle_entrega.entity';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity('entrega')
-export class Entrega {
+@Entity({ name: 'entrega' })
+export class EntregaEntity {
   @PrimaryGeneratedColumn({ name: 'ide_entr' })
-  id: number;
+  ideEntr!: number;
 
-  @ManyToOne(() => Proveedor, (proveedor) => proveedor.entregas)
-  proveedor: Proveedor;
+  @Column({ name: 'ide_pedi', type: 'int' })
+  idePedi!: number;
 
-  @ManyToOne(() => Pedido, (pedido) => pedido.entregas)
-  pedido: Pedido;
+  @Column({ name: 'ide_prov', type: 'int' })
+  ideProv!: number;
 
-  @Column({ name: 'fecha_entr' })
-  fecha: Date;
+  @Column({ name: 'fecha_entr', type: 'timestamp' })
+  fechaEntr!: Date;
 
-  @Column({ name: 'cantidad_total_entr' })
-  cantidadTotal: number;
+  @Column({ name: 'cantidad_total_entr', type: 'int' })
+  cantidadTotalEntr!: number;
 
-  @Column({ name: 'total_entr', type: 'numeric', precision: 10, scale: 2 })
-  total: number;
+  @Column({
+    name: 'total_entr',
+    type: 'numeric',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
+  totalEntr!: string;
 
-  @Column({ name: 'estado_entr', length: 25 })
-  estado: string;
+  @Column({
+    name: 'estado_entr',
+    type: 'varchar',
+    length: 25,
+    default: 'incompleto',
+  })
+  estadoEntr!: 'completo' | 'incompleto';
 
-  @Column({ name: 'observacion_entr', length: 250 })
-  observacion: string;
+  @Column({
+    name: 'observacion_entr',
+    type: 'varchar',
+    length: 250,
+    default: 'Ninguna',
+  })
+  observacionEntr!: string;
 
-  @Column({ name: 'usua_ingre', length: 25, nullable: true })
-  usuarioIngreso: string;
+  @Column({ name: 'usua_ingre', type: 'varchar', length: 25, nullable: true })
+  usuaIngre?: string;
 
-  @Column({ name: 'fecha_ingre', nullable: true })
-  fechaIngreso: Date;
+  @Column({
+    name: 'fecha_ingre',
+    type: 'timestamp',
+    nullable: true,
+    default: () => 'CURRENT_TIMESTAMP',
+  })
+  fechaIngre?: Date;
 
-  @Column({ name: 'usua_actua', length: 25, nullable: true })
-  usuarioActualiza: string;
+  @Column({ name: 'usua_actua', type: 'varchar', length: 25, nullable: true })
+  usuaActua?: string;
 
-  @Column({ name: 'fecha_actua', nullable: true })
-  fechaActualiza: Date;
-
-  @OneToMany(() => DetalleEntrega, (detalle) => detalle.entrega)
-  detalles: DetalleEntrega[];
+  @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
+  fechaActua?: Date;
 }
+
+export { EntregaEntity as Entrega };
