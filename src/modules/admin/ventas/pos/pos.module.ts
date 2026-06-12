@@ -9,6 +9,9 @@ import {
 import { PosController } from './pos.controller';
 import { PosRepository } from './pos.repository';
 import { PosService } from './pos.service';
+import { PosScanController } from './pos-scan.controller';
+import { PosScanGateway } from './pos-scan.gateway';
+import { PosScanService } from './pos-scan.service';
 
 @Module({
   imports: [
@@ -19,7 +22,7 @@ import { PosService } from './pos.service';
       DetalleVentaEntity,
     ]),
   ],
-  controllers: [PosController],
-  providers: [PosService, PosRepository],
+  controllers: [PosController, PosScanController],
+  providers: [PosService, PosRepository, PosScanService, PosScanGateway],
 })
 export class PosModule {}
