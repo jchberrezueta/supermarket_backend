@@ -1,11 +1,30 @@
 import { Module } from '@nestjs/common';
-import { DatabaseModule } from '@database';
-import {EntregasController} from './entregas.controller';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import {
+  DetalleEntregaEntity,
+  EmpresaEntity,
+  EntregaEntity,
+  PedidoEntity,
+  ProductoEntity,
+  ProveedorEntity,
+} from '@entities';
+import { EntregasController } from './entregas.controller';
+import { EntregasMapper } from './entregas.mapper';
+import { EntregasRepository } from './entregas.repository';
 import { EntregasService } from './entregas.service';
 
 @Module({
-    imports: [DatabaseModule],
-    controllers: [EntregasController],
-    providers: [EntregasService]
+  imports: [
+    TypeOrmModule.forFeature([
+      EntregaEntity,
+      DetalleEntregaEntity,
+      PedidoEntity,
+      ProveedorEntity,
+      EmpresaEntity,
+      ProductoEntity,
+    ]),
+  ],
+  controllers: [EntregasController],
+  providers: [EntregasService, EntregasRepository, EntregasMapper],
 })
 export class EntregasModule {}

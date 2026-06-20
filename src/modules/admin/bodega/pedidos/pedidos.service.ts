@@ -1,136 +1,273 @@
-import { DatabaseService } from '@database';
-import { Injectable } from '@nestjs/common';
-import { FilterPedidoDTO } from './dto/filter_pedido.dto';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { ApiResponseFactory, ComboMapper, MoneyUtil } from '@common/index';
+import { DataSource } from 'typeorm';
 import { CreatePedidoDTO } from './dto/create_pedido.dto';
-import { UpdatePedidoDTO } from './dto/update_pedido.dto';
 import { CreatePedidoDetalleDTO } from './dto/create_pedido_detalle.dto';
+import { FilterPedidoDTO } from './dto/filter_pedido.dto';
+import { UpdatePedidoDTO } from './dto/update_pedido.dto';
+import { PedidosMapper } from './pedidos.mapper';
+import { PedidosRepository } from './pedidos.repository';
+
+interface TotalesPedidoCalculados {
+  cantidadTotalPedi: number;
+  totalPedi: number;
+}
 
 @Injectable()
 export class PedidosService {
-  private fnName: string = 'pedido';
-  private fnName2: string = 'detalle_pedido';
+  constructor(
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
+    private readonly pedidosRepository: PedidosRepository,
+  ) {}
 
-  constructor(private readonly db: DatabaseService){}
+  async listar() {
+    const pedidos = await this.dataSource.transaction((manager) =>
+      this.pedidosRepository.listar(manager),
+    );
 
-  async listar(){
-    return this.db.executeFunctionRead(`fn_listar_${this.fnName}_empresa`);
+    return ApiResponseFactory.legacyRead(
+      PedidosMapper.toRows(pedidos),
+      'Listado de pedidos obtenido',
+    );
   }
 
-  async buscar(id:number){
-    return this.db.executeFunctionRead(`fn_buscar_${this.fnName}`, [id]);
-  }
+  async buscar(id: number) {
+    const idePedi = Number(id);
 
-  async filtrar(queryParams: FilterPedidoDTO){
-    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}`, queryParams.toArray());
-  }
-
-  async insertar(body: CreatePedidoDTO){
-    const result = await this.db.executeFunctionWrite(`fn_insertar_${this.fnName}`, body.cabeceraPedido.toArray());
-    body.detallePedido.forEach( obj => {
-      const data = obj.toArray(); data.unshift(result.p_id);
-      this.db.executeFunctionWrite(`fn_insertar_${this.fnName2}`, data);
-    });
-    return result;
-  }
-
-  async actualizar(body: UpdatePedidoDTO){
-    const idPedi = body.cabeceraPedido.idePedi;
-    // Actualizar cabecera
-    const result = await this.db.executeFunctionWrite(`fn_actualizar_${this.fnName}`, body.cabeceraPedido.toArray());
-    // Eliminar detalles anteriores
-    await this.db.executeQuery(`DELETE FROM detalle_pedido WHERE ide_pedi = $1`, [idPedi]);
-    // Insertar nuevos detalles
-    for (const obj of body.detallePedido) {
-      const detalle = new CreatePedidoDetalleDTO();
-      Object.assign(detalle, obj);
-      const data = detalle.toArray();
-      data.unshift(idPedi);
-      await this.db.executeFunctionWrite(`fn_insertar_${this.fnName2}`, data);
+    if (!idePedi || Number.isNaN(idePedi)) {
+      throw new BadRequestException('El ID del pedido no es válido.');
     }
-    return result;
+
+    const pedido = await this.dataSource.transaction((manager) =>
+      this.pedidosRepository.buscarPorId(idePedi, manager),
+    );
+
+    return ApiResponseFactory.legacyRead(
+      pedido ? [PedidosMapper.toRow(pedido)] : [],
+      'Pedido encontrado',
+    );
   }
 
-  async eliminar(id: number){
-    return this.db.executeFunctionWrite(`fn_eliminar_${this.fnName}`, [id]);
+  async filtrar(queryParams: FilterPedidoDTO) {
+    const pedidos = await this.dataSource.transaction((manager) =>
+      this.pedidosRepository.filtrar(queryParams, manager),
+    );
+
+    return ApiResponseFactory.legacyRead(
+      PedidosMapper.toRows(pedidos),
+      'Filtrado de pedidos completado',
+    );
   }
 
+  async insertar(body: CreatePedidoDTO) {
+    this.validarDetallePedido(body.detallePedido);
+
+    try {
+      const pedido = await this.dataSource.transaction(async (manager) => {
+        const totales = this.calcularTotalesDesdeDetalle(body.detallePedido);
+
+        const pedidoCreado = await this.pedidosRepository.crearPedido(
+          body.cabeceraPedido,
+          totales,
+          manager,
+        );
+
+        await this.pedidosRepository.reemplazarDetalles(
+          pedidoCreado.idePedi,
+          body.detallePedido,
+          manager,
+        );
+
+        return pedidoCreado;
+      });
+
+      return ApiResponseFactory.legacyWrite(
+        1,
+        'Pedido registrado correctamente',
+        pedido.idePedi,
+      );
+    } catch (error) {
+      return ApiResponseFactory.legacyWrite(
+        0,
+        error?.message || 'No se pudo registrar el pedido.',
+      );
+    }
+  }
+
+  async actualizar(body: UpdatePedidoDTO) {
+    this.validarDetallePedido(body.detallePedido);
+
+    const idePedi = Number(body.cabeceraPedido.idePedi);
+
+    if (!idePedi || Number.isNaN(idePedi)) {
+      throw new BadRequestException('El ID del pedido no es válido.');
+    }
+
+    try {
+      const pedido = await this.dataSource.transaction(async (manager) => {
+        const pedidoActual = await this.pedidosRepository.buscarPorIdForUpdate(
+          idePedi,
+          manager,
+        );
+
+        if (!pedidoActual) {
+          throw new NotFoundException('No se encontró el pedido indicado.');
+        }
+
+        const totales = this.calcularTotalesDesdeDetalle(body.detallePedido);
+
+        const pedidoActualizado = await this.pedidosRepository.actualizarPedido(
+          pedidoActual,
+          body.cabeceraPedido,
+          totales,
+          manager,
+        );
+
+        await this.pedidosRepository.reemplazarDetalles(
+          pedidoActualizado.idePedi,
+          body.detallePedido,
+          manager,
+        );
+
+        return pedidoActualizado;
+      });
+
+      return ApiResponseFactory.legacyWrite(
+        1,
+        'Pedido actualizado correctamente',
+        pedido.idePedi,
+      );
+    } catch (error) {
+      return ApiResponseFactory.legacyWrite(
+        0,
+        error?.message || 'No se pudo actualizar el pedido.',
+      );
+    }
+  }
+
+  async eliminar(id: number) {
+    const idePedi = Number(id);
+
+    if (!idePedi || Number.isNaN(idePedi)) {
+      throw new BadRequestException('El ID del pedido no es válido.');
+    }
+
+    try {
+      const affected = await this.dataSource.transaction((manager) =>
+        this.pedidosRepository.eliminarPedidoConDetalles(idePedi, manager),
+      );
+
+      if (affected === 0) {
+        return ApiResponseFactory.legacyWrite(
+          0,
+          'No se encontró el pedido indicado.',
+        );
+      }
+
+      return ApiResponseFactory.legacyWrite(
+        1,
+        'Pedido eliminado correctamente',
+      );
+    } catch (error) {
+      return ApiResponseFactory.legacyWrite(
+        0,
+        error?.message || 'No se pudo eliminar el pedido.',
+      );
+    }
+  }
 
   /**
    * JOINS
    */
-  async listarPedidos(){
-    return this.db.executeFunctionRead(`fn_listar_${this.fnName}_empresa`);
-  }
-  async filtrarPedidos(queryParams: FilterPedidoDTO){
-    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}_empresa`, queryParams.toArray());
+  async listarPedidos() {
+    return this.listar();
   }
 
-  async listarDetallesPedido(idPedido: number){
-    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName2}`, [idPedido, null]);
+  async filtrarPedidos(queryParams: FilterPedidoDTO) {
+    return this.filtrar(queryParams);
+  }
+
+  async listarDetallesPedido(idPedido: number) {
+    const idePedi = Number(idPedido);
+
+    if (!idePedi || Number.isNaN(idePedi)) {
+      throw new BadRequestException('El ID del pedido no es válido.');
+    }
+
+    const detalles = await this.dataSource.transaction((manager) =>
+      this.pedidosRepository.listarDetallesPorPedido(idePedi, manager),
+    );
+
+    return ApiResponseFactory.legacyRead(
+      PedidosMapper.toDetalleRows(detalles),
+      'Filtrado de detalles de pedido completado',
+    );
   }
 
   /**
    * COMBOS
    */
   async listarComboEstados() {
-    const query = 
-    `
-      SELECT json_build_object(
-        'data', json_agg(
-          json_build_object(
-            'label', estado,
-            'value', estado
-          )
-        )
-      )
-      FROM (
-        SELECT 'progreso'   AS estado
-        UNION ALL
-        SELECT 'completado'
-        UNION ALL
-        SELECT 'incompleto'
-      ) t;
-    `;
-    const result = await this.db.executeQuery(query);
-    return result[0].json_build_object.data;
+    return ComboMapper.fromValues(['progreso', 'completado', 'incompleto']);
   }
 
   async listarComboMotivos() {
-    const query = 
-    `
-      SELECT json_build_object(
-        'data', json_agg(
-          json_build_object(
-            'label', motivo,
-            'value', motivo
-          )
-        )
-      )
-      FROM (
-        SELECT 'peticion'   AS motivo
-        UNION ALL
-        SELECT 'devolucion'
-      ) t;
-    `;
-    const result = await this.db.executeQuery(query);
-    return result[0].json_build_object.data;
+    return ComboMapper.fromValues(['peticion', 'devolucion']);
   }
 
   async listarComboPedidos() {
-    const query = 
-    `
-      SELECT json_build_object(
-        'data', COALESCE(json_agg(
-          json_build_object(
-            'label', CONCAT('Pedido #', p.ide_pedi, ' - ', e.nombre_empr),
-            'value', p.ide_pedi
-          ) ORDER BY p.ide_pedi DESC
-        ), '[]'::json)
-      )
-      FROM pedido p
-      INNER JOIN empresa e ON p.ide_empr = e.ide_empr;
-    `;
-    const result = await this.db.executeQuery(query);
-    return result[0].json_build_object.data;
+    const pedidos = await this.dataSource.transaction((manager) =>
+      this.pedidosRepository.listar(manager),
+    );
+
+    return ComboMapper.fromEntities(
+      pedidos,
+      (pedido) =>
+        `Pedido #${pedido.idePedi} - ${pedido.empresa?.nombreEmpr ?? 'Empresa'}`,
+      (pedido) => pedido.idePedi,
+    );
+  }
+
+  private validarDetallePedido(detalles: CreatePedidoDetalleDTO[]): void {
+    if (!Array.isArray(detalles) || detalles.length === 0) {
+      throw new BadRequestException(
+        'Debe agregar al menos un producto al pedido.',
+      );
+    }
+
+    for (const detalle of detalles) {
+      if (!detalle.ideProd || detalle.ideProd <= 0) {
+        throw new BadRequestException(
+          'Todos los detalles deben tener un producto válido.',
+        );
+      }
+
+      if (!detalle.cantidadProd || detalle.cantidadProd <= 0) {
+        throw new BadRequestException(
+          'Todos los detalles deben tener una cantidad válida.',
+        );
+      }
+    }
+  }
+
+  private calcularTotalesDesdeDetalle(
+    detalles: CreatePedidoDetalleDTO[],
+  ): TotalesPedidoCalculados {
+    return detalles.reduce<TotalesPedidoCalculados>(
+      (totales, detalle) => ({
+        cantidadTotalPedi: totales.cantidadTotalPedi + detalle.cantidadProd,
+        totalPedi: MoneyUtil.add(totales.totalPedi, detalle.totalProd),
+      }),
+      {
+        cantidadTotalPedi: 0,
+        totalPedi: 0,
+      },
+    );
   }
 }

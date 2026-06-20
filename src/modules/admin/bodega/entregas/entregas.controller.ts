@@ -1,71 +1,87 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { RolesGuard } from 'src/modules/auth/roles.guard';
 import { Roles } from 'src/modules/auth/roles.decorator';
-import { EntregasService } from './entregas.service';
-import { FilterEntregaDTO } from './dto/filter_entrega.dto';
+import { RolesGuard } from 'src/modules/auth/roles.guard';
 import { CreateEntregaDTO } from './dto/create_entrega.dto';
+import { FilterEntregaDTO } from './dto/filter_entrega.dto';
 import { UpdateEntregaDTO } from './dto/update_entrega.dto';
-
+import { EntregasService } from './entregas.service';
 
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 @Roles('padmin', 'pbodega')
 @Controller('entregas')
 export class EntregasController {
-    constructor(private servicio: EntregasService) {}
+  constructor(private readonly entregasService: EntregasService) {}
 
-    @Get()
-    async listar() {
-        console.log('lo logramos :)');
-        return this.servicio.listar(); 
-    }
+  @Get()
+  async listar() {
+    return this.entregasService.listar();
+  }
 
-    @Get('buscar/:id')
-    async buscar(@Param('id') id:number) {
-        return this.servicio.buscar(id); 
-    }
+  @Get('buscar/:id')
+  async buscar(@Param('id', ParseIntPipe) id: number) {
+    return this.entregasService.buscar(id);
+  }
 
-    @Get('filtrar')
-    async filtrar(@Query() queryParams: FilterEntregaDTO) {
-        console.log(':)');
-        return this.servicio.filtrar(queryParams); 
-    }
+  @Get('filtrar')
+  async filtrar(@Query() queryParams: FilterEntregaDTO) {
+    return this.entregasService.filtrar(queryParams);
+  }
 
-    @Post('insertar')
-    async insertar(@Body() body: CreateEntregaDTO) {
-        return this.servicio.insertar(body); 
-    }
+  @Post('insertar')
+  async insertar(@Body() body: CreateEntregaDTO) {
+    return this.entregasService.insertar(body);
+  }
 
-    @Put('actualizar/:id')
-    async actualizar(
-        @Param('id') id: number, 
-        @Body() body: UpdateEntregaDTO
-    ) {
-        return this.servicio.actualizar(body); 
-    }
+  @Put('actualizar/:id')
+  async actualizar(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: UpdateEntregaDTO,
+  ) {
+    body.cabeceraEntrega.ideEntr = id;
 
-    @Delete('eliminar/:id')
-    async eliminar(@Param('id') id:number) {
-        return this.servicio.eliminar(id); 
-    }
+    return this.entregasService.actualizar(body);
+  }
 
-    /**
-     * JOINS
-     */
-    @Get('listar/entregas')
-    async listarEntregas() {
-        return this.servicio.listarEntregas(); 
-    }
-    @Get('filtrar/pedidos')
-    async filtrarEntregas(@Query() queryParams: FilterEntregaDTO) {
-        return this.servicio.filtrarEntregas(queryParams); 
-    }
+  @Delete('eliminar/:id')
+  async eliminar(@Param('id', ParseIntPipe) id: number) {
+    return this.entregasService.eliminar(id);
+  }
 
-    /**
-     * COMBOS
-     */
-    @Get('listar/combo/estados')
-    async listarComboEstados() {
-        return this.servicio.listarComboEstados(); 
-    }
+  /**
+   * JOINS
+   */
+  @Get('listar/entregas')
+  async listarEntregas() {
+    return this.entregasService.listarEntregas();
+  }
+
+  @Get('filtrar/pedidos')
+  async filtrarEntregas(@Query() queryParams: FilterEntregaDTO) {
+    return this.entregasService.filtrarEntregas(queryParams);
+  }
+
+  @Get('listar/detalles/:id')
+  async listarDetallesEntrega(@Param('id', ParseIntPipe) id: number) {
+    return this.entregasService.listarDetallesEntrega(id);
+  }
+
+  /**
+   * COMBOS
+   */
+  @Get('listar/combo/estados')
+  async listarComboEstados() {
+    return this.entregasService.listarComboEstados();
+  }
 }

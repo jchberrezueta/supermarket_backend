@@ -4,59 +4,63 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Post,
   Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { RolesGuard } from 'src/modules/auth/roles.guard';
 import { Roles } from 'src/modules/auth/roles.decorator';
-import { VentasService } from './ventas.service';
-import { FilterVentaDTO } from './dto/filter_venta.dto';
+import { RolesGuard } from 'src/modules/auth/roles.guard';
 import { CreateVentaDTO } from './dto/create_venta.dto';
+import { FilterVentaDTO } from './dto/filter_venta.dto';
 import { UpdateVentaDTO } from './dto/update_venta.dto';
+import { VentasService } from './ventas.service';
 
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 @Roles('padmin', 'pventas')
 @Controller('ventas')
 export class VentasController {
-  constructor(private servicio: VentasService) {}
+  constructor(private readonly ventasService: VentasService) {}
 
   @Get()
   async listar() {
-    console.log('lo logramos :)');
-    return this.servicio.listar();
+    return this.ventasService.listar();
   }
 
   @Get('buscar/:id')
-  async buscar(@Param('id') id: number) {
-    return this.servicio.buscar(id);
+  async buscar(@Param('id', ParseIntPipe) id: number) {
+    return this.ventasService.buscar(id);
   }
 
   @Get('filtrar')
   async filtrar(@Query() queryParams: FilterVentaDTO) {
-    console.log(':)');
-    return this.servicio.filtrar(queryParams);
+    return this.ventasService.filtrar(queryParams);
   }
 
   @Post('insertar')
   async insertar(@Body() body: CreateVentaDTO) {
-    return this.servicio.insertar(body);
+    return this.ventasService.insertar(body);
   }
 
   @Put('actualizar/:id')
-  async actualizar(@Param('id') id: number, @Body() body: UpdateVentaDTO) {
-    return this.servicio.actualizar(body);
+  async actualizar(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: UpdateVentaDTO,
+  ) {
+    body.cabeceraVenta.ideVent = id;
+
+    return this.ventasService.actualizar(body);
   }
 
   @Delete('eliminar/:id')
-  async eliminar(@Param('id') id: number) {
-    return this.servicio.eliminar(id);
+  async eliminar(@Param('id', ParseIntPipe) id: number) {
+    return this.ventasService.eliminar(id);
   }
 
   @Get('detalles/:id')
-  async buscarDetallesVenta(@Param('id') id: number) {
-    return this.servicio.buscarDetallesVenta(id);
+  async buscarDetallesVenta(@Param('id', ParseIntPipe) id: number) {
+    return this.ventasService.buscarDetallesVenta(id);
   }
 }
