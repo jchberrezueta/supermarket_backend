@@ -2,6 +2,7 @@ export * from './acceso_usuario.entity';
 export * from './categoria.entity';
 export * from './cliente.entity';
 export * from './cuenta.entity';
+export * from './cuenta_cliente.entity';
 export * from './detalle_entrega.entity';
 export * from './detalle_pedido.entity';
 export * from './detalle_venta.entity';

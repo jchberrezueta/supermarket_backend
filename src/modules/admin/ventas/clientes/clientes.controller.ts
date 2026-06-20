@@ -1,93 +1,102 @@
-import { Controller, Get, Post, Patch, Delete, Body, UseGuards, Put, Param, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { Roles } from 'src/modules/auth/roles.decorator';
 import { RolesGuard } from 'src/modules/auth/roles.guard';
-import { AuthGuard } from '@nestjs/passport';
 import { ClientesService } from './clientes.service';
-import { FilterClienteDTO } from './dto/filter_cliente.dto';
 import { CreateClienteDTO } from './dto/create_cliente.dto';
+import { FilterClienteDTO } from './dto/filter_cliente.dto';
 import { UpdateClienteDTO } from './dto/update_cliente.dto';
-import { toArray } from 'rxjs';
 
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 @Roles('padmin', 'pventas')
 @Controller('clientes')
 export class ClientesController {
+  constructor(private readonly clientesService: ClientesService) {}
 
-    constructor(private servicio: ClientesService) {}
+  @Get()
+  async listar() {
+    return this.clientesService.listar();
+  }
 
-    @Get()
-    async listar() {
-        console.log('lo logramos :)');
-        return this.servicio.listar(); 
-    }
+  @Get('buscar/:id')
+  async buscar(@Param('id', ParseIntPipe) id: number) {
+    return this.clientesService.buscar(id);
+  }
 
-    @Get('buscar/:id')
-    async buscar(@Param('id') id:number) {
-        return this.servicio.buscar(id); 
-    }
+  @Get('filtrar')
+  async filtrar(@Query() queryParams: FilterClienteDTO) {
+    return this.clientesService.filtrar(queryParams);
+  }
 
-    @Get('filtrar')
-    async filtrar(@Query() queryParams: FilterClienteDTO) {
-        return this.servicio.filtrar(queryParams); 
-    }
+  @Post('insertar')
+  async insertar(@Body() body: CreateClienteDTO) {
+    return this.clientesService.insertar(body);
+  }
 
-    @Post('insertar')
-    async insertar(@Body() body: CreateClienteDTO) {
-        return this.servicio.insertar(body); 
-    }
+  @Put('actualizar/:id')
+  async actualizar(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: UpdateClienteDTO,
+  ) {
+    body.ideClie = id;
 
-    @Put('actualizar/:id')
-    async actualizar(
-        @Param('id') id: number,
-        @Body() body: UpdateClienteDTO
-    ) {
-        return this.servicio.actualizar(body); 
-    }
+    return this.clientesService.actualizar(body);
+  }
 
-    @Delete('eliminar/:id')
-    async eliminar(@Param('id') id:number) {
-        return this.servicio.eliminar(id); 
-    }
+  @Delete('eliminar/:id')
+  async eliminar(@Param('id', ParseIntPipe) id: number) {
+    return this.clientesService.eliminar(id);
+  }
 
-    /**
-     * JOINS
-     */
-    @Get('listar/clientes')
-    async listarClientes() {
-        return this.servicio.listarClientes(); 
-    }
+  /**
+   * JOINS
+   */
+  @Get('listar/clientes')
+  async listarClientes() {
+    return this.clientesService.listarClientes();
+  }
 
-    /**
-     * COMBOS
-     */
-    @Get('listar/combo/clientes')
-    async listarComboClientes() {
-        return this.servicio.listarComboClientes(); 
-    }
+  /**
+   * COMBOS
+   */
+  @Get('listar/combo/clientes')
+  async listarComboClientes() {
+    return this.clientesService.listarComboClientes();
+  }
 
-    @Get('listar/combo/cedulas')
-    async listarComboCedulas() {
-        return this.servicio.listarComboCedulas(); 
-    }
+  @Get('listar/combo/cedulas')
+  async listarComboCedulas() {
+    return this.clientesService.listarComboCedulas();
+  }
 
-    @Get('listar/combo/nombres')
-    async listarComboNombres() {
-        return this.servicio.listarComboNombres(); 
-    }
+  @Get('listar/combo/nombres')
+  async listarComboNombres() {
+    return this.clientesService.listarComboNombres();
+  }
 
-    @Get('listar/combo/apellidos')
-    async listarComboApellidos() {
-        return this.servicio.listarComboApellidos(); 
-    }
+  @Get('listar/combo/apellidos')
+  async listarComboApellidos() {
+    return this.clientesService.listarComboApellidos();
+  }
 
-    @Get('listar/combo/socios')
-    async listarComboSocio() {
-        return this.servicio.listarComboSocio(); 
-    }
+  @Get('listar/combo/socios')
+  async listarComboSocio() {
+    return this.clientesService.listarComboSocio();
+  }
 
-    @Get('listar/combo/tercera/edad')
-    async listarComboTerceraEdad() {
-        return this.servicio.listarComboTerceraEdad(); 
-    }
-    
+  @Get('listar/combo/tercera/edad')
+  async listarComboTerceraEdad() {
+    return this.clientesService.listarComboTerceraEdad();
+  }
 }

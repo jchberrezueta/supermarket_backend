@@ -1,4 +1,5 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { CuentaClienteEntity } from './cuenta_cliente.entity';
 import { VentaEntity } from './venta.entity';
 
 @Entity({ name: 'cliente' })
@@ -49,7 +50,7 @@ export class ClienteEntity {
     length: 50,
     nullable: true,
   })
-  segundoNombreClie?: string;
+  segundoNombreClie?: string | null;
 
   @Column({
     name: 'apellido_materno_clie',
@@ -57,7 +58,7 @@ export class ClienteEntity {
     length: 50,
     nullable: true,
   })
-  apellidoMaternoClie?: string;
+  apellidoMaternoClie?: string | null;
 
   @Column({ name: 'usua_ingre', type: 'varchar', length: 25, nullable: true })
   usuaIngre?: string;
@@ -78,6 +79,12 @@ export class ClienteEntity {
 
   @OneToMany(() => VentaEntity, (venta) => venta.cliente)
   ventas?: VentaEntity[];
+
+  @OneToMany(
+    () => CuentaClienteEntity,
+    (cuentaCliente) => cuentaCliente.cliente,
+  )
+  cuentasCliente?: CuentaClienteEntity[];
 }
 
 export { ClienteEntity as Cliente };
