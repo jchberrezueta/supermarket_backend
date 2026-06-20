@@ -1,103 +1,178 @@
-import { Injectable } from '@nestjs/common';
-import {DatabaseService} from '@database';
-import { FilterRolDTO } from './dto/filter_rol.dto';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { ApiResponseFactory, ComboMapper } from '@common/index';
+import { DataSource } from 'typeorm';
 import { CreateRolDTO } from './dto/create_rol.dto';
+import { FilterRolDTO } from './dto/filter_rol.dto';
 import { UpdateRolDTO } from './dto/update_rol.dto';
-
+import { RolesMapper } from './roles.mapper';
+import { RolesRepository } from './roles.repository';
 
 @Injectable()
 export class RolesService {
-  
-  private fnName: string = 'rol';
-  constructor(private readonly db: DatabaseService){}
+  constructor(
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
+    private readonly rolesRepository: RolesRepository,
+  ) {}
 
-  async listar(){
-    return this.db.executeFunctionRead(`fn_listar_${this.fnName}`);
+  async listar() {
+    const roles = await this.dataSource.transaction((manager) =>
+      this.rolesRepository.listar(manager),
+    );
+
+    return ApiResponseFactory.legacyRead(
+      RolesMapper.toRows(roles),
+      'Listado de roles obtenido',
+    );
   }
 
-  async buscar(id:number){
-    return this.db.executeFunctionRead(`fn_buscar_${this.fnName}`, [id]);
+  async buscar(id: number) {
+    const ideRol = Number(id);
+
+    if (!ideRol || Number.isNaN(ideRol)) {
+      throw new BadRequestException('El ID del rol no es válido.');
+    }
+
+    const rol = await this.dataSource.transaction((manager) =>
+      this.rolesRepository.buscarPorId(ideRol, manager),
+    );
+
+    return ApiResponseFactory.legacyRead(
+      rol ? [RolesMapper.toRow(rol)] : [],
+      'Rol encontrado',
+    );
   }
 
-  async filtrar(queryParams: FilterRolDTO){
-    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}`, queryParams.toArray());
+  async filtrar(queryParams: FilterRolDTO) {
+    const roles = await this.dataSource.transaction((manager) =>
+      this.rolesRepository.filtrar(queryParams, manager),
+    );
+
+    return ApiResponseFactory.legacyRead(
+      RolesMapper.toRows(roles),
+      'Filtrado de roles completado',
+    );
   }
 
-  async insertar(body:CreateRolDTO){
-    return this.db.executeFunctionWrite(`fn_insertar_${this.fnName}`, body.toArray());
+  async insertar(body: CreateRolDTO) {
+    try {
+      const rol = await this.dataSource.transaction((manager) =>
+        this.rolesRepository.crear(body, manager),
+      );
+
+      return ApiResponseFactory.legacyWrite(
+        1,
+        'Rol registrado correctamente',
+        rol.ideRol,
+      );
+    } catch (error) {
+      return ApiResponseFactory.legacyWrite(
+        0,
+        error?.message || 'No se pudo registrar el rol.',
+      );
+    }
   }
 
-  async actualizar(body:UpdateRolDTO){
-    return this.db.executeFunctionWrite(`fn_actualizar_${this.fnName}`, body.toArray());
+  async actualizar(body: UpdateRolDTO) {
+    const ideRol = Number(body.ideRol);
+
+    if (!ideRol || Number.isNaN(ideRol)) {
+      throw new BadRequestException('El ID del rol no es válido.');
+    }
+
+    try {
+      const rol = await this.dataSource.transaction(async (manager) => {
+        const rolActual = await this.rolesRepository.buscarPorId(
+          ideRol,
+          manager,
+        );
+
+        if (!rolActual) {
+          throw new Error('No se encontró el rol indicado.');
+        }
+
+        return this.rolesRepository.actualizar(rolActual, body, manager);
+      });
+
+      return ApiResponseFactory.legacyWrite(
+        1,
+        'Rol actualizado correctamente',
+        rol.ideRol,
+      );
+    } catch (error) {
+      return ApiResponseFactory.legacyWrite(
+        0,
+        error?.message || 'No se pudo actualizar el rol.',
+      );
+    }
   }
 
-  async eliminar(id:number){
-    return this.db.executeFunctionWrite(`fn_eliminar_${this.fnName}`, [id]);
+  async eliminar(id: number) {
+    const ideRol = Number(id);
+
+    if (!ideRol || Number.isNaN(ideRol)) {
+      throw new BadRequestException('El ID del rol no es válido.');
+    }
+
+    try {
+      const affected = await this.dataSource.transaction((manager) =>
+        this.rolesRepository.eliminar(ideRol, manager),
+      );
+
+      if (affected === 0) {
+        return ApiResponseFactory.legacyWrite(
+          0,
+          'No se encontró el rol indicado.',
+        );
+      }
+
+      return ApiResponseFactory.legacyWrite(1, 'Rol eliminado correctamente');
+    } catch (error) {
+      return ApiResponseFactory.legacyWrite(
+        0,
+        error?.message ||
+          'No se pudo eliminar el rol. Puede estar relacionado con empleados.',
+      );
+    }
   }
 
   /**
    * COMBOS
    */
   async listarComboRoles() {
-    const query = 
-    `
-      SELECT json_build_object(
-        'data',
-        json_agg(
-          json_build_object(
-            'label', nombre_rol,
-            'value', ide_rol
-          )
-          ORDER BY nombre_rol
-        )
-      )
-      FROM rol;
-    `;
-    const result = await this.db.executeQuery(query);
-    return result[0].json_build_object.data;
+    const roles = await this.dataSource.transaction((manager) =>
+      this.rolesRepository.listar(manager),
+    );
+
+    return ComboMapper.fromEntities(
+      roles,
+      (rol) => rol.nombreRol,
+      (rol) => rol.ideRol,
+    );
   }
 
   async listarComboNombres() {
-    const query = 
-    `
-      SELECT json_build_object(
-        'response', 'OK',
-        'data',
-        json_agg(
-          json_build_object(
-            'label', nombre_rol,
-            'value', ide_rol
-          )
-          ORDER BY nombre_rol
-        )
-      )
-      FROM rol;
-    `;
-    const result = await this.db.executeQuery(query);
-    return result[0].json_build_object.data;
+    return this.listarComboRoles();
   }
 
   async listarComboDescripciones() {
-    const query = 
-    `
-      SELECT json_build_object(
-        'response', 'OK',
-        'data',
-        json_agg(
-          json_build_object(
-            'label', descripcion_rol,
-            'value', descripcion_rol
-          )
-          ORDER BY descripcion_rol
-        )
-      )
-      FROM (
-        SELECT DISTINCT descripcion_rol
-        FROM rol
-      ) t;
-    `;
-    const result = await this.db.executeQuery(query);
-    return result[0].json_build_object.data;
+    const roles = await this.dataSource.transaction((manager) =>
+      this.rolesRepository.listar(manager),
+    );
+
+    const descripcionesUnicas = Array.from(
+      new Set(
+        roles
+          .map((rol) => rol.descripcionRol)
+          .filter((descripcion) => !!descripcion),
+      ),
+    ).sort((a, b) => a.localeCompare(b));
+
+    return ComboMapper.fromEntities(
+      descripcionesUnicas,
+      (descripcion) => descripcion,
+      (descripcion) => descripcion,
+    );
   }
-  
 }

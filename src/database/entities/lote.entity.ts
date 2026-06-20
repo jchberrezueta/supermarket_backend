@@ -29,7 +29,9 @@ export class LoteEntity {
   })
   estadoLote!: 'correcto' | 'proximo' | 'caducado' | 'devuelto';
 
-  @ManyToOne(() => ProductoEntity, (producto) => producto.lotes)
+  @ManyToOne(() => ProductoEntity, (producto) => producto.lotes, {
+    onDelete: 'RESTRICT',
+  })
   @JoinColumn({ name: 'ide_prod' })
   producto?: ProductoEntity;
 }

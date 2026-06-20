@@ -66,7 +66,7 @@ export class EmpleadoEntity {
     length: 50,
     nullable: true,
   })
-  segundoNombreEmpl?: string;
+  segundoNombreEmpl?: string | null;
 
   @Column({
     name: 'apellido_materno_empl',
@@ -74,10 +74,10 @@ export class EmpleadoEntity {
     length: 50,
     nullable: true,
   })
-  apellidoMaternoEmpl?: string;
+  apellidoMaternoEmpl?: string | null;
 
   @Column({ name: 'fecha_termino_empl', type: 'date', nullable: true })
-  fechaTerminoEmpl?: Date;
+  fechaTerminoEmpl?: Date | null;
 
   @Column({ name: 'usua_ingre', type: 'varchar', length: 25, nullable: true })
   usuaIngre?: string;
@@ -96,7 +96,9 @@ export class EmpleadoEntity {
   @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
   fechaActua?: Date;
 
-  @ManyToOne(() => RolEntity)
+  @ManyToOne(() => RolEntity, (rol) => rol.empleados, {
+    onDelete: 'RESTRICT',
+  })
   @JoinColumn({ name: 'ide_rol' })
   rol?: RolEntity;
 

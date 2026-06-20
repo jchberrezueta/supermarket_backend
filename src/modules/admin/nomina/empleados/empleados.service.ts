@@ -1,183 +1,282 @@
-import { Injectable } from '@nestjs/common';
-import {DatabaseService} from '@database';
-import { FilterEmpleadoDTO } from './dto/filter_empleado.dto';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { ApiResponseFactory, ComboMapper } from '@common/index';
+import { DataSource } from 'typeorm';
 import { CreateEmpleadoDTO } from './dto/create_empleado.dto';
+import { FilterEmpleadoDTO } from './dto/filter_empleado.dto';
 import { UpdateEmpleadoDTO } from './dto/update_empleado.dto';
+import { EmpleadosMapper } from './empleados.mapper';
+import { EmpleadosRepository } from './empleados.repository';
 
 @Injectable()
 export class EmpleadosService {
-  
-  private fnName: string = 'empleado';
-  constructor(private readonly db: DatabaseService){}
+  constructor(
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
+    private readonly empleadosRepository: EmpleadosRepository,
+  ) {}
 
-  async listar(){
-    return this.db.executeFunctionRead(`fn_listar_${this.fnName}`);
+  async listar() {
+    const empleados = await this.dataSource.transaction((manager) =>
+      this.empleadosRepository.listar(manager),
+    );
+
+    return ApiResponseFactory.legacyRead(
+      EmpleadosMapper.toRows(empleados),
+      'Listado de empleados obtenido',
+    );
   }
 
-  async buscar(id:number){
-    return this.db.executeFunctionRead(`fn_buscar_${this.fnName}`, [id]);
+  async buscar(id: number) {
+    const ideEmpl = Number(id);
+
+    if (!ideEmpl || Number.isNaN(ideEmpl)) {
+      throw new BadRequestException('El ID del empleado no es válido.');
+    }
+
+    const empleado = await this.dataSource.transaction((manager) =>
+      this.empleadosRepository.buscarPorId(ideEmpl, manager),
+    );
+
+    return ApiResponseFactory.legacyRead(
+      empleado ? [EmpleadosMapper.toRow(empleado)] : [],
+      'Empleado encontrado',
+    );
   }
 
-  async filtrar(queryParams: FilterEmpleadoDTO){
-    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}`, queryParams.toArray());
+  async filtrar(queryParams: FilterEmpleadoDTO) {
+    const empleados = await this.dataSource.transaction((manager) =>
+      this.empleadosRepository.filtrar(queryParams, manager),
+    );
+
+    return ApiResponseFactory.legacyRead(
+      EmpleadosMapper.toRows(empleados),
+      'Filtrado de empleados completado',
+    );
   }
 
-  async insertar(body:CreateEmpleadoDTO){
-    return this.db.executeFunctionWrite(`fn_insertar_${this.fnName}`, body.toArray());
+  async insertar(body: CreateEmpleadoDTO) {
+    try {
+      const empleado = await this.dataSource.transaction((manager) =>
+        this.empleadosRepository.crear(body, manager),
+      );
+
+      return ApiResponseFactory.legacyWrite(
+        1,
+        'Empleado registrado correctamente',
+        empleado.ideEmpl,
+      );
+    } catch (error) {
+      return ApiResponseFactory.legacyWrite(
+        0,
+        error?.message || 'No se pudo registrar el empleado.',
+      );
+    }
   }
 
-  async actualizar(body:UpdateEmpleadoDTO){
-    return this.db.executeFunctionWrite(`fn_actualizar_${this.fnName}`, body.toArray());
+  async actualizar(body: UpdateEmpleadoDTO) {
+    const ideEmpl = Number(body.ideEmpl);
+
+    if (!ideEmpl || Number.isNaN(ideEmpl)) {
+      throw new BadRequestException('El ID del empleado no es válido.');
+    }
+
+    try {
+      const empleado = await this.dataSource.transaction(async (manager) => {
+        const empleadoActual = await this.empleadosRepository.buscarPorId(
+          ideEmpl,
+          manager,
+        );
+
+        if (!empleadoActual) {
+          throw new Error('No se encontró el empleado indicado.');
+        }
+
+        return this.empleadosRepository.actualizar(
+          empleadoActual,
+          body,
+          manager,
+        );
+      });
+
+      return ApiResponseFactory.legacyWrite(
+        1,
+        'Empleado actualizado correctamente',
+        empleado.ideEmpl,
+      );
+    } catch (error) {
+      return ApiResponseFactory.legacyWrite(
+        0,
+        error?.message || 'No se pudo actualizar el empleado.',
+      );
+    }
   }
 
-  async eliminar(id:number){
-    return this.db.executeFunctionWrite(`fn_eliminar_${this.fnName}`, [id]);
+  async eliminar(id: number) {
+    const ideEmpl = Number(id);
+
+    if (!ideEmpl || Number.isNaN(ideEmpl)) {
+      throw new BadRequestException('El ID del empleado no es válido.');
+    }
+
+    try {
+      const affected = await this.dataSource.transaction((manager) =>
+        this.empleadosRepository.eliminar(ideEmpl, manager),
+      );
+
+      if (affected === 0) {
+        return ApiResponseFactory.legacyWrite(
+          0,
+          'No se encontró el empleado indicado.',
+        );
+      }
+
+      return ApiResponseFactory.legacyWrite(
+        1,
+        'Empleado eliminado correctamente',
+      );
+    } catch (error) {
+      return ApiResponseFactory.legacyWrite(
+        0,
+        error?.message ||
+          'No se pudo eliminar el empleado. Puede estar relacionado con ventas o cuentas.',
+      );
+    }
   }
 
   /**
    * JOINS
    */
-  async listarEmpleados(){
-    return this.db.executeFunctionRead(`fn_listar_${this.fnName}_rol`);
+  async listarEmpleados() {
+    const empleados = await this.dataSource.transaction((manager) =>
+      this.empleadosRepository.listar(manager),
+    );
+
+    return ApiResponseFactory.legacyRead(
+      EmpleadosMapper.toRolRows(empleados),
+      'Listado de empleados obtenido',
+    );
   }
-  async filtrarEmpleados(queryParams: FilterEmpleadoDTO){
-    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}_rol`, queryParams.toArray());
+
+  async filtrarEmpleados(queryParams: FilterEmpleadoDTO) {
+    const empleados = await this.dataSource.transaction((manager) =>
+      this.empleadosRepository.filtrar(queryParams, manager),
+    );
+
+    return ApiResponseFactory.legacyRead(
+      EmpleadosMapper.toRolRows(empleados),
+      'Filtrado de empleados completado',
+    );
   }
 
   /**
    * COMBOS
    */
   async listarComboEmpleados() {
-    const query = 
-    `
-      SELECT json_build_object(
-        'response', 'OK',
-        'data',
-        json_agg(
-          json_build_object(
-            'label',
-              trim(
-                e.primer_nombre_empl || ' ' ||
-                coalesce(e.segundo_nombre_empl, '') || ' ' ||
-                e.apellido_paterno_empl || ' ' ||
-                coalesce(e.apellido_materno_empl, '')
-              ),
-            'value', e.ide_empl
-          )
-          ORDER BY e.apellido_paterno_empl, e.primer_nombre_empl
-        )
-      )
-      FROM empleado e;
-    `;
-    const result = await this.db.executeQuery(query);
-    return result[0].json_build_object.data;
+    const empleados = await this.dataSource.transaction((manager) =>
+      this.empleadosRepository.listar(manager),
+    );
+
+    return ComboMapper.fromEntities(
+      empleados,
+      (empleado) => EmpleadosMapper.getNombreCompleto(empleado),
+      (empleado) => empleado.ideEmpl,
+    );
   }
+
   async listarComboCedulas() {
-    const query = 
-    `
-      SELECT json_build_object(
-        'data',
-        json_agg(
-          json_build_object(
-            'label', cedula_empl,
-            'value', cedula_empl
-          )
-          ORDER BY cedula_empl
-        )
-      )
-      FROM (
-        SELECT DISTINCT cedula_empl
-        FROM empleado
-      ) t;
-    `;
-    const result = await this.db.executeQuery(query);
-    return result[0].json_build_object.data;
+    const empleados = await this.dataSource.transaction((manager) =>
+      this.empleadosRepository.listar(manager),
+    );
+
+    const cedulasUnicas = Array.from(
+      new Set(
+        empleados
+          .map((empleado) => empleado.cedulaEmpl)
+          .filter((cedula) => !!cedula),
+      ),
+    ).sort((a, b) => a.localeCompare(b));
+
+    return ComboMapper.fromEntities(
+      cedulasUnicas,
+      (cedula) => cedula,
+      (cedula) => cedula,
+    );
   }
 
   async listarComboPrimerNombre() {
-    const query = 
-    `
-      SELECT json_build_object(
-        'data',
-        json_agg(
-          json_build_object(
-            'label', primer_nombre_empl,
-            'value', primer_nombre_empl
-          )
-          ORDER BY primer_nombre_empl
-        )
-      )
-      FROM (
-        SELECT DISTINCT primer_nombre_empl
-        FROM empleado
-      ) t;
-    `;
-    const result = await this.db.executeQuery(query);
-    return result[0].json_build_object.data;
+    const empleados = await this.dataSource.transaction((manager) =>
+      this.empleadosRepository.listar(manager),
+    );
+
+    const nombresUnicos = Array.from(
+      new Set(
+        empleados
+          .map((empleado) => empleado.primerNombreEmpl)
+          .filter((nombre) => !!nombre),
+      ),
+    ).sort((a, b) => a.localeCompare(b));
+
+    return ComboMapper.fromEntities(
+      nombresUnicos,
+      (nombre) => nombre,
+      (nombre) => nombre,
+    );
   }
 
   async listarComboApellidoPaterno() {
-    const query = 
-    `
-      SELECT json_build_object(
-        'data',
-        json_agg(
-          json_build_object(
-            'label', apellido_paterno_empl,
-            'value', apellido_paterno_empl
-          )
-          ORDER BY apellido_paterno_empl
-        )
-      )
-      FROM (
-        SELECT DISTINCT apellido_paterno_empl
-        FROM empleado
-      ) t;
-    `;
-    const result = await this.db.executeQuery(query);
-    return result[0].json_build_object.data;
+    const empleados = await this.dataSource.transaction((manager) =>
+      this.empleadosRepository.listar(manager),
+    );
+
+    const apellidosUnicos = Array.from(
+      new Set(
+        empleados
+          .map((empleado) => empleado.apellidoPaternoEmpl)
+          .filter((apellido) => !!apellido),
+      ),
+    ).sort((a, b) => a.localeCompare(b));
+
+    return ComboMapper.fromEntities(
+      apellidosUnicos,
+      (apellido) => apellido,
+      (apellido) => apellido,
+    );
   }
 
   async listarComboTitulos() {
-    const query = 
-    `
-      SELECT json_build_object(
-        'data',
-        json_agg(
-          json_build_object(
-            'label', titulo_empl,
-            'value', titulo_empl
-          )
-          ORDER BY titulo_empl
-        )
-      )
-      FROM (
-        SELECT DISTINCT titulo_empl
-        FROM empleado
-      ) t;
-    `;
-    const result = await this.db.executeQuery(query);
-    return result[0].json_build_object.data;
+    const empleados = await this.dataSource.transaction((manager) =>
+      this.empleadosRepository.listar(manager),
+    );
+
+    const titulosUnicos = Array.from(
+      new Set(
+        empleados
+          .map((empleado) => empleado.tituloEmpl)
+          .filter((titulo) => !!titulo),
+      ),
+    ).sort((a, b) => a.localeCompare(b));
+
+    return ComboMapper.fromEntities(
+      titulosUnicos,
+      (titulo) => titulo,
+      (titulo) => titulo,
+    );
   }
 
   async listarComboEstados() {
-    const query = 
-    `
-     SELECT json_build_object(
-        'data',
-        json_agg(
-          json_build_object('label', estado, 'value', estado)
-        )
-      )
-      FROM (
-        SELECT 'activo'   AS estado
-        UNION ALL
-        SELECT 'inactivo' AS estado
-      ) t;
-    `;
-    const result = await this.db.executeQuery(query);
-    return result[0].json_build_object.data;
+    return ComboMapper.fromValues(['activo', 'inactivo']);
   }
-  
-  
+
+  async listarComboRoles() {
+    const roles = await this.dataSource.transaction((manager) =>
+      this.empleadosRepository.listarRoles(manager),
+    );
+
+    return ComboMapper.fromEntities(
+      roles,
+      (rol) => rol.nombreRol,
+      (rol) => rol.ideRol,
+    );
+  }
 }
