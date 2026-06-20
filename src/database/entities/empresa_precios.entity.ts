@@ -1,4 +1,12 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { EmpresaEntity } from './empresas.entity';
+import { ProductoEntity } from './producto.entity';
 
 @Entity({ name: 'empresa_precios' })
 export class EmpresaPreciosEntity {
@@ -63,6 +71,14 @@ export class EmpresaPreciosEntity {
 
   @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
   fechaActua?: Date;
+
+  @ManyToOne(() => EmpresaEntity, (empresa) => empresa.preciosProductos)
+  @JoinColumn({ name: 'ide_empr' })
+  empresa?: EmpresaEntity;
+
+  @ManyToOne(() => ProductoEntity, (producto) => producto.preciosEmpresa)
+  @JoinColumn({ name: 'ide_prod' })
+  producto?: ProductoEntity;
 }
 
 export { EmpresaPreciosEntity as EmpresaPrecios };

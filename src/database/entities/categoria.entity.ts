@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { ProductoEntity } from './producto.entity';
 
 @Entity({ name: 'categoria' })
 export class CategoriaEntity {
@@ -32,6 +33,9 @@ export class CategoriaEntity {
 
   @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
   fechaActua?: Date;
+
+  @OneToMany(() => ProductoEntity, (producto) => producto.categoria)
+  productos?: ProductoEntity[];
 }
 
 export { CategoriaEntity as Categoria };

@@ -1,152 +1,220 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { DatabaseService } from '@database';
-import { ProductosRepository } from './productos.repository';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { ApiResponseFactory, ComboMapper } from '@common/index';
+import { DataSource } from 'typeorm';
 import { CreateProductoDTO } from './dto/create_producto.dto';
-import { UpdateProductoDTO } from './dto/update_producto.dto';
 import { FilterProductoDTO } from './dto/filter_producto.dto';
+import { UpdateProductoDTO } from './dto/update_producto.dto';
+import { ProductosMapper } from './productos.mapper';
+import { ProductosRepository } from './productos.repository';
 
 @Injectable()
 export class ProductosService {
-  private fnName: string = 'producto';
   constructor(
-    private readonly db: DatabaseService,
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
     private readonly productosRepository: ProductosRepository,
   ) {}
 
   async listar() {
-    return this.db.executeFunctionRead(`fn_listar_${this.fnName}`);
+    const productos = await this.dataSource.transaction((manager) =>
+      this.productosRepository.listar(manager),
+    );
+
+    return ApiResponseFactory.legacyRead(
+      ProductosMapper.toRows(productos),
+      'Listado de productos obtenido',
+    );
   }
 
   async buscar(id: number) {
-    return this.db.executeFunctionRead(`fn_buscar_${this.fnName}`, [id]);
+    const ideProd = Number(id);
+
+    if (!ideProd || Number.isNaN(ideProd)) {
+      throw new BadRequestException('El ID del producto no es válido.');
+    }
+
+    const producto = await this.dataSource.transaction((manager) =>
+      this.productosRepository.buscarPorId(ideProd, manager),
+    );
+
+    if (!producto) {
+      throw new NotFoundException('No se encontró el producto indicado.');
+    }
+
+    return ApiResponseFactory.legacyRead(
+      [ProductosMapper.toRow(producto)],
+      'Producto encontrado',
+    );
   }
 
   async filtrar(queryParams: FilterProductoDTO) {
-    return this.db.executeFunctionRead(
-      `fn_filtrar_${this.fnName}`,
-      queryParams.toArray(),
+    const productos = await this.dataSource.transaction((manager) =>
+      this.productosRepository.filtrar(queryParams, manager),
+    );
+
+    return ApiResponseFactory.legacyRead(
+      ProductosMapper.toRows(productos),
+      'Filtrado de productos completado',
     );
   }
 
   async insertar(body: CreateProductoDTO) {
-    return this.db.executeFunctionWrite(
-      `fn_insertar_${this.fnName}`,
-      body.toArray(),
-    );
+    try {
+      const producto = await this.dataSource.transaction((manager) =>
+        this.productosRepository.crear(body, manager),
+      );
+
+      return ApiResponseFactory.legacyWrite(
+        1,
+        'Producto registrado correctamente',
+        producto.ideProd,
+      );
+    } catch (error) {
+      return ApiResponseFactory.legacyWrite(
+        0,
+        error?.message || 'No se pudo registrar el producto.',
+      );
+    }
   }
 
   async actualizar(body: UpdateProductoDTO) {
-    return this.db.executeFunctionWrite(
-      `fn_actualizar_${this.fnName}`,
-      body.toArray(),
-    );
+    const ideProd = Number(body.ideProd);
+
+    if (!ideProd || Number.isNaN(ideProd)) {
+      throw new BadRequestException('El ID del producto no es válido.');
+    }
+
+    try {
+      const producto = await this.dataSource.transaction(async (manager) => {
+        const productoActual = await this.productosRepository.buscarPorId(
+          ideProd,
+          manager,
+        );
+
+        if (!productoActual) {
+          throw new NotFoundException('No se encontró el producto indicado.');
+        }
+
+        return this.productosRepository.actualizar(
+          productoActual,
+          body,
+          manager,
+        );
+      });
+
+      return ApiResponseFactory.legacyWrite(
+        1,
+        'Producto actualizado correctamente',
+        producto.ideProd,
+      );
+    } catch (error) {
+      return ApiResponseFactory.legacyWrite(
+        0,
+        error?.message || 'No se pudo actualizar el producto.',
+      );
+    }
   }
 
   async eliminar(id: number) {
-    return this.db.executeFunctionWrite(`fn_eliminar_${this.fnName}`, [id]);
+    const ideProd = Number(id);
+
+    if (!ideProd || Number.isNaN(ideProd)) {
+      throw new BadRequestException('El ID del producto no es válido.');
+    }
+
+    try {
+      const affected = await this.dataSource.transaction((manager) =>
+        this.productosRepository.eliminar(ideProd, manager),
+      );
+
+      if (affected === 0) {
+        return ApiResponseFactory.legacyWrite(
+          0,
+          'No se encontró el producto indicado.',
+        );
+      }
+
+      return ApiResponseFactory.legacyWrite(
+        1,
+        'Producto eliminado correctamente',
+      );
+    } catch (error) {
+      return ApiResponseFactory.legacyWrite(
+        0,
+        error?.message || 'No se pudo eliminar el producto.',
+      );
+    }
   }
 
   /**
    * JOINS
+   *
+   * Se mantienen estos métodos porque Angular ya usa estas rutas:
+   * - productos/listar/productos
+   * - productos/filtrar/productos
+   *
+   * Internamente ya no dependen de funciones PostgreSQL.
    */
   async listarProductos() {
-    return this.db.executeFunctionRead(
-      `fn_listar_${this.fnName}_categoria_marca`,
-    );
+    return this.listar();
   }
+
   async filtrarProductos(queryParams: FilterProductoDTO) {
-    return this.db.executeFunctionRead(
-      `fn_filtrar_${this.fnName}_categoria_marca`,
-      queryParams.toArray(),
-    );
+    return this.filtrar(queryParams);
   }
 
   /**
    * COMBOS
    */
   async listarComboProductos() {
-    const query = `
-        SELECT json_build_object(
-          'response', 'OK',
-          'data',
-          json_agg(
-            json_build_object(
-              'label', nombre_prod,
-              'value', ide_prod
-            )
-            ORDER BY nombre_prod
-          )
-        )
-        FROM producto;
-    `;
-    const result = await this.db.executeQuery(query);
-    return result[0].json_build_object.data;
+    const productos = await this.dataSource.transaction((manager) =>
+      this.productosRepository.listar(manager),
+    );
+
+    return ComboMapper.fromEntities(
+      productos,
+      (producto) => producto.nombreProd,
+      (producto) => producto.ideProd,
+    );
   }
 
   async listarComboCodigosBarras() {
-    const query = `
-        SELECT json_build_object(
-          'response', 'OK',
-          'data',
-          json_agg(
-            json_build_object(
-              'label', codigo_barra_prod,
-              'value', codigo_barra_prod
-            )
-            ORDER BY codigo_barra_prod
-          )
-        )
-        FROM (
-          SELECT DISTINCT codigo_barra_prod
-          FROM producto
-        ) t;
-    `;
-    const result = await this.db.executeQuery(query);
-    return result[0].json_build_object.data;
+    const productos = await this.dataSource.transaction((manager) =>
+      this.productosRepository.listar(manager),
+    );
+
+    const codigosUnicos = Array.from(
+      new Set(
+        productos
+          .map((producto) => producto.codigoBarraProd)
+          .filter((codigo) => !!codigo),
+      ),
+    ).sort((a, b) => a.localeCompare(b));
+
+    return ComboMapper.fromEntities(
+      codigosUnicos,
+      (codigo) => codigo,
+      (codigo) => codigo,
+    );
   }
 
   async listarComboEstados() {
-    const query = `
-        SELECT json_build_object(
-          'data', json_agg(
-            json_build_object(
-              'label', estado,
-              'value', estado
-            )
-          )
-        )
-        FROM (
-          SELECT 'activo' AS estado
-          UNION ALL
-          SELECT 'inactivo'
-        ) t;
-    `;
-    const result = await this.db.executeQuery(query);
-    return result[0].json_build_object.data;
+    return ComboMapper.fromValues(['activo', 'inactivo']);
   }
 
   async listarComboDisponibilidad() {
-    const query = `
-        SELECT json_build_object(
-          'data', json_agg(
-            json_build_object(
-              'label', disponible,
-              'value', disponible
-            )
-          )
-        )
-        FROM (
-          SELECT 'si' AS disponible
-          UNION ALL
-          SELECT 'no'
-        ) t;
-    `;
-    const result = await this.db.executeQuery(query);
-    return result[0].json_build_object.data;
+    return ComboMapper.fromValues(['si', 'no']);
   }
 
   async buscarActivoPorCodigo(codigo: string) {
-    const producto = await this.productosRepository.findActivoByCodigo(codigo);
+    const producto = await this.dataSource.transaction((manager) =>
+      this.productosRepository.findActivoByCodigo(codigo, manager),
+    );
 
     if (!producto) {
       throw new NotFoundException(
@@ -154,12 +222,9 @@ export class ProductosService {
       );
     }
 
-    return {
-      data: producto,
-      response: {
-        success: true,
-        message: 'Producto encontrado correctamente.',
-      },
-    };
+    return ApiResponseFactory.success(
+      producto,
+      'Producto encontrado correctamente.',
+    );
   }
 }

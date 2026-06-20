@@ -2,6 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ProductoEntity } from '@entities';
 import { EntityManager, Repository } from 'typeorm';
+import { CreateProductoDTO } from './dto/create_producto.dto';
+import { FilterProductoDTO } from './dto/filter_producto.dto';
+import { UpdateProductoDTO } from './dto/update_producto.dto';
 
 @Injectable()
 export class ProductosRepository {
@@ -10,24 +13,165 @@ export class ProductosRepository {
     private readonly productoRepository: Repository<ProductoEntity>,
   ) {}
 
-  async findActivoByCodigo(codigo: string): Promise<ProductoEntity | null> {
-    return this.productoRepository
+  async listar(manager?: EntityManager): Promise<ProductoEntity[]> {
+    return this.getRepository(manager).find({
+      relations: {
+        categoria: true,
+        marca: true,
+      },
+      order: {
+        nombreProd: 'ASC',
+      },
+    });
+  }
+
+  async buscarPorId(
+    ideProd: number,
+    manager?: EntityManager,
+  ): Promise<ProductoEntity | null> {
+    return this.getRepository(manager).findOne({
+      where: {
+        ideProd,
+      },
+      relations: {
+        categoria: true,
+        marca: true,
+      },
+    });
+  }
+
+  async filtrar(
+    filtros: FilterProductoDTO,
+    manager?: EntityManager,
+  ): Promise<ProductoEntity[]> {
+    const qb = this.getRepository(manager)
+      .createQueryBuilder('producto')
+      .leftJoinAndSelect('producto.categoria', 'categoria')
+      .leftJoinAndSelect('producto.marca', 'marca')
+      .orderBy('producto.nombreProd', 'ASC');
+
+    if (filtros.ideCate !== undefined && filtros.ideCate !== null) {
+      qb.andWhere('producto.ideCate = :ideCate', {
+        ideCate: filtros.ideCate,
+      });
+    }
+
+    if (filtros.ideMarc !== undefined && filtros.ideMarc !== null) {
+      qb.andWhere('producto.ideMarc = :ideMarc', {
+        ideMarc: filtros.ideMarc,
+      });
+    }
+
+    if (filtros.nombreProd) {
+      qb.andWhere('LOWER(producto.nombreProd) LIKE LOWER(:nombreProd)', {
+        nombreProd: `%${filtros.nombreProd}%`,
+      });
+    }
+
+    if (filtros.codigoBarraProd) {
+      qb.andWhere('producto.codigoBarraProd = :codigoBarraProd', {
+        codigoBarraProd: filtros.codigoBarraProd,
+      });
+    }
+
+    if (filtros.estadoProd) {
+      qb.andWhere('producto.estadoProd = :estadoProd', {
+        estadoProd: filtros.estadoProd,
+      });
+    }
+
+    if (filtros.disponibleProd) {
+      qb.andWhere('producto.disponibleProd = :disponibleProd', {
+        disponibleProd: filtros.disponibleProd,
+      });
+    }
+
+    return qb.getMany();
+  }
+
+  async crear(
+    dto: CreateProductoDTO,
+    manager?: EntityManager,
+  ): Promise<ProductoEntity> {
+    const repository = this.getRepository(manager);
+
+    const producto = repository.create({
+      ideCate: dto.ideCate,
+      ideMarc: dto.ideMarc,
+      codigoBarraProd: dto.codigoBarraProd,
+      nombreProd: dto.nombreProd,
+      urlImgProd: dto.urlImgProd ?? '',
+      precioVentaProd: dto.precioVentaProd.toFixed(2),
+      ivaProd: dto.ivaProd.toFixed(2),
+      dctoPromoProd: dto.dctoPromoProd.toFixed(2),
+      stockProd: dto.stockProd,
+      disponibleProd: dto.disponibleProd,
+      estadoProd: dto.estadoProd,
+      descripcionProd: dto.descripcionProd,
+      usuaIngre: 'admin',
+    });
+
+    return repository.save(producto);
+  }
+
+  async actualizar(
+    producto: ProductoEntity,
+    dto: UpdateProductoDTO,
+    manager?: EntityManager,
+  ): Promise<ProductoEntity> {
+    producto.ideCate = dto.ideCate;
+    producto.ideMarc = dto.ideMarc;
+    producto.codigoBarraProd = dto.codigoBarraProd;
+    producto.nombreProd = dto.nombreProd;
+    producto.urlImgProd = dto.urlImgProd ?? '';
+    producto.precioVentaProd = dto.precioVentaProd.toFixed(2);
+    producto.ivaProd = dto.ivaProd.toFixed(2);
+    producto.dctoPromoProd = dto.dctoPromoProd.toFixed(2);
+    producto.stockProd = dto.stockProd;
+    producto.disponibleProd = dto.disponibleProd;
+    producto.estadoProd = dto.estadoProd;
+    producto.descripcionProd = dto.descripcionProd;
+    producto.usuaActua = 'admin';
+    producto.fechaActua = new Date();
+
+    return this.getRepository(manager).save(producto);
+  }
+
+  async eliminar(ideProd: number, manager?: EntityManager): Promise<number> {
+    const result = await this.getRepository(manager).delete({
+      ideProd,
+    });
+
+    return result.affected ?? 0;
+  }
+
+  async findActivoByCodigo(
+    codigo: string,
+    manager?: EntityManager,
+  ): Promise<ProductoEntity | null> {
+    return this.getRepository(manager)
       .createQueryBuilder('producto')
       .where('producto.codigoBarraProd = :codigo', { codigo })
       .andWhere('producto.estadoProd = :estado', { estado: 'activo' })
       .getOne();
   }
 
-  async findActivoById(ideProd: number): Promise<ProductoEntity | null> {
-    return this.productoRepository
+  async findActivoById(
+    ideProd: number,
+    manager?: EntityManager,
+  ): Promise<ProductoEntity | null> {
+    return this.getRepository(manager)
       .createQueryBuilder('producto')
       .where('producto.ideProd = :ideProd', { ideProd })
       .andWhere('producto.estadoProd = :estado', { estado: 'activo' })
       .getOne();
   }
 
-  async findStockBajo(stockMinimo = 5): Promise<ProductoEntity[]> {
-    return this.productoRepository
+  async findStockBajo(
+    stockMinimo = 5,
+    manager?: EntityManager,
+  ): Promise<ProductoEntity[]> {
+    return this.getRepository(manager)
       .createQueryBuilder('producto')
       .where('producto.estadoProd = :estado', { estado: 'activo' })
       .andWhere('producto.stockProd <= :stockMinimo', { stockMinimo })
@@ -65,5 +209,13 @@ export class ProductosRepository {
     producto.fechaActua = new Date();
 
     return manager.getRepository(ProductoEntity).save(producto);
+  }
+
+  private getRepository(manager?: EntityManager): Repository<ProductoEntity> {
+    if (manager) {
+      return manager.getRepository(ProductoEntity);
+    }
+
+    return this.productoRepository;
   }
 }

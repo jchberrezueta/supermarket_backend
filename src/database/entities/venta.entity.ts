@@ -1,4 +1,14 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { ClienteEntity } from './cliente.entity';
+import { DetalleVentaEntity } from './detalle_venta.entity';
+import { EmpleadoEntity } from './empleado.entity';
 
 @Entity({ name: 'venta' })
 export class VentaEntity {
@@ -92,6 +102,19 @@ export class VentaEntity {
     default: 'efectivo',
   })
   tipoPagoVent?: 'efectivo' | 'tarjeta_credito' | 'tarjeta_debito' | 'paypal';
+
+  @ManyToOne(() => ClienteEntity, (cliente) => cliente.ventas)
+  @JoinColumn({ name: 'ide_clie' })
+  cliente?: ClienteEntity;
+
+  @ManyToOne(() => EmpleadoEntity, (empleado) => empleado.ventas, {
+    nullable: true,
+  })
+  @JoinColumn({ name: 'ide_empl' })
+  empleado?: EmpleadoEntity;
+
+  @OneToMany(() => DetalleVentaEntity, (detalle) => detalle.venta)
+  detalles?: DetalleVentaEntity[];
 }
 
 export { VentaEntity as Venta };

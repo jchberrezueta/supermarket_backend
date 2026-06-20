@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { ProductoEntity } from './producto.entity';
 
 @Entity({ name: 'marca' })
 export class MarcaEntity {
@@ -38,6 +39,9 @@ export class MarcaEntity {
 
   @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
   fechaActua?: Date;
+
+  @OneToMany(() => ProductoEntity, (producto) => producto.marca)
+  productos?: ProductoEntity[];
 }
 
 export { MarcaEntity as Marca };

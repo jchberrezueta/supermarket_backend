@@ -1,4 +1,12 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { PedidoEntity } from './pedido.entity';
+import { ProductoEntity } from './producto.entity';
 
 @Entity({ name: 'detalle_pedido' })
 export class DetallePedidoEntity {
@@ -75,6 +83,14 @@ export class DetallePedidoEntity {
     default: 'incompleto',
   })
   estadoDetaPedi!: 'progreso' | 'completado' | 'incompleto' | 'emitido';
+
+  @ManyToOne(() => PedidoEntity)
+  @JoinColumn({ name: 'ide_pedi' })
+  pedido?: PedidoEntity;
+
+  @ManyToOne(() => ProductoEntity, (producto) => producto.detallesPedido)
+  @JoinColumn({ name: 'ide_prod' })
+  producto?: ProductoEntity;
 }
 
 export { DetallePedidoEntity as DetallePedido };

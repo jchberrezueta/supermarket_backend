@@ -1,4 +1,13 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { RolEntity } from './rol.entity';
+import { VentaEntity } from './venta.entity';
 
 @Entity({ name: 'empleado' })
 export class EmpleadoEntity {
@@ -86,6 +95,13 @@ export class EmpleadoEntity {
 
   @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
   fechaActua?: Date;
+
+  @ManyToOne(() => RolEntity)
+  @JoinColumn({ name: 'ide_rol' })
+  rol?: RolEntity;
+
+  @OneToMany(() => VentaEntity, (venta) => venta.empleado)
+  ventas?: VentaEntity[];
 }
 
 export { EmpleadoEntity as Empleado };

@@ -1,4 +1,18 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { CategoriaEntity } from './categoria.entity';
+import { DetalleEntregaEntity } from './detalle_entrega.entity';
+import { DetallePedidoEntity } from './detalle_pedido.entity';
+import { DetalleVentaEntity } from './detalle_venta.entity';
+import { LoteEntity } from './lote.entity';
+import { MarcaEntity } from './marca.entity';
+import { EmpresaPreciosEntity } from './empresa_precios.entity';
 
 @Entity({ name: 'producto' })
 export class ProductoEntity {
@@ -90,6 +104,29 @@ export class ProductoEntity {
 
   @Column({ name: 'url_img_prod', type: 'varchar', length: 500 })
   urlImgProd!: string;
+
+  @ManyToOne(() => CategoriaEntity, (categoria) => categoria.productos)
+  @JoinColumn({ name: 'ide_cate' })
+  categoria?: CategoriaEntity;
+
+  @ManyToOne(() => MarcaEntity, (marca) => marca.productos)
+  @JoinColumn({ name: 'ide_marc' })
+  marca?: MarcaEntity;
+
+  @OneToMany(() => DetalleVentaEntity, (detalle) => detalle.producto)
+  detallesVenta?: DetalleVentaEntity[];
+
+  @OneToMany(() => DetallePedidoEntity, (detalle) => detalle.producto)
+  detallesPedido?: DetallePedidoEntity[];
+
+  @OneToMany(() => DetalleEntregaEntity, (detalle) => detalle.producto)
+  detallesEntrega?: DetalleEntregaEntity[];
+
+  @OneToMany(() => LoteEntity, (lote) => lote.producto)
+  lotes?: LoteEntity[];
+
+  @OneToMany(() => EmpresaPreciosEntity, (precio) => precio.producto)
+  preciosEmpresa?: EmpresaPreciosEntity[];
 }
 
 export { ProductoEntity as Producto };

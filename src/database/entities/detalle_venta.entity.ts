@@ -1,4 +1,12 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { ProductoEntity } from './producto.entity';
+import { VentaEntity } from './venta.entity';
 
 @Entity({ name: 'detalle_venta' })
 export class DetalleVentaEntity {
@@ -58,6 +66,14 @@ export class DetalleVentaEntity {
     default: 0,
   })
   totalProd!: string;
+
+  @ManyToOne(() => VentaEntity, (venta) => venta.detalles)
+  @JoinColumn({ name: 'ide_vent' })
+  venta?: VentaEntity;
+
+  @ManyToOne(() => ProductoEntity, (producto) => producto.detallesVenta)
+  @JoinColumn({ name: 'ide_prod' })
+  producto?: ProductoEntity;
 }
 
 export { DetalleVentaEntity as DetalleVenta };

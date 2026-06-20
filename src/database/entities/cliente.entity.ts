@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { VentaEntity } from './venta.entity';
 
 @Entity({ name: 'cliente' })
 export class ClienteEntity {
@@ -74,6 +75,9 @@ export class ClienteEntity {
 
   @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
   fechaActua?: Date;
+
+  @OneToMany(() => VentaEntity, (venta) => venta.cliente)
+  ventas?: VentaEntity[];
 }
 
 export { ClienteEntity as Cliente };

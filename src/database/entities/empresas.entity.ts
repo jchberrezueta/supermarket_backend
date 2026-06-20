@@ -1,4 +1,7 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { EmpresaPreciosEntity } from './empresa_precios.entity';
+import { PedidoEntity } from './pedido.entity';
+import { ProveedorEntity } from './proveedor.entity';
 
 @Entity({ name: 'empresa' })
 export class EmpresaEntity {
@@ -55,6 +58,15 @@ export class EmpresaEntity {
 
   @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
   fechaActua?: Date;
+
+  @OneToMany(() => PedidoEntity, (pedido) => pedido.empresa)
+  pedidos?: PedidoEntity[];
+
+  @OneToMany(() => ProveedorEntity, (proveedor) => proveedor.empresa)
+  proveedores?: ProveedorEntity[];
+
+  @OneToMany(() => EmpresaPreciosEntity, (precio) => precio.empresa)
+  preciosProductos?: EmpresaPreciosEntity[];
 }
 
 export { EmpresaEntity as Empresa };

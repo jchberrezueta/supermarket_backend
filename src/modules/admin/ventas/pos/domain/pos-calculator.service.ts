@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { MoneyUtil } from '@common/utils/money.util';
 import { ProductoEntity } from '@entities';
 import { ItemVentaPosDto } from '../dto/item_venta_pos.dto';
 
@@ -47,12 +48,12 @@ export class PosCalculatorService {
     producto: ProductoEntity,
     cantidad: number,
   ): PosDetalleCalculado {
-    const precioUnitario = this.toNumber(producto.precioVentaProd);
-    const tasaIva = this.normalizarTasaIva(producto.ivaProd);
-    const descuentoUnitario = this.toNumber(producto.dctoPromoProd);
+    const precioUnitario = MoneyUtil.toNumber(producto.precioVentaProd);
+    const tasaIva = MoneyUtil.normalizeRate(producto.ivaProd);
+    const descuentoUnitario = MoneyUtil.toNumber(producto.dctoPromoProd);
 
-    const subtotalBruto = this.redondear(precioUnitario * cantidad);
-    const descuento = this.redondear(descuentoUnitario * cantidad);
+    const subtotalBruto = MoneyUtil.multiply(precioUnitario, cantidad);
+    const descuento = MoneyUtil.multiply(descuentoUnitario, cantidad);
 
     if (descuento > subtotalBruto) {
       throw new BadRequestException(
@@ -60,9 +61,9 @@ export class PosCalculatorService {
       );
     }
 
-    const baseImponible = this.redondear(subtotalBruto - descuento);
-    const iva = this.redondear(baseImponible * tasaIva);
-    const total = this.redondear(baseImponible + iva);
+    const baseImponible = MoneyUtil.subtract(subtotalBruto, descuento);
+    const iva = MoneyUtil.round(baseImponible * tasaIva);
+    const total = MoneyUtil.add(baseImponible, iva);
 
     return {
       ideProd: producto.ideProd,
@@ -80,12 +81,13 @@ export class PosCalculatorService {
     return detalles.reduce(
       (totales, detalle) => ({
         cantidadTotal: totales.cantidadTotal + detalle.cantidad,
-        subtotalVenta: this.redondear(totales.subtotalVenta + detalle.subtotal),
-        ivaVenta: this.redondear(totales.ivaVenta + detalle.iva),
-        descuentoVenta: this.redondear(
-          totales.descuentoVenta + detalle.descuento,
+        subtotalVenta: MoneyUtil.add(totales.subtotalVenta, detalle.subtotal),
+        ivaVenta: MoneyUtil.add(totales.ivaVenta, detalle.iva),
+        descuentoVenta: MoneyUtil.add(
+          totales.descuentoVenta,
+          detalle.descuento,
         ),
-        totalVenta: this.redondear(totales.totalVenta + detalle.total),
+        totalVenta: MoneyUtil.add(totales.totalVenta, detalle.total),
       }),
       {
         cantidadTotal: 0,
@@ -95,33 +97,5 @@ export class PosCalculatorService {
         totalVenta: 0,
       },
     );
-  }
-
-  private toNumber(value: string | number | null | undefined): number {
-    if (value === null || value === undefined) {
-      return 0;
-    }
-
-    const numero = Number(value);
-
-    if (Number.isNaN(numero)) {
-      return 0;
-    }
-
-    return numero;
-  }
-
-  private normalizarTasaIva(value: string | number | null | undefined): number {
-    const iva = this.toNumber(value);
-
-    if (iva > 1) {
-      return iva / 100;
-    }
-
-    return iva;
-  }
-
-  private redondear(value: number): number {
-    return Math.round((value + Number.EPSILON) * 100) / 100;
   }
 }

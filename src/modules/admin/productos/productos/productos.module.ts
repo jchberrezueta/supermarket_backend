@@ -1,15 +1,17 @@
-import { DatabaseModule } from '@database';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ProductoEntity } from '@entities';
+import { CategoriaEntity, MarcaEntity, ProductoEntity } from '@entities';
 import { ProductosController } from './productos.controller';
+import { ProductosMapper } from './productos.mapper';
 import { ProductosRepository } from './productos.repository';
 import { ProductosService } from './productos.service';
 
 @Module({
-  imports: [DatabaseModule, TypeOrmModule.forFeature([ProductoEntity])],
+  imports: [
+    TypeOrmModule.forFeature([ProductoEntity, CategoriaEntity, MarcaEntity]),
+  ],
   controllers: [ProductosController],
-  providers: [ProductosService, ProductosRepository],
+  providers: [ProductosService, ProductosRepository, ProductosMapper],
   exports: [ProductosRepository],
 })
 export class ProductitosModule {}

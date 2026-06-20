@@ -1,4 +1,14 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { DetallePedidoEntity } from './detalle_pedido.entity';
+import { EmpresaEntity } from './empresas.entity';
+import { EntregaEntity } from './entrega.entity';
 
 @Entity({ name: 'pedido' })
 export class PedidoEntity {
@@ -66,6 +76,16 @@ export class PedidoEntity {
 
   @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
   fechaActua?: Date;
+
+  @ManyToOne(() => EmpresaEntity, (empresa) => empresa.pedidos)
+  @JoinColumn({ name: 'ide_empr' })
+  empresa?: EmpresaEntity;
+
+  @OneToMany(() => DetallePedidoEntity, (detalle) => detalle.pedido)
+  detalles?: DetallePedidoEntity[];
+
+  @OneToMany(() => EntregaEntity, (entrega) => entrega.pedido)
+  entregas?: EntregaEntity[];
 }
 
 export { PedidoEntity as Pedido };

@@ -1,4 +1,11 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { ProductoEntity } from './producto.entity';
 
 @Entity({ name: 'lote' })
 export class LoteEntity {
@@ -21,6 +28,10 @@ export class LoteEntity {
     default: 'correcto',
   })
   estadoLote!: 'correcto' | 'proximo' | 'caducado' | 'devuelto';
+
+  @ManyToOne(() => ProductoEntity, (producto) => producto.lotes)
+  @JoinColumn({ name: 'ide_prod' })
+  producto?: ProductoEntity;
 }
 
 export { LoteEntity as Lote };
