@@ -1,164 +1,250 @@
-import { Injectable } from '@nestjs/common';
-import { DatabaseService } from '@database';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { ApiResponseFactory, ComboMapper } from '@common/index';
+import { DataSource } from 'typeorm';
 import { CreateProveedorDTO } from './dto/create_proveedor.dto';
-import { UpdateProveedorDTO } from './dto/update_proveedor.dto';
 import { FilterProveedorDTO } from './dto/filter_proveedor.dto';
+import { UpdateProveedorDTO } from './dto/update_proveedor.dto';
+import { ProveedoresMapper } from './proveedores.mapper';
+import { ProveedoresRepository } from './proveedores.repository';
 
 @Injectable()
 export class ProveedoresService {
-  
-  private fnName: string = 'proveedor';
-  constructor(private readonly db: DatabaseService){}
+  constructor(
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
+    private readonly proveedoresRepository: ProveedoresRepository,
+  ) {}
 
-  async listar(){
-    return this.db.executeFunctionRead(`fn_listar_${this.fnName}`);
+  async listar() {
+    const proveedores = await this.dataSource.transaction((manager) =>
+      this.proveedoresRepository.listar(manager),
+    );
+
+    return ApiResponseFactory.legacyRead(
+      ProveedoresMapper.toRows(proveedores),
+      'Listado de proveedores obtenido',
+    );
   }
 
-  async buscar(id:number){
-    return this.db.executeFunctionRead(`fn_buscar_${this.fnName}`, [id]);
+  async buscar(id: number) {
+    const ideProv = Number(id);
+
+    if (!ideProv || Number.isNaN(ideProv)) {
+      throw new BadRequestException('El ID del proveedor no es válido.');
+    }
+
+    const proveedor = await this.dataSource.transaction((manager) =>
+      this.proveedoresRepository.buscarPorId(ideProv, manager),
+    );
+
+    return ApiResponseFactory.legacyRead(
+      proveedor ? [ProveedoresMapper.toRow(proveedor)] : [],
+      'Proveedor encontrado',
+    );
   }
 
-  async filtrar(queryParams: FilterProveedorDTO){
-    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}`, queryParams.toArray());
+  async filtrar(queryParams: FilterProveedorDTO) {
+    const proveedores = await this.dataSource.transaction((manager) =>
+      this.proveedoresRepository.filtrar(queryParams, manager),
+    );
+
+    return ApiResponseFactory.legacyRead(
+      ProveedoresMapper.toRows(proveedores),
+      'Filtrado de proveedores completado',
+    );
   }
 
-  async insertar(body:CreateProveedorDTO){
-    return this.db.executeFunctionWrite(`fn_insertar_${this.fnName}`, body.toArray());
+  async insertar(body: CreateProveedorDTO) {
+    try {
+      const proveedor = await this.dataSource.transaction((manager) =>
+        this.proveedoresRepository.crear(body, manager),
+      );
+
+      return ApiResponseFactory.legacyWrite(
+        1,
+        'Proveedor registrado correctamente',
+        proveedor.ideProv,
+      );
+    } catch (error) {
+      return ApiResponseFactory.legacyWrite(
+        0,
+        error?.message || 'No se pudo registrar el proveedor.',
+      );
+    }
   }
 
-  async actualizar(body:UpdateProveedorDTO){
-    return this.db.executeFunctionWrite(`fn_actualizar_${this.fnName}`, body.toArray());
+  async actualizar(body: UpdateProveedorDTO) {
+    const ideProv = Number(body.ideProv);
+
+    if (!ideProv || Number.isNaN(ideProv)) {
+      throw new BadRequestException('El ID del proveedor no es válido.');
+    }
+
+    try {
+      const proveedor = await this.dataSource.transaction(async (manager) => {
+        const proveedorActual = await this.proveedoresRepository.buscarPorId(
+          ideProv,
+          manager,
+        );
+
+        if (!proveedorActual) {
+          throw new Error('No se encontró el proveedor indicado.');
+        }
+
+        return this.proveedoresRepository.actualizar(
+          proveedorActual,
+          body,
+          manager,
+        );
+      });
+
+      return ApiResponseFactory.legacyWrite(
+        1,
+        'Proveedor actualizado correctamente',
+        proveedor.ideProv,
+      );
+    } catch (error) {
+      return ApiResponseFactory.legacyWrite(
+        0,
+        error?.message || 'No se pudo actualizar el proveedor.',
+      );
+    }
   }
 
-  async eliminar(id:number){
-    return this.db.executeFunctionWrite(`fn_eliminar_${this.fnName}`, [id]);
+  async eliminar(id: number) {
+    const ideProv = Number(id);
+
+    if (!ideProv || Number.isNaN(ideProv)) {
+      throw new BadRequestException('El ID del proveedor no es válido.');
+    }
+
+    try {
+      const affected = await this.dataSource.transaction((manager) =>
+        this.proveedoresRepository.eliminar(ideProv, manager),
+      );
+
+      if (affected === 0) {
+        return ApiResponseFactory.legacyWrite(
+          0,
+          'No se encontró el proveedor indicado.',
+        );
+      }
+
+      return ApiResponseFactory.legacyWrite(
+        1,
+        'Proveedor eliminado correctamente',
+      );
+    } catch (error) {
+      return ApiResponseFactory.legacyWrite(
+        0,
+        error?.message || 'No se pudo eliminar el proveedor.',
+      );
+    }
   }
 
   /**
    * JOINS
    */
+  async listarProveedores() {
+    const proveedores = await this.dataSource.transaction((manager) =>
+      this.proveedoresRepository.listar(manager),
+    );
 
-  async listarProveedores(){
-    return this.db.executeFunctionRead(`fn_listar_${this.fnName}_empresa`);
+    return ApiResponseFactory.legacyRead(
+      ProveedoresMapper.toEmpresaRows(proveedores),
+      'Listado de proveedores obtenido',
+    );
   }
 
-  async filtrarProveedores(queryParams: FilterProveedorDTO){
-    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}_empresa`, queryParams.toArray());
+  async filtrarProveedores(queryParams: FilterProveedorDTO) {
+    const proveedores = await this.dataSource.transaction((manager) =>
+      this.proveedoresRepository.filtrar(queryParams, manager),
+    );
+
+    return ApiResponseFactory.legacyRead(
+      ProveedoresMapper.toEmpresaRows(proveedores),
+      'Filtrado de proveedores completado',
+    );
   }
 
-  async buscarProveedor(id:number){
-    return this.db.executeFunctionRead(`fn_buscar_${this.fnName}_empresa`, [id]);
+  async buscarProveedor(id: number) {
+    const ideProv = Number(id);
+
+    if (!ideProv || Number.isNaN(ideProv)) {
+      throw new BadRequestException('El ID del proveedor no es válido.');
+    }
+
+    const proveedor = await this.dataSource.transaction((manager) =>
+      this.proveedoresRepository.buscarPorId(ideProv, manager),
+    );
+
+    return ApiResponseFactory.legacyRead(
+      proveedor ? [ProveedoresMapper.toEmpresaRow(proveedor)] : [],
+      'Proveedor encontrado',
+    );
   }
 
   /**
    * COMBOS
    */
-
   async listarComboProveedores() {
-    const query = 
-    `
-      SELECT json_build_object(
-        'response', 'OK',
-        'data',
-        json_agg(
-          json_build_object(
-            'label',
-              trim(
-                p.primer_nombre_prov || ' ' ||
-                coalesce(p.segundo_nombre_prov, '') || ' ' ||
-                p.apellido_paterno_prov || ' ' ||
-                coalesce(p.apellido_materno_prov, '')
-              ),
-            'value', p.ide_prov
-          )
-          ORDER BY p.apellido_paterno_prov, p.primer_nombre_prov
-        )
-      )
-      FROM proveedor p;
-    `;
-    const result = await this.db.executeQuery(query);
-    return result[0].json_build_object.data;
+    const proveedores = await this.dataSource.transaction((manager) =>
+      this.proveedoresRepository.listar(manager),
+    );
+
+    return ComboMapper.fromEntities(
+      proveedores,
+      (proveedor) => ProveedoresMapper.getNombreCompleto(proveedor),
+      (proveedor) => proveedor.ideProv,
+    );
   }
 
-
   async listarComboProveedorCedula() {
-    const query = 
-    `
-      SELECT json_build_object(
-        'response', 'OK',
-        'data',
-        json_agg(
-          json_build_object(
-            'label', cedula_prov,
-            'value', ide_prov
-          )
-          ORDER BY cedula_prov
-        )
-      )
-      FROM proveedor;
-    `;
-    const result = await this.db.executeQuery(query);
-    return result[0].json_build_object.data;
+    const proveedores = await this.dataSource.transaction((manager) =>
+      this.proveedoresRepository.listar(manager),
+    );
+
+    return ComboMapper.fromEntities(
+      proveedores,
+      (proveedor) => proveedor.cedulaProv,
+      (proveedor) => proveedor.ideProv,
+    );
   }
 
   async listarComboProveedorPrimerNombre() {
-    const query = 
-    `
-     SELECT json_build_object(
-        'response', 'OK',
-        'data',
-        json_agg(
-          json_build_object(
-            'label', primer_nombre_prov,
-            'value', ide_prov
-          )
-          ORDER BY primer_nombre_prov
-        )
-      )
-      FROM proveedor;
-    `;
-    const result = await this.db.executeQuery(query);
-    return result[0].json_build_object.data;
+    const proveedores = await this.dataSource.transaction((manager) =>
+      this.proveedoresRepository.listar(manager),
+    );
+
+    return ComboMapper.fromEntities(
+      proveedores,
+      (proveedor) => proveedor.primerNombreProv,
+      (proveedor) => proveedor.ideProv,
+    );
   }
 
   async listarComboProveedorApellidoPaterno() {
-    const query = 
-    `
-     SELECT json_build_object(
-        'response', 'OK',
-        'data',
-        json_agg(
-          json_build_object(
-            'label', apellido_paterno_prov,
-            'value', ide_prov
-          )
-          ORDER BY apellido_paterno_prov
-        )
-      )
-      FROM proveedor;
-    `;
-    const result = await this.db.executeQuery(query);
-    return result[0].json_build_object.data;
+    const proveedores = await this.dataSource.transaction((manager) =>
+      this.proveedoresRepository.listar(manager),
+    );
+
+    return ComboMapper.fromEntities(
+      proveedores,
+      (proveedor) => proveedor.apellidoPaternoProv,
+      (proveedor) => proveedor.ideProv,
+    );
   }
 
   async listarComboProveedorEmail() {
-    const query = 
-    `
-     SELECT json_build_object(
-        'response', 'OK',
-        'data',
-        json_agg(
-          json_build_object(
-            'label', email_prov,
-            'value', ide_prov
-          )
-          ORDER BY email_prov
-        )
-      )
-      FROM proveedor;
-    `;
-    const result = await this.db.executeQuery(query);
-    return result[0].json_build_object.data;
+    const proveedores = await this.dataSource.transaction((manager) =>
+      this.proveedoresRepository.listar(manager),
+    );
+
+    return ComboMapper.fromEntities(
+      proveedores,
+      (proveedor) => proveedor.emailProv,
+      (proveedor) => proveedor.ideProv,
+    );
   }
-  
 }

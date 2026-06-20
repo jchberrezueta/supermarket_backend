@@ -1,11 +1,21 @@
 import { Module } from '@nestjs/common';
-import {EmpresasController} from './empresas.controller';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { EmpresaEntity, EmpresaPreciosEntity, ProductoEntity } from '@entities';
+import { EmpresasController } from './empresas.controller';
+import { EmpresasMapper } from './empresas.mapper';
+import { EmpresasRepository } from './empresas.repository';
 import { EmpresasService } from './empresas.service';
-import { DatabaseModule } from '@database';
 
 @Module({
-    imports: [DatabaseModule],
-    controllers: [EmpresasController],
-    providers: [EmpresasService]
+  imports: [
+    TypeOrmModule.forFeature([
+      EmpresaEntity,
+      EmpresaPreciosEntity,
+      ProductoEntity,
+    ]),
+  ],
+  controllers: [EmpresasController],
+  providers: [EmpresasService, EmpresasRepository, EmpresasMapper],
+  exports: [EmpresasRepository],
 })
 export class EmpresasModule {}
