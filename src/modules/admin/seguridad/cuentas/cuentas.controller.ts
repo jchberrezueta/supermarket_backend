@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Delete, Body, Put, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { CuentasService } from './cuentas.service';
 import { CreateCuentaDto } from './dto/create_cuenta.dto';
 import { UpdateCuentaDto } from './dto/update_cuenta.dto';
@@ -11,68 +22,81 @@ import { RolesGuard } from 'src/modules/auth/roles.guard';
 @Roles('padmin', 'pseguridad')
 @Controller('cuentas')
 export class CuentasController {
+  constructor(private readonly servicio: CuentasService) {}
 
-    constructor(private servicio: CuentasService) {}
+  @Get()
+  async listar() {
+    return this.servicio.listar();
+  }
 
-    @Get()
-    async listar() {
-        return this.servicio.listar(); 
-    }
+  @Get('buscar/:id')
+  async buscar(@Param('id', ParseIntPipe) id: number) {
+    return this.servicio.buscar(id);
+  }
 
-    @Get('buscar/:id')
-    async buscar(@Param('id') id:number) {
-        return this.servicio.buscar(id); 
-    }
+  @Get('filtrar')
+  async filtrar(@Query() queryParams: FiltroCuentaDto) {
+    return this.servicio.filtrar(queryParams);
+  }
 
-    @Get('filtrar')
-    async filtrar(@Query() queryParams: FiltroCuentaDto) {
-        return this.servicio.filtrar(queryParams); 
-    }
+  @Post('insertar')
+  async insertar(@Body() body: CreateCuentaDto) {
+    return this.servicio.insertar(body);
+  }
 
-    @Post('insertar')
-    async insertar(@Body() body: CreateCuentaDto) {
-        return this.servicio.insertar(body); 
-    }
+  @Put('actualizar/:id')
+  async actualizar(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: UpdateCuentaDto,
+  ) {
+    body.ideCuen = id;
 
-    @Put('actualizar/:id')
-    async actualizar(
-        @Param('id') id: number, 
-        @Body() body: UpdateCuentaDto
-    ) {
-        return this.servicio.actualizar(body); 
-    }
+    return this.servicio.actualizar(body);
+  }
 
-    @Delete('eliminar/:id')
-    async eliminar(@Param('id') id: number) {
-        return this.servicio.eliminar(id); 
-    }
+  @Delete('eliminar/:id')
+  async eliminar(@Param('id', ParseIntPipe) id: number) {
+    return this.servicio.eliminar(id);
+  }
 
-    /**
-     * JOINS
-     */
-    @Get('listar/cuentas')
-    async listarCuentas() {
-        return this.servicio.listarCuentas(); 
-    }
-    @Get('filtrar/cuentas')
-    async filtrarCuentas(@Query() queryParams: FiltroCuentaDto) {
-        return this.servicio.filtrarCuentas(queryParams); 
-    }
+  /**
+   * JOINS
+   */
+  @Get('listar/cuentas')
+  async listarCuentas() {
+    return this.servicio.listarCuentas();
+  }
 
+  @Get('filtrar/cuentas')
+  async filtrarCuentas(@Query() queryParams: FiltroCuentaDto) {
+    return this.servicio.filtrarCuentas(queryParams);
+  }
 
-    /**
-     * COMBOS
-     */
-    @Get('listar/combo/cuentas')
-    async listarComoboCuentas() {
-        return this.servicio.listarComboCuentas(); 
-    }
-    @Get('listar/combo/usuarios')
-    async listarComboUsuarios() {
-        return this.servicio.listarComboUsuarios(); 
-    }
-    @Get('listar/combo/estados')
-    async listarComboEstados() {
-        return this.servicio.listarComboEstados(); 
-    }
+  /**
+   * COMBOS
+   */
+  @Get('listar/combo/cuentas')
+  async listarComoboCuentas() {
+    return this.servicio.listarComboCuentas();
+  }
+
+  @Get('listar/combo/usuarios')
+  async listarComboUsuarios() {
+    return this.servicio.listarComboUsuarios();
+  }
+
+  @Get('listar/combo/estados')
+  async listarComboEstados() {
+    return this.servicio.listarComboEstados();
+  }
+
+  @Get('listar/combo/empleados')
+  async listarComboEmpleados() {
+    return this.servicio.listarComboEmpleados();
+  }
+
+  @Get('listar/combo/perfiles')
+  async listarComboPerfiles() {
+    return this.servicio.listarComboPerfiles();
+  }
 }

@@ -1,4 +1,14 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { AccesoUsuarioEntity } from './acceso_usuario.entity';
+import { EmpleadoEntity } from './empleado.entity';
+import { PerfilEntity } from './perfil.entity';
 
 @Entity({ name: 'cuenta' })
 export class CuentaEntity {
@@ -41,6 +51,21 @@ export class CuentaEntity {
 
   @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
   fechaActua?: Date;
+
+  @ManyToOne(() => EmpleadoEntity, {
+    onDelete: 'RESTRICT',
+  })
+  @JoinColumn({ name: 'ide_empl' })
+  empleado?: EmpleadoEntity;
+
+  @ManyToOne(() => PerfilEntity, {
+    onDelete: 'RESTRICT',
+  })
+  @JoinColumn({ name: 'ide_perf' })
+  perfil?: PerfilEntity;
+
+  @OneToMany(() => AccesoUsuarioEntity, (acceso) => acceso.cuenta)
+  accesos?: AccesoUsuarioEntity[];
 }
 
 export { CuentaEntity as Cuenta };
