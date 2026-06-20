@@ -1,102 +1,177 @@
-import { Injectable } from '@nestjs/common';
-import {DatabaseService} from '@database';
-import { UpdateCategoriaDTO } from './dto/update_categoria.dto';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { ApiResponseFactory, ComboMapper } from '@common/index';
+import { DataSource } from 'typeorm';
+import { CategoriasMapper } from './categorias.mapper';
+import { CategoriasRepository } from './categorias.repository';
 import { CreateCategoriaDTO } from './dto/create_categoria.dto';
 import { FilterCategoriaDTO } from './dto/filter_categoria.dto';
-
+import { UpdateCategoriaDTO } from './dto/update_categoria.dto';
 
 @Injectable()
 export class CategoriasService {
-  
-  private fnName: string = 'categoria';
-  constructor(private readonly db: DatabaseService){}
+  constructor(
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
+    private readonly categoriasRepository: CategoriasRepository,
+  ) {}
 
-  async listar(){
-    return this.db.executeFunctionRead(`fn_listar_${this.fnName}`);
+  async listar() {
+    const categorias = await this.dataSource.transaction((manager) =>
+      this.categoriasRepository.listar(manager),
+    );
+
+    return ApiResponseFactory.legacyRead(
+      CategoriasMapper.toRows(categorias),
+      'Listado de categorías obtenido',
+    );
   }
 
-  async buscar(id:number){
-    return this.db.executeFunctionRead(`fn_buscar_${this.fnName}`, [id]);
+  async buscar(id: number) {
+    const ideCate = Number(id);
+
+    if (!ideCate || Number.isNaN(ideCate)) {
+      throw new BadRequestException('El ID de la categoría no es válido.');
+    }
+
+    const categoria = await this.dataSource.transaction((manager) =>
+      this.categoriasRepository.buscarPorId(ideCate, manager),
+    );
+
+    return ApiResponseFactory.legacyRead(
+      categoria ? [CategoriasMapper.toRow(categoria)] : [],
+      'Categoría encontrada',
+    );
   }
 
-  async filtrar(queryParams: FilterCategoriaDTO){
-    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}`, queryParams.toArray());
+  async filtrar(queryParams: FilterCategoriaDTO) {
+    const categorias = await this.dataSource.transaction((manager) =>
+      this.categoriasRepository.filtrar(queryParams, manager),
+    );
+
+    return ApiResponseFactory.legacyRead(
+      CategoriasMapper.toRows(categorias),
+      'Filtrado de categorías completado',
+    );
   }
 
-  async insertar(body:CreateCategoriaDTO){
-    return this.db.executeFunctionWrite(`fn_insertar_${this.fnName}`, body.toArray());
+  async insertar(body: CreateCategoriaDTO) {
+    try {
+      const categoria = await this.dataSource.transaction((manager) =>
+        this.categoriasRepository.crear(body, manager),
+      );
+
+      return ApiResponseFactory.legacyWrite(
+        1,
+        'Categoría registrada correctamente',
+        categoria.ideCate,
+      );
+    } catch (error) {
+      return ApiResponseFactory.legacyWrite(
+        0,
+        error?.message || 'No se pudo registrar la categoría.',
+      );
+    }
   }
 
-  async actualizar(body:UpdateCategoriaDTO){
-    return this.db.executeFunctionWrite(`fn_actualizar_${this.fnName}`, body.toArray());
+  async actualizar(body: UpdateCategoriaDTO) {
+    const ideCate = Number(body.ideCate);
+
+    if (!ideCate || Number.isNaN(ideCate)) {
+      throw new BadRequestException('El ID de la categoría no es válido.');
+    }
+
+    try {
+      const categoria = await this.dataSource.transaction(async (manager) => {
+        const categoriaActual = await this.categoriasRepository.buscarPorId(
+          ideCate,
+          manager,
+        );
+
+        if (!categoriaActual) {
+          throw new Error('No se encontró la categoría indicada.');
+        }
+
+        return this.categoriasRepository.actualizar(
+          categoriaActual,
+          body,
+          manager,
+        );
+      });
+
+      return ApiResponseFactory.legacyWrite(
+        1,
+        'Categoría actualizada correctamente',
+        categoria.ideCate,
+      );
+    } catch (error) {
+      return ApiResponseFactory.legacyWrite(
+        0,
+        error?.message || 'No se pudo actualizar la categoría.',
+      );
+    }
   }
 
-  async eliminar(id:number){
-    return this.db.executeFunctionWrite(`fn_eliminar_${this.fnName}`, [id]);
-  }
+  async eliminar(id: number) {
+    const ideCate = Number(id);
 
+    if (!ideCate || Number.isNaN(ideCate)) {
+      throw new BadRequestException('El ID de la categoría no es válido.');
+    }
+
+    try {
+      const affected = await this.dataSource.transaction((manager) =>
+        this.categoriasRepository.eliminar(ideCate, manager),
+      );
+
+      if (affected === 0) {
+        return ApiResponseFactory.legacyWrite(
+          0,
+          'No se encontró la categoría indicada.',
+        );
+      }
+
+      return ApiResponseFactory.legacyWrite(
+        1,
+        'Categoría eliminada correctamente',
+      );
+    } catch (error) {
+      return ApiResponseFactory.legacyWrite(
+        0,
+        error?.message ||
+          'No se pudo eliminar la categoría. Puede estar relacionada con productos.',
+      );
+    }
+  }
 
   /**
    * COMBOS
    */
+  async listarComboCategoriaNombre() {
+    const categorias = await this.dataSource.transaction((manager) =>
+      this.categoriasRepository.listar(manager),
+    );
 
-  async listarComboCategoriaNombre(){
-    const query = 
-      `
-        SELECT json_build_object(
-          'response', 'OK',
-          'data',
-          json_agg(
-            json_build_object(
-              'label', nombre_cate,
-              'value', ide_cate
-            )
-            ORDER BY nombre_cate
-          )
-        )
-        FROM categoria;
-    `;
-    const result = await this.db.executeQuery(query);
-    return result[0].json_build_object.data;
+    return ComboMapper.fromEntities(
+      categorias,
+      (categoria) => categoria.nombreCate,
+      (categoria) => categoria.ideCate,
+    );
   }
 
-  async listarComboCategoriaDescripcion(){
-    const query = 
-      `
-        SELECT json_build_object(
-          'response', 'OK',
-          'data',
-          json_agg(
-            json_build_object(
-              'label', descripcion_cate,
-              'value', ide_cate
-            )
-            ORDER BY descripcion_cate
-          )
-        )
-        FROM categoria;
-    `;
-    const result = await this.db.executeQuery(query);
-    return result[0].json_build_object.data;
+  async listarComboCategoriaDescripcion() {
+    const categorias = await this.dataSource.transaction((manager) =>
+      this.categoriasRepository.listar(manager),
+    );
+
+    return ComboMapper.fromEntities(
+      categorias,
+      (categoria) => categoria.descripcionCate,
+      (categoria) => categoria.ideCate,
+    );
   }
-  
-  async listarComboCategorias(){
-    const query = 
-      `
-        SELECT json_build_object(
-          'response', 'OK',
-          'data',
-          json_agg(
-            json_build_object(
-              'label', nombre_cate,
-              'value', ide_cate
-            )
-            ORDER BY nombre_cate
-          )
-        )
-        FROM categoria;
-    `;
-    const result = await this.db.executeQuery(query);
-    return result[0].json_build_object.data;
+
+  async listarComboCategorias() {
+    return this.listarComboCategoriaNombre();
   }
 }
