@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { PerfilOpcionesEntity } from './perfil_opciones.entity';
 
 @Entity({ name: 'opciones' })
 export class OpcionesEntity {
@@ -43,10 +44,13 @@ export class OpcionesEntity {
   nivelOpci!: number;
 
   @Column({ name: 'padre_opci', type: 'int', nullable: true })
-  padreOpci?: number;
+  padreOpci?: number | null;
 
   @Column({ name: 'icono_opci', type: 'varchar', length: 50, nullable: true })
-  iconoOpci?: string;
+  iconoOpci?: string | null;
+
+  @OneToMany(() => PerfilOpcionesEntity, (perfilOpcion) => perfilOpcion.opcion)
+  perfilesOpciones?: PerfilOpcionesEntity[];
 }
 
 export { OpcionesEntity as Opciones };

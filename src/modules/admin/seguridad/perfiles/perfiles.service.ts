@@ -1,113 +1,204 @@
-import { Injectable } from '@nestjs/common';
-import {DatabaseService} from '@database';
-import { UpdatePerfilDto } from './dto/update_perfil.dto';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { ApiResponseFactory, ComboMapper } from '@common/index';
+import { DataSource } from 'typeorm';
 import { CreatePerfilDto } from './dto/create_perfil.dto';
 import { FilterPerfilDto } from './dto/filter_perfil.dto';
-
-
+import { UpdatePerfilDto } from './dto/update_perfil.dto';
+import { PerfilesMapper } from './perfiles.mapper';
+import { PerfilesRepository } from './perfiles.repository';
 
 @Injectable()
 export class PerfilesService {
-  
-  private fnName: string = 'perfil';
-  constructor(private readonly db: DatabaseService){}
+  constructor(
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
+    private readonly perfilesRepository: PerfilesRepository,
+  ) {}
 
-  async listar(){
-    return this.db.executeFunctionRead(`fn_listar_${this.fnName}`);
+  async listar() {
+    const perfiles = await this.dataSource.transaction((manager) =>
+      this.perfilesRepository.listar(manager),
+    );
+
+    return ApiResponseFactory.legacyRead(
+      PerfilesMapper.toRows(perfiles),
+      'Listado de perfiles obtenido',
+    );
   }
 
-  async buscar(id:number){
-    return this.db.executeFunctionRead(`fn_buscar_${this.fnName}`, [id]);
+  async buscar(id: number) {
+    const idePerf = Number(id);
+
+    if (!idePerf || Number.isNaN(idePerf)) {
+      throw new BadRequestException('El ID del perfil no es válido.');
+    }
+
+    const perfil = await this.dataSource.transaction((manager) =>
+      this.perfilesRepository.buscarPorId(idePerf, manager),
+    );
+
+    return ApiResponseFactory.legacyRead(
+      perfil ? [PerfilesMapper.toRow(perfil)] : [],
+      'Perfil encontrado',
+    );
   }
 
-  async filtrar(queryParams: FilterPerfilDto){
-    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}`, queryParams.toArray());
+  async filtrar(queryParams: FilterPerfilDto) {
+    const perfiles = await this.dataSource.transaction((manager) =>
+      this.perfilesRepository.filtrar(queryParams, manager),
+    );
+
+    return ApiResponseFactory.legacyRead(
+      PerfilesMapper.toRows(perfiles),
+      'Filtrado de perfiles completado',
+    );
   }
 
-  async insertar(body:CreatePerfilDto){
-    return this.db.executeFunctionWrite(`fn_insertar_${this.fnName}`, body.toArray());
+  async insertar(body: CreatePerfilDto) {
+    try {
+      const perfil = await this.dataSource.transaction((manager) =>
+        this.perfilesRepository.crear(body, manager),
+      );
+
+      return ApiResponseFactory.legacyWrite(
+        1,
+        'Perfil registrado correctamente',
+        perfil.idePerf,
+      );
+    } catch (error) {
+      return ApiResponseFactory.legacyWrite(
+        0,
+        error?.message || 'No se pudo registrar el perfil.',
+      );
+    }
   }
 
-  async actualizar(body:UpdatePerfilDto){
-    return this.db.executeFunctionWrite(`fn_actualizar_${this.fnName}`, body.toArray());
+  async actualizar(body: UpdatePerfilDto) {
+    const idePerf = Number(body.idePerf);
+
+    if (!idePerf || Number.isNaN(idePerf)) {
+      throw new BadRequestException('El ID del perfil no es válido.');
+    }
+
+    try {
+      const perfil = await this.dataSource.transaction(async (manager) => {
+        const perfilActual = await this.perfilesRepository.buscarPorId(
+          idePerf,
+          manager,
+        );
+
+        if (!perfilActual) {
+          throw new Error('No se encontró el perfil indicado.');
+        }
+
+        return this.perfilesRepository.actualizar(perfilActual, body, manager);
+      });
+
+      return ApiResponseFactory.legacyWrite(
+        1,
+        'Perfil actualizado correctamente',
+        perfil.idePerf,
+      );
+    } catch (error) {
+      return ApiResponseFactory.legacyWrite(
+        0,
+        error?.message || 'No se pudo actualizar el perfil.',
+      );
+    }
   }
 
-  async eliminar(id:number){
-    return this.db.executeFunctionWrite(`fn_eliminar_${this.fnName}`, [id]);
+  async eliminar(id: number) {
+    const idePerf = Number(id);
+
+    if (!idePerf || Number.isNaN(idePerf)) {
+      throw new BadRequestException('El ID del perfil no es válido.');
+    }
+
+    try {
+      const affected = await this.dataSource.transaction((manager) =>
+        this.perfilesRepository.eliminar(idePerf, manager),
+      );
+
+      if (affected === 0) {
+        return ApiResponseFactory.legacyWrite(
+          0,
+          'No se encontró el perfil indicado.',
+        );
+      }
+
+      return ApiResponseFactory.legacyWrite(
+        1,
+        'Perfil eliminado correctamente',
+      );
+    } catch (error) {
+      return ApiResponseFactory.legacyWrite(
+        0,
+        error?.message ||
+          'No se pudo eliminar el perfil. Puede estar relacionado con cuentas o accesos.',
+      );
+    }
   }
 
   /**
    * JOINS
    */
-  async listarPerfiles(){
-    return this.db.executeFunctionRead(`fn_listar_${this.fnName}_rol`);
-  }
-  async filtrarPerfiles(queryParams: FilterPerfilDto){
-    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}_rol`, queryParams.toArray());
+  async listarPerfiles() {
+    return this.listar();
   }
 
+  async filtrarPerfiles(queryParams: FilterPerfilDto) {
+    return this.filtrar(queryParams);
+  }
 
   /**
    * COMBOS
    */
   async listarComboPerfiles() {
-    const query = 
-    `
-      SELECT json_build_object(
-        'response', 'OK',
-        'data',
-        json_agg(
-          json_build_object(
-            'label', nombre_perf,
-            'value', ide_perf
-          )
-          ORDER BY nombre_perf
-        )
-      )
-      FROM perfil;
-    `;
-    const result = await this.db.executeQuery(query);
-    return result[0].json_build_object.data;
+    const perfiles = await this.dataSource.transaction((manager) =>
+      this.perfilesRepository.listar(manager),
+    );
+
+    return ComboMapper.fromEntities(
+      perfiles,
+      (perfil) => perfil.nombrePerf,
+      (perfil) => perfil.idePerf,
+    );
   }
 
   async listarComboNombres() {
-    const query = 
-    `
-      SELECT json_build_object(
-        'response', 'OK',
-        'data',
-        json_agg(
-          json_build_object(
-            'label', nombre_perf,
-            'value', ide_perf
-          )
-          ORDER BY nombre_perf
-        )
-      )
-      FROM perfil;
-    `;
-    const result = await this.db.executeQuery(query);
-    return result[0].json_build_object.data;
+    return this.listarComboPerfiles();
   }
 
   async listarComboDescripcion() {
-    const query = 
-    `
-      SELECT json_build_object(
-        'response', 'OK',
-        'data',
-        json_agg(
-          json_build_object(
-            'label', descripcion_perf,
-            'value', ide_perf
-          )
-          ORDER BY descripcion_perf
-        )
-      )
-      FROM perfil;
-    `;
-    const result = await this.db.executeQuery(query);
-    return result[0].json_build_object.data;
+    const perfiles = await this.dataSource.transaction((manager) =>
+      this.perfilesRepository.listar(manager),
+    );
+
+    const descripcionesUnicas = Array.from(
+      new Set(
+        perfiles
+          .map((perfil) => perfil.descripcionPerf)
+          .filter((descripcion) => !!descripcion),
+      ),
+    ).sort((a, b) => a.localeCompare(b));
+
+    return ComboMapper.fromEntities(
+      descripcionesUnicas,
+      (descripcion) => descripcion,
+      (descripcion) => descripcion,
+    );
   }
-  
+
+  async listarComboRoles() {
+    const roles = await this.dataSource.transaction((manager) =>
+      this.perfilesRepository.listarRoles(manager),
+    );
+
+    return ComboMapper.fromEntities(
+      roles,
+      (rol) => rol.nombreRol,
+      (rol) => rol.ideRol,
+    );
+  }
 }

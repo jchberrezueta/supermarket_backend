@@ -1,87 +1,137 @@
-import { Injectable } from '@nestjs/common';
-import { DatabaseService } from '@database';
-import { FilterAccesoUsuarioDto, FilterAccesoUsuarioDtoToArray } from './dto/filter_acceso.dto';
-import { CreateAccesoUsuarioToArray, CreateAccesoUsuarioDto } from './dto/create_acceso.dto';
-import { toArray } from 'rxjs';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { ApiResponseFactory, ComboMapper } from '@common/index';
+import { DataSource } from 'typeorm';
+import { CreateAccesoUsuarioDto } from './dto/create_acceso.dto';
+import { FilterAccesoUsuarioDto } from './dto/filter_acceso.dto';
+import { AccesosMapper } from './accesos.mapper';
+import { AccesosRepository } from './accesos.repository';
 
 @Injectable()
 export class AccesosUsuariosService {
+  constructor(
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
+    private readonly accesosRepository: AccesosRepository,
+  ) {}
 
-  private fnName: string = 'acceso_usuario'
-  constructor(private readonly db: DatabaseService){}
+  async listar() {
+    const accesos = await this.dataSource.transaction((manager) =>
+      this.accesosRepository.listar(manager),
+    );
 
-  async listar(){
-    return this.db.executeFunctionRead(`fn_listar_${this.fnName}`);
+    return ApiResponseFactory.legacyRead(
+      AccesosMapper.toRows(accesos),
+      'Listado de accesos de usuario obtenido',
+    );
   }
 
   async buscar(id: number) {
-    return this.db.executeFunctionRead(`fn_buscar_${this.fnName}`, [id])
+    const ideAcce = Number(id);
+
+    if (!ideAcce || Number.isNaN(ideAcce)) {
+      throw new BadRequestException('El ID del acceso no es válido.');
+    }
+
+    const acceso = await this.dataSource.transaction((manager) =>
+      this.accesosRepository.buscarPorId(ideAcce, manager),
+    );
+
+    return ApiResponseFactory.legacyRead(
+      acceso ? [AccesosMapper.toRow(acceso)] : [],
+      'Acceso de usuario encontrado',
+    );
   }
 
   async filtrar(queryParams: FilterAccesoUsuarioDto) {
-    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}`, FilterAccesoUsuarioDtoToArray(queryParams));
+    const accesos = await this.dataSource.transaction((manager) =>
+      this.accesosRepository.filtrar(queryParams, manager),
+    );
+
+    return ApiResponseFactory.legacyRead(
+      AccesosMapper.toRows(accesos),
+      'Filtrado de accesos de usuario completado',
+    );
   }
 
   async insertarAccesoUsuario(data: CreateAccesoUsuarioDto) {
-    return this.db.executeFunctionWrite(`fn_insertar_${this.fnName}`, CreateAccesoUsuarioToArray(data));
-  }
+    try {
+      const acceso = await this.dataSource.transaction((manager) =>
+        this.accesosRepository.crear(data, manager),
+      );
 
+      return ApiResponseFactory.legacyWrite(
+        1,
+        'Acceso de usuario registrado correctamente',
+        acceso.ideAcce,
+      );
+    } catch (error) {
+      return ApiResponseFactory.legacyWrite(
+        0,
+        error?.message || 'No se pudo registrar el acceso de usuario.',
+      );
+    }
+  }
 
   /**
    * JOINS
    */
-  async listarAccesos(){
-    return this.db.executeFunctionRead(`fn_listar_${this.fnName}_cuenta`);
+  async listarAccesos() {
+    return this.listar();
   }
-  async filtrarAccesos(queryParams: FilterAccesoUsuarioDto){
-    return this.db.executeFunctionRead(`fn_filtrar_${this.fnName}`, queryParams.toArray());
+
+  async filtrarAccesos(queryParams: FilterAccesoUsuarioDto) {
+    return this.filtrar(queryParams);
   }
 
   /**
    * COMBOS
    */
   async listarComboIps() {
-    const query = `
-      SELECT json_build_object(
-        'response', 'OK',
-        'data',
-        json_agg(
-          json_build_object(
-            'label', ip_acce,
-            'value', ip_acce
-          )
-          ORDER BY ip_acce
-        )
-      )
-      FROM (
-        SELECT DISTINCT ip_acce
-        FROM acceso_usuario
-      ) t;
-    `;
-    const result = await this.db.executeQuery(query);
-    return result[0].json_build_object.data;
+    const accesos = await this.dataSource.transaction((manager) =>
+      this.accesosRepository.listar(manager),
+    );
+
+    const ipsUnicas = Array.from(
+      new Set(accesos.map((acceso) => acceso.ipAcce).filter((ip) => !!ip)),
+    ).sort((a, b) => a.localeCompare(b));
+
+    return ComboMapper.fromEntities(
+      ipsUnicas,
+      (ip) => ip,
+      (ip) => ip,
+    );
   }
 
   async listarComboNavegador() {
-    const query = `
-      SELECT json_build_object(
-        'response', 'OK',
-        'data',
-        json_agg(
-          json_build_object(
-            'label', navegador_acce,
-            'value', navegador_acce
-          )
-          ORDER BY navegador_acce
-        )
-      )
-      FROM (
-        SELECT DISTINCT navegador_acce
-        FROM acceso_usuario
-      ) t;
-    `;
-    const result = await this.db.executeQuery(query);
-    return result[0].json_build_object.data;
+    const accesos = await this.dataSource.transaction((manager) =>
+      this.accesosRepository.listar(manager),
+    );
+
+    const navegadoresUnicos = Array.from(
+      new Set(
+        accesos
+          .map((acceso) => acceso.navegadorAcce)
+          .filter((navegador) => !!navegador),
+      ),
+    ).sort((a, b) => a.localeCompare(b));
+
+    return ComboMapper.fromEntities(
+      navegadoresUnicos,
+      (navegador) => navegador,
+      (navegador) => navegador,
+    );
   }
 
+  async listarComboCuentas() {
+    const cuentas = await this.dataSource.transaction((manager) =>
+      this.accesosRepository.listarCuentas(manager),
+    );
+
+    return ComboMapper.fromEntities(
+      cuentas,
+      (cuenta) => cuenta.usuarioCuen,
+      (cuenta) => cuenta.ideCuen,
+    );
+  }
 }

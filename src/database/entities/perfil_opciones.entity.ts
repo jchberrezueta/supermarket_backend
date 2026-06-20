@@ -1,4 +1,12 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { OpcionesEntity } from './opciones.entity';
+import { PerfilEntity } from './perfil.entity';
 
 @Entity({ name: 'perfil_opciones' })
 export class PerfilOpcionesEntity {
@@ -39,6 +47,18 @@ export class PerfilOpcionesEntity {
 
   @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
   fechaActua?: Date;
+
+  @ManyToOne(() => PerfilEntity, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'ide_perf' })
+  perfil?: PerfilEntity;
+
+  @ManyToOne(() => OpcionesEntity, (opcion) => opcion.perfilesOpciones, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'ide_opci' })
+  opcion?: OpcionesEntity;
 }
 
 export { PerfilOpcionesEntity as PerfilOpciones };

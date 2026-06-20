@@ -1,4 +1,11 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { CuentaEntity } from './cuenta.entity';
 
 @Entity({ name: 'acceso_usuario' })
 export class AccesoUsuarioEntity {
@@ -37,7 +44,7 @@ export class AccesoUsuarioEntity {
     scale: 6,
     nullable: true,
   })
-  latitudAcce?: string;
+  latitudAcce?: string | null;
 
   @Column({
     name: 'longitud_acce',
@@ -46,7 +53,13 @@ export class AccesoUsuarioEntity {
     scale: 6,
     nullable: true,
   })
-  longitudAcce?: string;
+  longitudAcce?: string | null;
+
+  @ManyToOne(() => CuentaEntity, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'ide_cuen' })
+  cuenta?: CuentaEntity;
 }
 
 export { AccesoUsuarioEntity as AccesoUsuario };
