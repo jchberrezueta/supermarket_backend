@@ -12,6 +12,9 @@ import { PosService } from './pos.service';
 import { PosScanController } from './pos-scan.controller';
 import { PosScanGateway } from './pos-scan.gateway';
 import { PosScanService } from './pos-scan.service';
+import { InvoiceNumberService } from './domain/invoice-number.service';
+import { PosCalculatorService } from './domain/pos-calculator.service';
+import { StockPolicyService } from './domain/stock-policy.service';
 
 @Module({
   imports: [
@@ -23,6 +26,14 @@ import { PosScanService } from './pos-scan.service';
     ]),
   ],
   controllers: [PosController, PosScanController],
-  providers: [PosService, PosRepository, PosScanService, PosScanGateway],
+  providers: [
+    PosService,
+    PosRepository,
+    PosScanService,
+    PosScanGateway,
+    PosCalculatorService,
+    InvoiceNumberService,
+    StockPolicyService,
+  ],
 })
 export class PosModule {}

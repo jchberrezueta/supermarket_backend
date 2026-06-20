@@ -4,18 +4,29 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
+import { ProductoEntity } from '@entities';
 import { DataSource } from 'typeorm';
 import { ConfirmarVentaPosDto } from './dto/confirmar_venta_pos.dto';
+import {
+  PosCalculatorService,
+  PosDetalleCalculado,
+} from './domain/pos-calculator.service';
+import { InvoiceNumberService } from './domain/invoice-number.service';
+import {
+  PosAlertaStock,
+  StockPolicyService,
+} from './domain/stock-policy.service';
 import { PosRepository } from './pos.repository';
 
 @Injectable()
 export class PosService {
-  private readonly stockMinimo = 5;
-
   constructor(
     @InjectDataSource()
     private readonly dataSource: DataSource,
     private readonly posRepository: PosRepository,
+    private readonly posCalculatorService: PosCalculatorService,
+    private readonly invoiceNumberService: InvoiceNumberService,
+    private readonly stockPolicyService: StockPolicyService,
   ) {}
 
   async buscarProductoPorCodigo(codigo: string) {
@@ -64,18 +75,21 @@ export class PosService {
         'Debe agregar al menos un producto a la venta.',
       );
     }
+
     const ideEmpl = user.ideEmpl ?? dto.ideEmpl;
 
     if (ideEmpl === undefined || ideEmpl === null || Number.isNaN(ideEmpl)) {
-      // que paso aqui?
       throw new BadRequestException(
         'No se pudo identificar el cajero de la venta.',
       );
     }
 
     return this.dataSource.transaction(async (manager) => {
-      const itemsConsolidados = this.consolidarItems(dto.items);
-      const numeroFactura = this.generarNumeroFactura();
+      const itemsConsolidados = this.posCalculatorService.consolidarItems(
+        dto.items,
+      );
+
+      const numeroFactura = this.invoiceNumberService.generarNumeroFactura();
 
       const cliente = await this.posRepository.findClienteById(
         dto.ideClie,
@@ -88,29 +102,9 @@ export class PosService {
         );
       }
 
-      let cantidadTotal = 0;
-      let subtotalVenta = 0;
-      let ivaVenta = 0;
-      let descuentoVenta = 0;
-      let totalVenta = 0;
-
-      const detallesCalculados: Array<{
-        ideProd: number;
-        nombreProd: string;
-        cantidad: number;
-        precioUnitario: number;
-        subtotal: number;
-        iva: number;
-        descuento: number;
-        total: number;
-      }> = [];
-
-      const alertasStock: Array<{
-        ideProd: number;
-        nombreProd: string;
-        stockActual: number;
-        mensaje: string;
-      }> = [];
+      const detallesCalculados: PosDetalleCalculado[] = [];
+      const alertasStock: PosAlertaStock[] = [];
+      const productosBloqueados = new Map<number, ProductoEntity>();
 
       for (const item of itemsConsolidados) {
         const producto =
@@ -125,51 +119,19 @@ export class PosService {
           );
         }
 
-        if (producto.stockProd < item.cantidad) {
-          throw new BadRequestException(
-            `Stock insuficiente para ${producto.nombreProd}. Disponible: ${producto.stockProd}`,
-          );
-        }
+        this.stockPolicyService.validarStockDisponible(producto, item.cantidad);
 
-        const precioUnitario = this.toNumber(producto.precioVentaProd);
-        const tasaIva = this.normalizarTasaIva(producto.ivaProd);
-        const descuentoUnitario = this.toNumber(producto.dctoPromoProd);
+        const detalleCalculado = this.posCalculatorService.calcularDetalle(
+          producto,
+          item.cantidad,
+        );
 
-        const subtotalBruto = this.redondear(precioUnitario * item.cantidad);
-        const descuento = this.redondear(descuentoUnitario * item.cantidad);
-
-        if (descuento > subtotalBruto) {
-          throw new BadRequestException(
-            `El descuento del producto ${producto.nombreProd} no puede superar el subtotal.`,
-          );
-        }
-
-        const baseImponible = this.redondear(subtotalBruto - descuento);
-        const iva = this.redondear(baseImponible * tasaIva);
-        const total = this.redondear(baseImponible + iva);
-
-        cantidadTotal += item.cantidad;
-        subtotalVenta += baseImponible;
-        ivaVenta += iva;
-        descuentoVenta += descuento;
-        totalVenta += total;
-
-        detallesCalculados.push({
-          ideProd: producto.ideProd,
-          nombreProd: producto.nombreProd,
-          cantidad: item.cantidad,
-          precioUnitario,
-          subtotal: baseImponible,
-          iva,
-          descuento,
-          total,
-        });
+        detallesCalculados.push(detalleCalculado);
+        productosBloqueados.set(producto.ideProd, producto);
       }
 
-      subtotalVenta = this.redondear(subtotalVenta);
-      ivaVenta = this.redondear(ivaVenta);
-      descuentoVenta = this.redondear(descuentoVenta);
-      totalVenta = this.redondear(totalVenta);
+      const totalesVenta =
+        this.posCalculatorService.calcularTotales(detallesCalculados);
 
       const venta = await this.posRepository.guardarVenta(
         {
@@ -177,9 +139,9 @@ export class PosService {
           ideEmpl,
           numFacturaVent: numeroFactura,
           fechaVent: new Date(),
-          cantidadVent: cantidadTotal,
-          subTotalVent: subtotalVenta.toFixed(2),
-          totalVent: totalVenta.toFixed(2),
+          cantidadVent: totalesVenta.cantidadTotal,
+          subTotalVent: totalesVenta.subtotalVenta.toFixed(2),
+          totalVent: totalesVenta.totalVenta.toFixed(2),
           dctoSocioVent: '0.00',
           dctoEdadVent: '0.00',
           estadoVent: 'completado',
@@ -205,11 +167,7 @@ export class PosService {
           manager,
         );
 
-        const producto =
-          await this.posRepository.findProductoActivoByIdForUpdate(
-            detalle.ideProd,
-            manager,
-          );
+        const producto = productosBloqueados.get(detalle.ideProd);
 
         if (!producto) {
           throw new BadRequestException(
@@ -217,23 +175,23 @@ export class PosService {
           );
         }
 
-        producto.stockProd -= detalle.cantidad;
-        producto.disponibleProd = producto.stockProd > 0 ? 'si' : 'no';
-        producto.usuaActua = 'pos';
-        producto.fechaActua = new Date();
+        const productoConStockActualizado =
+          this.stockPolicyService.descontarStock(
+            producto,
+            detalle.cantidad,
+            'pos',
+          );
 
         const productoActualizado = await this.posRepository.guardarProducto(
-          producto,
+          productoConStockActualizado,
           manager,
         );
 
-        if (productoActualizado.stockProd <= this.stockMinimo) {
-          alertasStock.push({
-            ideProd: productoActualizado.ideProd,
-            nombreProd: productoActualizado.nombreProd,
-            stockActual: productoActualizado.stockProd,
-            mensaje: `Stock bajo para ${productoActualizado.nombreProd}`,
-          });
+        const alertaStock =
+          this.stockPolicyService.crearAlertaSiStockBajo(productoActualizado);
+
+        if (alertaStock) {
+          alertasStock.push(alertaStock);
         }
       }
 
@@ -241,11 +199,11 @@ export class PosService {
         data: {
           ideVent: venta.ideVent,
           numFacturaVent: venta.numFacturaVent,
-          cantidadVent: cantidadTotal,
-          subtotalVent: subtotalVenta,
-          ivaVent: ivaVenta,
-          descuentoVent: descuentoVenta,
-          totalVent: totalVenta,
+          cantidadVent: totalesVenta.cantidadTotal,
+          subtotalVent: totalesVenta.subtotalVenta,
+          ivaVent: totalesVenta.ivaVenta,
+          descuentoVent: totalesVenta.descuentoVenta,
+          totalVent: totalesVenta.totalVenta,
           detalles: detallesCalculados,
           alertasStock,
         },
@@ -311,13 +269,14 @@ export class PosService {
           );
         }
 
-        producto.stockProd += detalle.cantidadProd;
-        producto.disponibleProd = producto.stockProd > 0 ? 'si' : 'no';
-        producto.usuaActua = 'pos';
-        producto.fechaActua = new Date();
+        const productoConStockRevertido = this.stockPolicyService.revertirStock(
+          producto,
+          detalle.cantidadProd,
+          'pos',
+        );
 
         const productoActualizado = await this.posRepository.guardarProducto(
-          producto,
+          productoConStockRevertido,
           manager,
         );
 
@@ -350,69 +309,5 @@ export class PosService {
         },
       };
     });
-  }
-
-  private generarNumeroFactura(): string {
-    const now = new Date();
-
-    const fecha = [
-      now.getFullYear(),
-      String(now.getMonth() + 1).padStart(2, '0'),
-      String(now.getDate()).padStart(2, '0'),
-      String(now.getHours()).padStart(2, '0'),
-      String(now.getMinutes()).padStart(2, '0'),
-      String(now.getSeconds()).padStart(2, '0'),
-    ].join('');
-
-    const aleatorio = Math.floor(Math.random() * 900 + 100);
-
-    return `POS-${fecha}-${aleatorio}`;
-  }
-
-  private toNumber(value: string | number | null | undefined): number {
-    if (value === null || value === undefined) {
-      return 0;
-    }
-
-    const numero = Number(value);
-
-    if (Number.isNaN(numero)) {
-      return 0;
-    }
-
-    return numero;
-  }
-
-  private normalizarTasaIva(value: string | number | null | undefined): number {
-    const iva = this.toNumber(value);
-
-    if (iva > 1) {
-      return iva / 100;
-    }
-
-    return iva;
-  }
-
-  private consolidarItems(items: Array<{ ideProd: number; cantidad: number }>) {
-    const mapa = new Map<number, { ideProd: number; cantidad: number }>();
-
-    for (const item of items) {
-      const existente = mapa.get(item.ideProd);
-
-      if (existente) {
-        existente.cantidad += item.cantidad;
-      } else {
-        mapa.set(item.ideProd, {
-          ideProd: item.ideProd,
-          cantidad: item.cantidad,
-        });
-      }
-    }
-
-    return Array.from(mapa.values());
-  }
-
-  private redondear(value: number): number {
-    return Math.round((value + Number.EPSILON) * 100) / 100;
   }
 }
