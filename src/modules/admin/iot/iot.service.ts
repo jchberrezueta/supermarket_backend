@@ -139,27 +139,45 @@ export class IotService {
     const alertas = [];
 
     if (temperatura >= this.temperaturaMaxima) {
-      const alerta = await this.iotRepository.guardarAlerta({
+      const alertaAbierta = await this.iotRepository.buscarAlertaAbiertaPorTipo(
         ideDisp,
-        ideLect,
-        tipoAler: 'temperatura_alta',
-        mensajeAler: `Temperatura alta detectada: ${temperatura} °C.`,
-        estadoAler: 'abierta',
-      });
+        'temperatura_alta',
+      );
 
-      alertas.push(IotMapper.toAlertaResponse(alerta));
+      if (alertaAbierta) {
+        alertas.push(IotMapper.toAlertaResponse(alertaAbierta));
+      } else {
+        const alerta = await this.iotRepository.guardarAlerta({
+          ideDisp,
+          ideLect,
+          tipoAler: 'temperatura_alta',
+          mensajeAler: `Temperatura alta detectada: ${temperatura} °C.`,
+          estadoAler: 'abierta',
+        });
+
+        alertas.push(IotMapper.toAlertaResponse(alerta));
+      }
     }
 
     if (humedad >= this.humedadMaxima) {
-      const alerta = await this.iotRepository.guardarAlerta({
+      const alertaAbierta = await this.iotRepository.buscarAlertaAbiertaPorTipo(
         ideDisp,
-        ideLect,
-        tipoAler: 'humedad_alta',
-        mensajeAler: `Humedad alta detectada: ${humedad} %.`,
-        estadoAler: 'abierta',
-      });
+        'humedad_alta',
+      );
 
-      alertas.push(IotMapper.toAlertaResponse(alerta));
+      if (alertaAbierta) {
+        alertas.push(IotMapper.toAlertaResponse(alertaAbierta));
+      } else {
+        const alerta = await this.iotRepository.guardarAlerta({
+          ideDisp,
+          ideLect,
+          tipoAler: 'humedad_alta',
+          mensajeAler: `Humedad alta detectada: ${humedad} %.`,
+          estadoAler: 'abierta',
+        });
+
+        alertas.push(IotMapper.toAlertaResponse(alerta));
+      }
     }
 
     return alertas;

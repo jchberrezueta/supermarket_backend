@@ -70,6 +70,22 @@ export class IotRepository {
     });
   }
 
+  buscarAlertaAbiertaPorTipo(
+    ideDisp: number,
+    tipoAler: string,
+  ): Promise<IotAlertaEntity | null> {
+    return this.alertasRepository.findOne({
+      where: {
+        ideDisp,
+        tipoAler,
+        estadoAler: 'abierta',
+      },
+      order: {
+        fechaAler: 'DESC',
+      },
+    });
+  }
+
   listarAlertasAbiertas(): Promise<IotAlertaEntity[]> {
     return this.alertasRepository.find({
       relations: { dispositivo: true, lectura: true },
