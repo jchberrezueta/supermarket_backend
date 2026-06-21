@@ -8,6 +8,7 @@ import { FiltroCuentaDto } from './dto/filter_cuenta.dto';
 import { UpdateCuentaDto } from './dto/update_cuenta.dto';
 import { CuentasMapper } from './cuentas.mapper';
 import { CuentasRepository } from './cuentas.repository';
+import { IdUtil } from '@common/utils/id.util';
 
 @Injectable()
 export class CuentasService {
@@ -29,9 +30,9 @@ export class CuentasService {
   }
 
   async buscar(id: number) {
-    const ideCuen = Number(id);
+    const ideCuen = IdUtil.parseId(id);
 
-    if (!ideCuen || Number.isNaN(ideCuen)) {
+    if (ideCuen === null) {
       throw new BadRequestException('El ID de la cuenta no es válido.');
     }
 
@@ -57,9 +58,9 @@ export class CuentasService {
   }
 
   async eliminar(id: number) {
-    const ideCuen = Number(id);
+    const ideCuen = IdUtil.parseId(id);
 
-    if (!ideCuen || Number.isNaN(ideCuen)) {
+    if (ideCuen === null) {
       throw new BadRequestException('El ID de la cuenta no es válido.');
     }
 
@@ -110,9 +111,9 @@ export class CuentasService {
   }
 
   async actualizar(body: UpdateCuentaDto) {
-    const ideCuen = Number(body.ideCuen);
+    const ideCuen = IdUtil.parseId(body.ideCuen);
 
-    if (!ideCuen || Number.isNaN(ideCuen)) {
+    if (ideCuen === null) {
       throw new BadRequestException('El ID de la cuenta no es válido.');
     }
 
@@ -178,9 +179,9 @@ export class CuentasService {
   }
 
   async getPerfilPermisos(idCuenta: string) {
-    const ideCuen = Number(idCuenta);
+    const ideCuen = IdUtil.parseId(idCuenta);
 
-    if (!ideCuen || Number.isNaN(ideCuen)) {
+    if (ideCuen === null) {
       return [];
     }
 
@@ -195,24 +196,24 @@ export class CuentasService {
    * Luego lo reemplazamos por construcción de árbol en TypeScript.
    */
   async getSidebarRutas(idCuenta: string) {
-    const ideCuen = Number(idCuenta);
+    const ideCuen = IdUtil.parseId(idCuenta);
 
-    if (!ideCuen || Number.isNaN(ideCuen)) {
+    if (ideCuen === null) {
       return [];
     }
 
     const query = `
-      SELECT 
-        jsonb_agg(obtener_rutas_json(d.ide_opci, b.ide_perf)) AS menu
-      FROM cuenta a
-      LEFT JOIN perfil b ON b.ide_perf = a.ide_perf
-      LEFT JOIN perfil_opciones c ON c.ide_perf = b.ide_perf
-      LEFT JOIN opciones d ON d.ide_opci = c.ide_opci
-      WHERE a.ide_cuen = $1
-        AND a.estado_cuen = 'activo'
-        AND d.padre_opci IS NULL
-        AND d.activo_opci = 'si'
-    `;
+    SELECT 
+      jsonb_agg(obtener_rutas_json(d.ide_opci, b.ide_perf)) AS menu
+    FROM cuenta a
+    LEFT JOIN perfil b ON b.ide_perf = a.ide_perf
+    LEFT JOIN perfil_opciones c ON c.ide_perf = b.ide_perf
+    LEFT JOIN opciones d ON d.ide_opci = c.ide_opci
+    WHERE a.ide_cuen = $1
+      AND a.estado_cuen = 'activo'
+      AND d.padre_opci IS NULL
+      AND d.activo_opci = 'si'
+  `;
 
     const result = await this.dataSource.query(query, [ideCuen]);
 
