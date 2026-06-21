@@ -1,20 +1,56 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreatePedidoCabeceraDTO } from './create_pedido_cabecera.dto';
-import { IsInt, Min } from 'class-validator';
+import { EnumEstadosPedido, EnumMotivosPedido } from '@models';
+import { Transform, Type } from 'class-transformer';
+import {
+  IsDateString,
+  IsEnum,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Length,
+  Min,
+} from 'class-validator';
 
-export class UpdatePedidoCabeceraDTO extends (CreatePedidoCabeceraDTO) {
+export class UpdatePedidoCabeceraDTO {
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  idePedi!: number;
 
-    @IsInt()
-    @Min(0)
-    idePedi: number;
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  ideEmpr!: number;
 
-    toArray (): any[]  {
-        const lista = super.toArray();
-        // Remover el último null (p_usua_ingre) y agregar al inicio el ID
-        lista.pop();
-        lista.unshift(this.idePedi);
-        lista.push(null); // p_usua_actua
-        return lista;
-    };
+  @IsDateString()
+  fechaPedi!: string;
 
+  @IsDateString()
+  fechaEntrPedi!: string;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  cantidadTotalPedi!: number;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  totalPedi!: number;
+
+  @IsEnum(EnumEstadosPedido)
+  estadoPedi!: EnumEstadosPedido;
+
+  @IsEnum(EnumMotivosPedido)
+  motivoPedi!: EnumMotivosPedido;
+
+  @IsOptional()
+  @IsString()
+  @Length(1, 250)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : 'ninguna',
+  )
+  observacionPedi?: string;
 }

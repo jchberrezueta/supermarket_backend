@@ -1,77 +1,80 @@
-import { IsString, IsNumber, IsEnum, IsDateString, Length, IsInt, Min, IsOptional, Equals } from 'class-validator';
-import { Transform } from 'class-transformer';
-import { EnumEstadoVenta, IVenta } from '@models';
+import { EnumEstadoVenta } from '@models';
+import { Transform, Type } from 'class-transformer';
+import {
+  IsDateString,
+  IsEnum,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Length,
+  Min,
+} from 'class-validator';
 
-export class CreateVentaCabeceraDTO implements IVenta {
-
-  @IsInt()
-  @Equals(-1)
-  ideVent: number;
-
+export class CreateVentaCabeceraDTO {
+  @Type(() => Number)
   @IsInt()
   @Min(0)
-  ideEmpl: number;
+  ideEmpl!: number;
 
+  @Type(() => Number)
   @IsInt()
   @Min(0)
-  ideClie: number;
+  ideClie!: number;
 
   @IsString()
   @Length(1, 25)
-  @Transform(({value}) => (
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
-  ))
-  numFacturaVent: string;
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : null,
+  )
+  numFacturaVent!: string;
 
   @IsDateString()
-  fechaVent: string;
+  fechaVent!: string;
 
+  @Type(() => Number)
   @IsInt()
   @Min(1)
-  cantidadVent: number;
+  cantidadVent!: number;
 
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
-  subTotalVent: number;
+  subTotalVent!: number;
 
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
-  totalVent: number;
+  totalVent!: number;
 
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
-  dctoSocioVent: number;
+  dctoSocioVent!: number;
 
   @IsEnum(EnumEstadoVenta)
-  estadoVent:EnumEstadoVenta;
+  estadoVent!: EnumEstadoVenta;
 
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
-  dctoEdadVent: number;
+  dctoEdadVent!: number;
 
   @IsOptional()
   @IsString()
+  @Length(1, 50)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : 'efectivo',
+  )
   tipoPagoVent?: string;
 
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
-  ideMetoPago?: number;
-
-  toArray(): any[] {
-    return [
-      this.ideEmpl,
-      this.ideClie,
-      this.numFacturaVent,
-      this.fechaVent,
-      this.cantidadVent,
-      this.subTotalVent,
-      this.dctoSocioVent,
-      this.dctoEdadVent,
-      this.totalVent,
-      this.estadoVent,
-      null, // p_usua_ingre
-      this.tipoPagoVent || 'efectivo', // p_tipo_pago_vent
-      this.ideMetoPago || null // p_ide_meto_pago
-    ]
-  }
+  @Min(0)
+  ideMetoPago?: number | null;
 }

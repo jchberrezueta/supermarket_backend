@@ -1,27 +1,23 @@
-import { 
-  IsString,
-  IsOptional, 
-  IsNotEmpty,
-  IsInt,
-  Min,
-  IsIn
-} from 'class-validator';
-import { Transform } from 'class-transformer';
-import { Length, IsEnum } from 'class-validator';
-import { EnumEstadosProducto, IFiltroProducto } from '@models';
 import { isIntNumeric } from '@helpers/utilities';
+import { Transform } from 'class-transformer';
+import {
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  Length,
+  Min,
+} from 'class-validator';
 
-
-export class FilterProductoDTO implements IFiltroProducto {
-
+export class FilterProductoDTO {
   @IsOptional()
-  @Transform(({value}) => isIntNumeric(value) ? (+value) : null )
+  @Transform(({ value }) => (isIntNumeric(value) ? Number(value) : null))
   @IsInt()
   @Min(0)
   ideCate?: number;
 
   @IsOptional()
-  @Transform(({value}) => isIntNumeric(value) ? (+value) : null )
+  @Transform(({ value }) => (isIntNumeric(value) ? Number(value) : null))
   @IsInt()
   @Min(0)
   ideMarc?: number;
@@ -29,29 +25,24 @@ export class FilterProductoDTO implements IFiltroProducto {
   @IsOptional()
   @IsString()
   @Length(1, 30)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
   codigoBarraProd?: string;
 
   @IsOptional()
   @IsString()
-  @Length(1, 250)
+  @Length(1, 100)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
   nombreProd?: string;
-  
+
   @IsOptional()
   @IsIn(['si', 'no'])
   disponibleProd?: 'si' | 'no';
 
   @IsOptional()
-  @IsEnum(EnumEstadosProducto)
-  estadoProd?: EnumEstadosProducto;
-  
-  toArray(): any[] {
-    return [
-      this.ideCate?? null,
-      this.ideMarc?? null,
-      this.nombreProd?? null,
-      this.codigoBarraProd?? null,
-      this.estadoProd?? null,
-      this.disponibleProd?? null
-    ];
-  }
+  @IsIn(['activo', 'inactivo'])
+  estadoProd?: 'activo' | 'inactivo';
 }

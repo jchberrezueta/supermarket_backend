@@ -1,18 +1,24 @@
-import { IsOptional, IsInt, IsString, Min, Max, IsEnum, IsNumber, Length } from 'class-validator';
-import { Transform, Type } from 'class-transformer';
-import { EnumEstadosCuenta, IFiltroCuenta } from '@models';
 import { isIntNumeric } from '@helpers/utilities';
+import { EnumEstadosCuenta, IFiltroCuenta } from '@models';
+import { Transform } from 'class-transformer';
+import {
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Length,
+  Min,
+} from 'class-validator';
 
 export class FiltroCuentaDto implements IFiltroCuenta {
-
   @IsOptional()
-  @Transform(({value}) => isIntNumeric(value) ? (+value) : null )
+  @Transform(({ value }) => (isIntNumeric(value) ? Number(value) : null))
   @IsInt()
   @Min(0)
   ideEmpl?: number;
 
   @IsOptional()
-  @Transform(({value}) => isIntNumeric(value) ? (+value) : null )
+  @Transform(({ value }) => (isIntNumeric(value) ? Number(value) : null))
   @IsInt()
   @Min(0)
   idePerf?: number;
@@ -20,19 +26,12 @@ export class FiltroCuentaDto implements IFiltroCuenta {
   @IsOptional()
   @IsString()
   @Length(1, 25)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
   usuarioCuen?: string;
 
   @IsOptional()
   @IsEnum(EnumEstadosCuenta)
   estadoCuen?: EnumEstadosCuenta;
-
-  toArray(): any[] {
-    return [
-      this.ideEmpl?? null,
-      this.idePerf?? null,
-      this.usuarioCuen?? null,
-      this.estadoCuen?? null
-    ]
-  }
-
 }

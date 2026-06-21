@@ -34,7 +34,6 @@ export class AuthController {
       ip = ip.split('::ffff:')[1]; // ahora tienes IPv4
     }
     const accesoUsuario: CreateAccesoUsuarioDto = {
-      ideAcce: -1,
       ideCuen: user.ide_cuen,
       navegadorAcce: req.headers['user-agent'] || '',
       fechaAcce: formatDate(new Date()),

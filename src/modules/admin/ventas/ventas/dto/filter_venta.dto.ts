@@ -1,47 +1,46 @@
-import { IsOptional, IsEnum, Min, IsDateString, IsInt, IsString, Length } from 'class-validator';
-import { Transform } from 'class-transformer';
 import { isIntNumeric } from '@helpers/utilities';
-import { EnumEstadoEntrega, EnumEstadoVenta, IFiltroVenta } from '@models';
+import { EnumEstadoVenta } from '@models';
+import { Transform } from 'class-transformer';
+import {
+  IsDateString,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Length,
+  Min,
+} from 'class-validator';
 
-export class FilterVentaDTO implements IFiltroVenta {
-    
-    @IsOptional()
-    @Transform(({value}) => isIntNumeric(value) ? (+value) : null )
-    @IsInt()
-    @Min(0)
-    ideEmpl?: number;
+export class FilterVentaDTO {
+  @IsOptional()
+  @Transform(({ value }) => (isIntNumeric(value) ? Number(value) : null))
+  @IsInt()
+  @Min(0)
+  ideEmpl?: number;
 
-    @IsOptional()
-    @Transform(({value}) => isIntNumeric(value) ? (+value) : null )
-    @IsInt()
-    @Min(0)
-    ideClie?: number;
+  @IsOptional()
+  @Transform(({ value }) => (isIntNumeric(value) ? Number(value) : null))
+  @IsInt()
+  @Min(0)
+  ideClie?: number;
 
-    @IsOptional()
-    @IsString()
-    @Length(1, 25)
-    numFacturaVent: string;
+  @IsOptional()
+  @IsString()
+  @Length(1, 25)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
+  numFacturaVent?: string;
 
-    @IsOptional()
-    @IsEnum(EnumEstadoVenta)
-    estadoVent?: EnumEstadoVenta;
+  @IsOptional()
+  @IsEnum(EnumEstadoVenta)
+  estadoVent?: EnumEstadoVenta;
 
-    @IsOptional()
-    @IsDateString()
-    fechaDesde?: string;
+  @IsOptional()
+  @IsDateString()
+  fechaDesde?: string;
 
-    @IsOptional()
-    @IsDateString()
-    fechaHasta?: string;
-
-    toArray(): any[] {
-        return [
-            this.ideEmpl ?? null,
-            this.ideClie ?? null,
-            this.numFacturaVent?? null,
-            this.estadoVent ?? null,
-            this.fechaDesde ?? null,
-            this.fechaHasta ?? null        
-        ];
-    }
+  @IsOptional()
+  @IsDateString()
+  fechaHasta?: string;
 }

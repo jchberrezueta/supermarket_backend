@@ -1,26 +1,17 @@
-import { IsOptional, Min, IsInt } from 'class-validator';
-import { Transform } from 'class-transformer';
 import { isIntNumeric } from '@helpers/utilities';
-import { IFiltroDetalleVenta } from '@models';
+import { Transform } from 'class-transformer';
+import { IsInt, IsOptional, Min } from 'class-validator';
 
-export class FilterVentaDetalleDTO implements IFiltroDetalleVenta {
-    
-    @IsOptional()
-    @Transform(({value}) => isIntNumeric(value) ? (+value) : null )
-    @IsInt()
-    @Min(0)
-    ideVent?: number;
+export class FilterVentaDetalleDTO {
+  @IsOptional()
+  @Transform(({ value }) => (isIntNumeric(value) ? Number(value) : null))
+  @IsInt()
+  @Min(0)
+  ideVent?: number;
 
-    @IsOptional()
-    @Transform(({value}) => isIntNumeric(value) ? (+value) : null )
-    @IsInt()
-    @Min(0)
-    ideProd?: number;
-
-    toArray(): any[] {
-        return [
-            this.ideVent ?? null,
-            this.ideProd ?? null,   
-        ];
-    }
+  @IsOptional()
+  @Transform(({ value }) => (isIntNumeric(value) ? Number(value) : null))
+  @IsInt()
+  @Min(0)
+  ideProd?: number;
 }

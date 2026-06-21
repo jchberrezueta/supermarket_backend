@@ -1,66 +1,51 @@
-import { 
-  IsString, 
-  IsDateString, 
-  IsEnum, 
-  Length,
-  IsNumber,
-  Min,
+import { EnumEstadosPedido, EnumMotivosPedido } from '@models';
+import { Transform, Type } from 'class-transformer';
+import {
+  IsDateString,
+  IsEnum,
   IsInt,
-  Equals,
-  IsOptional
+  IsNumber,
+  IsOptional,
+  IsString,
+  Length,
+  Min,
 } from 'class-validator';
-import { Transform } from 'class-transformer';
-import { EnumEstadosPedido, EnumMotivosPedido, IPedido } from '@models';
 
-export class CreatePedidoCabeceraDTO implements IPedido {
-
-  @IsInt()
-  @Equals(-1)
-  idePedi: number;
-
+export class CreatePedidoCabeceraDTO {
+  @Type(() => Number)
   @IsInt()
   @Min(0)
-  ideEmpr: number;
+  ideEmpr!: number;
 
   @IsDateString()
-  fechaPedi: string;
+  fechaPedi!: string;
 
   @IsDateString()
-  fechaEntrPedi: string;
+  fechaEntrPedi!: string;
 
+  @Type(() => Number)
   @IsInt()
   @Min(0)
-  cantidadTotalPedi: number;
+  cantidadTotalPedi!: number;
 
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
-  totalPedi: number;
+  totalPedi!: number;
 
   @IsEnum(EnumEstadosPedido)
-  estadoPedi: EnumEstadosPedido;
+  estadoPedi!: EnumEstadosPedido;
 
   @IsEnum(EnumMotivosPedido)
-  motivoPedi: EnumMotivosPedido;
+  motivoPedi!: EnumMotivosPedido;
 
   @IsOptional()
   @IsString()
-  @Length(0, 250)
-  @Transform(({value}) => 
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : 'ninguna'
+  @Length(1, 250)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : 'ninguna',
   )
-  observacionPedi: string;
-
-  toArray(): any[] {
-    return [
-      this.ideEmpr,
-      this.fechaPedi,
-      this.fechaEntrPedi,
-      this.cantidadTotalPedi,
-      this.totalPedi,
-      this.estadoPedi,
-      this.motivoPedi,
-      this.observacionPedi,
-      null // p_usua_ingre
-    ]
-  }
+  observacionPedi?: string;
 }

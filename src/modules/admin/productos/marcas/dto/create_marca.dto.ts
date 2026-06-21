@@ -1,53 +1,37 @@
-import { 
-  IsString,
-  IsInt,
-  Max,
-  Min,
-  Equals
-} from 'class-validator';
-import { Transform } from 'class-transformer';
-import { Length } from 'class-validator';
-import { IMarca } from '@models';
+import { Transform, Type } from 'class-transformer';
+import { IsInt, IsString, Length, Max, Min } from 'class-validator';
 
-
-export class CreateMarcaDTO implements IMarca {
-  
-  @IsInt()
-  @Equals(-1)
-  ideMarc: number;
-
+export class CreateMarcaDTO {
   @IsString()
   @Length(1, 100)
-  @Transform(({value}) => 
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : null,
   )
-  nombreMarc: string;
+  nombreMarc!: string;
 
   @IsString()
   @Length(1, 100)
-  @Transform(({value}) => 
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
-  )  
-  paisOrigenMarc: string;
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : null,
+  )
+  paisOrigenMarc!: string;
 
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(10)
-  calidadMarc: number;
+  calidadMarc!: number;
 
   @IsString()
   @Length(1, 250)
-    @Transform(({value}) => 
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : 'ninguna'
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : 'ninguna',
   )
-  descripcionMarc: string;
-
-  toArray(): any[] {
-    return [
-      this.nombreMarc,
-      this.paisOrigenMarc,
-      this.calidadMarc,
-      this.descripcionMarc
-    ];
-  }
+  descripcionMarc!: string;
 }

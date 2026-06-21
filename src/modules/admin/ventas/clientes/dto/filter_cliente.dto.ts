@@ -1,40 +1,42 @@
-import { IsOptional, IsString, Length, IsNumberString, IsIn, IsEmail } from 'class-validator';
-import { IFiltroCliente } from '@models';
+import { Transform } from 'class-transformer';
+import {
+  IsIn,
+  IsNumberString,
+  IsOptional,
+  IsString,
+  Length,
+} from 'class-validator';
 
-export class FilterClienteDTO implements IFiltroCliente {
+export class FilterClienteDTO {
+  @IsOptional()
+  @IsNumberString()
+  @Length(7, 15)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
+  cedulaClie?: string;
 
-    @IsOptional()
-    @IsNumberString()
-    @Length(7, 15)
-    cedulaClie?: string;
+  @IsOptional()
+  @IsString()
+  @Length(1, 50)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
+  primerNombreClie?: string;
 
-    @IsOptional()
-    @IsString()
-    @Length(1, 50)
-    primerNombreClie?: string;
+  @IsOptional()
+  @IsString()
+  @Length(1, 50)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
+  apellidoPaternoClie?: string;
 
-    @IsOptional()
-    @IsString()
-    @Length(1, 50)
-    apellidoPaternoClie?: string;
-    
-    @IsOptional()
-    @IsString()
-    @IsIn(['si', 'no'])
-    esSocio: 'si' | 'no';
+  @IsOptional()
+  @IsIn(['si', 'no'])
+  esSocio?: 'si' | 'no';
 
-    @IsOptional()
-    @IsString()
-    @IsIn(['si', 'no'])
-    esTerceraEdad: 'si' | 'no';
-
-    toArray(): any[] {
-        return [
-            this.cedulaClie ?? null,
-            this.primerNombreClie ?? null,
-            this.apellidoPaternoClie ?? null,
-            this.esSocio ?? null,
-            this.esTerceraEdad ?? null,
-        ];
-    }
+  @IsOptional()
+  @IsIn(['si', 'no'])
+  esTerceraEdad?: 'si' | 'no';
 }

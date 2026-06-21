@@ -1,92 +1,89 @@
-import { ICliente } from '@models';
-import { Transform } from 'class-transformer';
-import { IsString, Length, IsEmail, Min, IsInt, Equals, IsNumberString, IsDateString, IsIn, IsOptional } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import {
+  IsDateString,
+  IsEmail,
+  IsIn,
+  IsInt,
+  IsNumberString,
+  IsOptional,
+  IsString,
+  Length,
+  Min,
+} from 'class-validator';
 
-export class CreateClienteDTO implements ICliente {
+export class CreateClienteDTO {
+  @IsNumberString()
+  @Length(7, 15)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
+  cedulaClie!: string;
 
-    @IsInt()
-    @Equals(-1)
-    ideClie: number;
+  @IsDateString()
+  fechaNacimientoClie!: string;
 
-    @IsNumberString()
-    @Length(7, 15)
-    @Transform(({ value }) =>
-        (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
-    )
-    cedulaClie: string;
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  edadClie!: number;
 
-    @IsDateString()
-    fechaNacimientoClie :string;
+  @IsNumberString()
+  @Length(7, 15)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
+  telefonoClie!: string;
 
-    @IsInt()
-    @Min(1)
-    edadClie :number;
+  @IsString()
+  @Length(1, 50)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : null,
+  )
+  primerNombreClie!: string;
 
-    @IsNumberString()
-    @Length(7, 15)
-    @Transform(({ value }) =>
-        (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
-    )
-    telefonoClie :string;
+  @IsString()
+  @Length(1, 50)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : null,
+  )
+  apellidoPaternoClie!: string;
 
-    @IsString()
-    @Length(1, 50)
-    @Transform(({ value }) =>
-        (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
-    )
-    primerNombreClie: string;
+  @IsEmail()
+  @Length(1, 100)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : null,
+  )
+  emailClie!: string;
 
-    @IsString()
-    @Length(1, 50)
-    @Transform(({ value }) =>
-        (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
-    )
-    apellidoPaternoClie: string;
+  @IsIn(['si', 'no'])
+  esSocio!: 'si' | 'no';
 
-    @IsEmail()
-    @Length(1, 100)
-    @Transform(({ value }) =>
-        (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
-    )
-    emailClie: string;
+  @IsIn(['si', 'no'])
+  esTerceraEdad!: 'si' | 'no';
 
-    @IsString()
-    @IsIn(['si', 'no'])
-    esSocio: 'si' | 'no';
+  @IsOptional()
+  @IsString()
+  @Length(1, 50)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : null,
+  )
+  segundoNombreClie?: string | null;
 
-    @IsString()
-    @IsIn(['si', 'no'])
-    esTerceraEdad: 'si' | 'no';
-
-    @IsOptional()
-    @IsString()
-    @Length(1, 50)
-    @Transform(({ value }) =>
-        (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
-    )
-    segundoNombreClie?: string | null;
-
-    @IsOptional()
-    @IsString()
-    @Length(1, 50)
-    @Transform(({ value }) =>
-        (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
-    )
-    apellidoMaternoClie?: string | null;
-
-    toArray(): any[] {
-        return [
-            this.cedulaClie,
-            this.fechaNacimientoClie,
-            this.edadClie,
-            this.telefonoClie,
-            this.primerNombreClie,
-            this.apellidoPaternoClie,
-            this.emailClie,
-            this.esSocio,
-            this.esTerceraEdad,
-            this.segundoNombreClie?? null,
-            this.apellidoMaternoClie?? null
-        ];
-    }
+  @IsOptional()
+  @IsString()
+  @Length(1, 50)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : null,
+  )
+  apellidoMaternoClie?: string | null;
 }

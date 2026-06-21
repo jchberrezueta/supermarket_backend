@@ -1,75 +1,68 @@
 import { EnumEstadoDetallePedido } from '@models';
-import { Transform } from 'class-transformer';
-import { 
-  IsEnum,
-  IsInt,
-  IsNumber,
-  IsOptional,
-  Min
-} from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsEnum, IsInt, IsNumber, IsOptional, Min } from 'class-validator';
 
 export class CreatePedidoDetalleDTO {
-
+  /**
+   * Opcional porque en creación la BD genera el ID.
+   * Se mantiene para compatibilidad si el frontend lo envía.
+   */
   @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
   ideDetaPedi?: number;
 
+  /**
+   * Opcional porque la cabecera recién creada define el pedido.
+   * Se mantiene para compatibilidad si el frontend lo envía.
+   */
   @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
   idePedi?: number;
 
+  @Type(() => Number)
   @IsInt()
   @Min(0)
-  @Transform(({ value }) => parseInt(value))
-  ideProd: number;
+  ideProd!: number;
 
+  @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Transform(({ value }) => parseInt(value))
-  cantidadProd: number;
+  cantidadProd!: number;
 
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
-  @Transform(({ value }) => parseFloat(value))
-  precioUnitarioProd: number;
+  precioUnitarioProd!: number;
 
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
-  @Transform(({ value }) => parseFloat(value))
-  subtotalProd: number;
+  subtotalProd!: number;
 
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
-  @Transform(({ value }) => parseFloat(value))
-  dctoCompraProd: number;
+  dctoCompraProd!: number;
 
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
-  @Transform(({ value }) => parseFloat(value))
-  ivaProd: number;
+  ivaProd!: number;
 
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
-  @Transform(({ value }) => parseFloat(value))
-  totalProd: number;
+  totalProd!: number;
 
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
-  @Transform(({ value }) => parseFloat(value))
-  dctoCaducProd: number;
+  dctoCaducProd!: number;
 
   @IsEnum(EnumEstadoDetallePedido)
-  estadoDetaPedi: EnumEstadoDetallePedido
-
-  toArray(): any[] {
-    return [
-      this.ideProd,
-      this.cantidadProd,
-      this.precioUnitarioProd,
-      this.subtotalProd,
-      this.ivaProd,
-      this.dctoCompraProd,
-      this.dctoCaducProd,
-      this.totalProd,
-      this.estadoDetaPedi
-    ]
-  }
+  estadoDetaPedi!: EnumEstadoDetallePedido;
 }

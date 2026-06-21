@@ -1,51 +1,50 @@
-import { IsString, IsNumber, IsEnum, IsDateString, Length, IsInt, Min, IsOptional, Equals } from 'class-validator';
-import { Transform } from 'class-transformer';
-import { EnumEstadoEntrega, IEntrega } from '@models';
+import { EnumEstadoEntrega } from '@models';
+import { Transform, Type } from 'class-transformer';
+import {
+  IsDateString,
+  IsEnum,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Length,
+  Min,
+} from 'class-validator';
 
-export class CreateEntregaCabeceraDTO implements IEntrega {
-
-  @IsInt()
-  @Equals(-1)
-  ideEntr: number;
-
+export class CreateEntregaCabeceraDTO {
+  @Type(() => Number)
   @IsInt()
   @Min(0)
-  idePedi: number;
+  idePedi!: number;
 
+  @Type(() => Number)
   @IsInt()
   @Min(0)
-  ideProv: number;
+  ideProv!: number;
 
   @IsDateString()
-  fechaEntr: string;
+  fechaEntr!: string;
 
+  @Type(() => Number)
   @IsInt()
   @Min(1)
-  cantidadTotalEntr: number;
+  cantidadTotalEntr!: number;
 
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
-  totalEntr: number;
+  totalEntr!: number;
 
   @IsEnum(EnumEstadoEntrega)
-  estadoEntr:EnumEstadoEntrega;
-  
+  estadoEntr!: EnumEstadoEntrega;
+
+  @IsOptional()
   @IsString()
   @Length(1, 250)
-  @Transform(({value}) => (
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : 'ninguna'
-  ))
-  observacionEntr: string;
-
-  toArray(): any[] {
-    return [
-      this.idePedi,
-      this.ideProv,
-      this.fechaEntr,
-      this.cantidadTotalEntr,
-      this.totalEntr,
-      this.estadoEntr,
-      this.observacionEntr
-    ]
-  }
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : 'ninguna',
+  )
+  observacionEntr?: string;
 }

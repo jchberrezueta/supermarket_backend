@@ -1,18 +1,88 @@
-import { CreateProductoDTO } from './create_producto.dto';
-import { IsInt, Min } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import {
+  IsIn,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Length,
+  Min,
+} from 'class-validator';
 
+export class UpdateProductoDTO {
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  ideProd!: number;
 
-export class UpdateProductoDTO extends (CreateProductoDTO) {
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  ideCate!: number;
 
-    @IsInt()
-    @Min(0)
-    ideProd: number;
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  ideMarc!: number;
 
-    toArray(): any[] {
-        const lista = super.toArray();
-        lista.unshift(this.ideProd);
-        // La función SQL espera un último parámetro de usuario (p_usua_ingre)
-        // Ya viene como null desde super.toArray()
-        return lista;
-    }
+  @IsString()
+  @Length(1, 30)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : null,
+  )
+  codigoBarraProd!: string;
+
+  @IsString()
+  @Length(1, 100)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : null,
+  )
+  nombreProd!: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(1, 500)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
+  urlImgProd?: string | null;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  precioVentaProd!: number;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  ivaProd!: number;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  dctoPromoProd!: number;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  stockProd!: number;
+
+  @IsIn(['si', 'no'])
+  disponibleProd!: 'si' | 'no';
+
+  @IsIn(['activo', 'inactivo'])
+  estadoProd!: 'activo' | 'inactivo';
+
+  @IsString()
+  @Length(1, 250)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : 'ninguna',
+  )
+  descripcionProd!: string;
 }

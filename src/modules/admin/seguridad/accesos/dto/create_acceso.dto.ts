@@ -1,56 +1,50 @@
-import { IAccesoUsuario } from '@models';
-import { Transform } from 'class-transformer';
-import { IsOptional, IsInt, IsString, Min, Max, IsEnum, IsNumber, Length, IsDateString, Equals } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import {
+  IsDateString,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Length,
+  Min,
+} from 'class-validator';
 
-export class CreateAccesoUsuarioDto implements IAccesoUsuario{
+export class CreateAccesoUsuarioDto {
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  ideCuen!: number;
 
-    @IsInt()
-    @Equals(-1)
-    ideAcce: number;
+  @IsString()
+  @Length(1, 250)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
+  navegadorAcce!: string;
 
-    @IsInt()
-    @Min(0)
-    ideCuen: number;
+  @IsOptional()
+  @IsDateString()
+  fechaAcce?: string;
 
-    @IsString()
-    @Length(1, 250)
-    @Transform(({ value }) =>
-        (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
-    )
-    navegadorAcce: string;
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  numIntFallAcce!: number;
 
-    @IsDateString()
-    fechaAcce: string;
+  @IsString()
+  @Length(1, 15)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
+  ipAcce!: string;
 
-    @IsInt()
-    @Min(0)
-    numIntFallAcce: number;
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  latitudAcce?: number | null;
 
-    @IsString()
-    @Length(1, 15)
-    @Transform(({ value }) =>
-        (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
-    )
-    ipAcce: string;
-
-    @IsOptional()
-    @IsNumber()
-    latitudAcce?: number | null;
-
-    @IsOptional()
-    @IsNumber()
-    longitudAcce?: number | null;
-
-}
-
-export const CreateAccesoUsuarioToArray = (obj: CreateAccesoUsuarioDto): any[] => {
-    return [
-        obj.ideCuen,
-        obj.navegadorAcce,
-        obj.fechaAcce,
-        obj.numIntFallAcce,
-        obj.ipAcce,
-        obj.latitudAcce?? null,
-        obj.longitudAcce?? null
-    ];
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  longitudAcce?: number | null;
 }

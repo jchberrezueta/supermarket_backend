@@ -1,111 +1,101 @@
-import { 
-  IsString, 
-  IsDateString, 
-  IsEnum, 
-  Length,
-  IsNumberString,
+import { Transform, Type } from 'class-transformer';
+import {
+  IsDateString,
+  IsIn,
   IsInt,
-  Min,
   IsNumber,
-  Equals,
-  IsOptional
+  IsNumberString,
+  IsOptional,
+  IsString,
+  Length,
+  Min,
 } from 'class-validator';
-import { Transform } from 'class-transformer';
-import { EnumEstadoEmpleado, IEmpleado } from '@models';
 
-export class CreateEmpleadoDTO implements IEmpleado {
-
-  @IsInt()
-  @Equals(-1)
-  ideEmpl: number;
-
+export class CreateEmpleadoDTO {
+  @Type(() => Number)
   @IsInt()
   @Min(0)
-  ideRol: number;
+  ideRol!: number;
 
   @IsNumberString()
   @Length(7, 15)
   @Transform(({ value }) =>
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
   )
-  cedulaEmpl: string;
+  cedulaEmpl!: string;
 
   @IsDateString()
-  fechaNacimientoEmpl: string;
+  fechaNacimientoEmpl!: string;
 
+  @Type(() => Number)
   @IsInt()
-  @Min(18)
-  edadEmpl: number;
+  @Min(0)
+  edadEmpl!: number;
 
   @IsDateString()
-  fechaInicioEmpl: string;
+  fechaInicioEmpl!: string;
 
   @IsString()
   @Length(1, 50)
   @Transform(({ value }) =>
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : null,
   )
-  primerNombreEmpl: string;
+  primerNombreEmpl!: string;
 
   @IsString()
   @Length(1, 50)
   @Transform(({ value }) =>
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : null,
   )
-  apellidoPaternoEmpl: string;
+  apellidoPaternoEmpl!: string;
 
+  @Type(() => Number)
   @IsNumber()
-  @Min(1)
-  rmuEmpl: number;
-  
+  @Min(0)
+  rmuEmpl!: number;
+
   @IsString()
   @Length(1, 250)
   @Transform(({ value }) =>
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : 'libre'
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : 'libre',
   )
-  tituloEmpl: string;
+  tituloEmpl!: string;
 
-  @IsEnum(EnumEstadoEmpleado)
-  estadoEmpl: EnumEstadoEmpleado;
+  @IsIn(['activo', 'inactivo'])
+  estadoEmpl!: 'activo' | 'inactivo';
 
   @IsOptional()
   @IsString()
-  @Length(0, 50)
+  @Length(1, 50)
   @Transform(({ value }) =>
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : null,
   )
   segundoNombreEmpl?: string | null;
 
   @IsOptional()
   @IsString()
-  @Length(0, 50)
+  @Length(1, 50)
   @Transform(({ value }) =>
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : null,
   )
   apellidoMaternoEmpl?: string | null;
 
   @IsOptional()
-  @IsDateString()
   @Transform(({ value }) =>
-    (typeof value === 'string' && value.trim() !== '') ? value.trim() : null
+    value === null || value === undefined || String(value).trim() === ''
+      ? null
+      : value,
   )
+  @IsDateString()
   fechaTerminoEmpl?: string | null;
-
-  toArray(): any[] {
-    return [
-        this.ideRol,
-        this.cedulaEmpl,
-        this.fechaNacimientoEmpl,
-        this.edadEmpl,
-        this.fechaInicioEmpl,
-        this.primerNombreEmpl,
-        this.apellidoPaternoEmpl,
-        this.rmuEmpl,
-        this.tituloEmpl,
-        this.estadoEmpl,
-        this.segundoNombreEmpl ?? null,
-        this.apellidoPaternoEmpl ?? null,
-        this.fechaTerminoEmpl ?? null
-    ]
-  }
 }

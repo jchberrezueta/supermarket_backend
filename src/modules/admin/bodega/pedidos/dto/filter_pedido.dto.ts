@@ -1,10 +1,20 @@
-import { IsOptional, IsEnum, IsDateString, IsString } from 'class-validator';
 import { EnumEstadosPedido, EnumMotivosPedido } from '@models';
+import { Transform } from 'class-transformer';
+import {
+  IsDateString,
+  IsEnum,
+  IsOptional,
+  IsString,
+  Length,
+} from 'class-validator';
 
 export class FilterPedidoDTO {
-
   @IsOptional()
   @IsString()
+  @Length(1, 250)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
   nombreEmpr?: string;
 
   @IsOptional()
@@ -22,14 +32,4 @@ export class FilterPedidoDTO {
   @IsOptional()
   @IsDateString()
   fechaEntrPedi?: string;
-
-  toArray(): any[] {
-    return [
-      this.nombreEmpr ?? null,
-      this.estadoPedi ?? null,
-      this.motivoPedi ?? null,
-      this.fechaPedi ?? null,
-      this.fechaEntrPedi ?? null
-    ];
-  }
 }

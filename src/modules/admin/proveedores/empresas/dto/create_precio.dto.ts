@@ -1,49 +1,34 @@
-import { 
-  IsInt,
-  Equals,
-  Min,
-  IsNumber
-} from 'class-validator';
-import { IEmpresaPrecios } from '@models';
+import { Type } from 'class-transformer';
+import { IsInt, IsNumber, Min } from 'class-validator';
 
-export class CreateEmpresaPrecioDTO implements IEmpresaPrecios{
+export class CreateEmpresaPrecioDTO {
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  ideEmpr!: number;
 
-    @IsInt()
-    @Equals(-1)
-    ideEmprProd: number;
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  ideProd!: number;
 
-    @IsInt()
-    @Min(0)
-    ideEmpr: number;
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  precioCompraProd!: number;
 
-    @IsInt()
-    @Min(0)
-    ideProd: number;
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  dctoCompraProd!: number;
 
-    @IsNumber()
-    @Min(0)
-    precioCompraProd: number;
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  dctoCaducidadProd!: number;
 
-    @IsNumber()
-    @Min(0)
-    dctoCompraProd: number;
-
-    @IsNumber()
-    @Min(0)
-    dctoCaducidadProd: number;
-
-    @IsNumber()
-    @Min(0)
-    ivaProd: number;
-
-    toArray (): any[] {
-        return [
-            this.ideEmpr,
-            this.ideProd,
-            this.precioCompraProd,
-            this.dctoCompraProd,
-            this.dctoCaducidadProd,
-            this.ivaProd
-        ];
-    }
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  ivaProd!: number;
 }

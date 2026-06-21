@@ -1,59 +1,59 @@
-import { IDetalleVenta } from '@models';
-import { 
-  Equals,
-    IsInt,
-    IsNumber,
-    Min
-} from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsInt, IsNumber, IsOptional, Min } from 'class-validator';
 
-export class CreateVentaDetalleDTO implements IDetalleVenta {
-
-  @IsInt()
-  @Equals(-1)
-  ideDetaVent: number;
-
-  @IsInt()
-  @Equals(-1)
-  ideVent: number;
-
+export class CreateVentaDetalleDTO {
+  /**
+   * Opcional porque en creación la BD genera el ID.
+   * Se mantiene para compatibilidad si el frontend lo envía.
+   */
+  @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(0)
-  ideProd: number;
+  ideDetaVent?: number;
 
+  /**
+   * Opcional porque la cabecera recién creada define la venta.
+   * Se mantiene para compatibilidad si el frontend lo envía.
+   */
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  ideVent?: number;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  ideProd!: number;
+
+  @Type(() => Number)
   @IsInt()
   @Min(1)
-  cantidadProd: number;
+  cantidadProd!: number;
 
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
-  precioUnitarioProd: number;
+  precioUnitarioProd!: number;
 
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
-  subtotalProd: number;
+  subtotalProd!: number;
 
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
-  dctoPromoProd: number;
+  dctoPromoProd!: number;
 
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
-  ivaProd: number;
+  ivaProd!: number;
 
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
-  totalProd: number;
-
-  toArray(): any[] {
-    // Orden: ide_prod, cantidad_prod, precio_unitario_prod, subtotal_prod, iva_prod, dcto_promo_prod, total_prod
-    return [
-      this.ideProd,
-      this.cantidadProd,
-      this.precioUnitarioProd,
-      this.subtotalProd,
-      this.ivaProd,
-      this.dctoPromoProd,
-      this.totalProd,
-    ]
-  }
+  totalProd!: number;
 }

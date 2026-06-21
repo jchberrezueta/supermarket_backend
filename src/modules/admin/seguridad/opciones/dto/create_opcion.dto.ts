@@ -1,64 +1,61 @@
-import { EnumEstadosOpcion, IOpciones } from '@models';
-import { Transform } from 'class-transformer';
-import { IsString, Equals, IsInt, Min, IsEnum, Length, IsOptional } from 'class-validator';
+import { isIntNumeric } from '@helpers/utilities';
+import { Transform, Type } from 'class-transformer';
+import {
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  Length,
+  Min,
+} from 'class-validator';
 
-export class CreateOpcionDto implements IOpciones {
+export class CreateOpcionDto {
+  @IsString()
+  @Length(1, 100)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
+  nombreOpci!: string;
 
-    @IsInt()
-    @Equals(-1)
-    ideOpci: number;
+  @IsString()
+  @Length(1, 500)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
+  rutaOpci!: string;
 
-    @IsString()
-    @Length(1, 100)
-    @Transform(({ value }) =>
-        (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
-    )
-    nombreOpci: string;
+  @IsIn(['si', 'no'])
+  activoOpci!: 'si' | 'no';
 
-    @IsString()
-    @Length(1, 500)
-    @Transform(({ value }) =>
-        (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
-    )
-    rutaOpci: string;
+  @IsString()
+  @Length(1, 250)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : 'ninguna',
+  )
+  descripcionOpci!: string;
 
-    @IsEnum(EnumEstadosOpcion)
-    activoOpci: EnumEstadosOpcion;
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  nivelOpci!: number;
 
-    @IsString()
-    @Length(1, 250)
-    @Transform(({ value }) =>
-        (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : 'ninguna'
-    )
-    descripcionOpci: string;
+  @IsOptional()
+  @Transform(({ value }) =>
+    value === null || value === undefined || String(value).trim() === ''
+      ? null
+      : isIntNumeric(value)
+        ? Number(value)
+        : value,
+  )
+  @IsInt()
+  @Min(0)
+  padreOpci?: number | null;
 
-    @IsInt()
-    @Min(0)
-    nivelOpci: number;
-
-    @IsOptional()
-    @IsInt()
-    @Min(0)
-    padreOpci?: number | null;
-
-    @IsOptional()
-    @IsString()
-    @Length(1, 50)
-    @Transform(({ value }) =>
-        (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
-    )
-    iconoOpci?: string | null;
-
-  toArray(): any[] {
-    return [
-        this.nombreOpci,
-        this.rutaOpci,
-        this.nivelOpci,
-        this.padreOpci?? null,
-        this.iconoOpci?? null,
-        this.activoOpci,
-        this.descripcionOpci,
-        null // p_usua_ingre
-    ]
-  }
+  @IsOptional()
+  @IsString()
+  @Length(1, 50)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
+  iconoOpci?: string | null;
 }

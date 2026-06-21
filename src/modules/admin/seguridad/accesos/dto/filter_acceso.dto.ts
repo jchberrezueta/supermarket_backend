@@ -1,12 +1,17 @@
 import { isIntNumeric } from '@helpers/utilities';
-import { IFiltroAccesoUsuario } from '@models';
 import { Transform } from 'class-transformer';
-import { IsOptional, IsInt, IsString, Min, Max, IsEnum, IsNumber, Length, IsDateString } from 'class-validator';
+import {
+  IsDateString,
+  IsInt,
+  IsOptional,
+  IsString,
+  Length,
+  Min,
+} from 'class-validator';
 
-export class FilterAccesoUsuarioDto implements IFiltroAccesoUsuario{
-
+export class FilterAccesoUsuarioDto {
   @IsOptional()
-  @Transform(({value}) => isIntNumeric(value) ? (+value) : null )
+  @Transform(({ value }) => (isIntNumeric(value) ? Number(value) : null))
   @IsInt()
   @Min(0)
   ideCuen?: number;
@@ -14,11 +19,17 @@ export class FilterAccesoUsuarioDto implements IFiltroAccesoUsuario{
   @IsOptional()
   @IsString()
   @Length(1, 15)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
   ipAcce?: string;
 
   @IsOptional()
   @IsString()
   @Length(1, 250)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
   navegadorAcce?: string;
 
   @IsOptional()
@@ -28,25 +39,4 @@ export class FilterAccesoUsuarioDto implements IFiltroAccesoUsuario{
   @IsOptional()
   @IsDateString()
   fechaAcceHasta?: string;
-
-  toArray(): any[] {
-    return [
-      this.ideCuen?? null,
-      this.ipAcce?? null,
-      this.navegadorAcce?? null,
-      this.fechaAcceDesde?? null,
-      this.fechaAcceHasta?? null
-    ]
-  }
-
-}
-
-export const FilterAccesoUsuarioDtoToArray = (obj: FilterAccesoUsuarioDto): any[] => {
-  return [
-    obj.ideCuen?? null,
-    obj.ipAcce?? null,
-    obj.navegadorAcce?? null,
-    obj.fechaAcceDesde?? null,
-    obj.fechaAcceHasta?? null
-  ];
 }

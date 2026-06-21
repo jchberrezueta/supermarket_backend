@@ -1,69 +1,77 @@
-import { IProveedor } from '@models';
-import { Transform } from 'class-transformer';
-import { 
-  IsInt, IsString, IsOptional, IsDateString, IsEmail, 
-  Length, Min, 
+import { Transform, Type } from 'class-transformer';
+import {
+  IsDateString,
+  IsEmail,
+  IsInt,
   IsNumberString,
-  Equals
+  IsOptional,
+  IsString,
+  Length,
+  Min,
 } from 'class-validator';
 
-export class CreateProveedorDTO implements IProveedor {
-
-  @IsInt()
-  @Equals(-1)
-  ideProv: number;
-
+export class CreateProveedorDTO {
+  @Type(() => Number)
   @IsInt()
   @Min(0)
-  ideEmpr: number;
+  ideEmpr!: number;
 
   @IsNumberString()
   @Length(7, 15)
   @Transform(({ value }) =>
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
   )
-  cedulaProv: string;
+  cedulaProv!: string;
 
   @IsDateString()
-  fechaNacimientoProv: string;
+  fechaNacimientoProv!: string;
 
+  @Type(() => Number)
   @IsInt()
   @Min(1)
-  edadProv: number;
+  edadProv!: number;
 
   @IsNumberString()
   @Length(7, 15)
   @Transform(({ value }) =>
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
   )
-  telefonoProv: string;
+  telefonoProv!: string;
 
   @IsEmail()
   @Length(1, 100)
   @Transform(({ value }) =>
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : null,
   )
-  emailProv: string;
+  emailProv!: string;
 
   @IsString()
   @Length(1, 50)
   @Transform(({ value }) =>
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : null,
   )
-  primerNombreProv: string;
+  primerNombreProv!: string;
 
   @IsString()
   @Length(1, 50)
   @Transform(({ value }) =>
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : null,
   )
-  apellidoPaternoProv: string;
+  apellidoPaternoProv!: string;
 
   @IsOptional()
   @IsString()
   @Length(1, 50)
   @Transform(({ value }) =>
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : null,
   )
   segundoNombreProv?: string | null;
 
@@ -71,23 +79,9 @@ export class CreateProveedorDTO implements IProveedor {
   @IsString()
   @Length(1, 50)
   @Transform(({ value }) =>
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : null,
   )
   apellidoMaternoProv?: string | null;
-
-
-  toArray (): any[] {
-    return [
-      this.ideEmpr,
-      this.cedulaProv,
-      this.fechaNacimientoProv,
-      this.edadProv,
-      this.telefonoProv,
-      this.emailProv,
-      this.primerNombreProv,
-      this.apellidoPaternoProv,
-      this.segundoNombreProv?? null,
-      this.apellidoMaternoProv?? null,
-    ];
-  }
 }

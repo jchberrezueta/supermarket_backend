@@ -1,48 +1,55 @@
-import { EnumEstadoEmpleado, IFiltroEmpleado } from '@models';
+import { isIntNumeric } from '@helpers/utilities';
 import { Transform } from 'class-transformer';
-import { IsOptional, IsString, Length, IsEnum, IsIn, IsInt, Min, IsNumberString } from 'class-validator';
-import { isIntNumeric } from 'src/helpers/utilities';
+import {
+  IsIn,
+  IsInt,
+  IsNumberString,
+  IsOptional,
+  IsString,
+  Length,
+  Min,
+} from 'class-validator';
 
-export class FilterEmpleadoDTO implements IFiltroEmpleado {
-    
-    @IsOptional()
-    @Transform(({value}) => isIntNumeric(value) ? (+value) : -1 )
-    @IsInt()
-    @Min(0)
-    ideRol?: number;
+export class FilterEmpleadoDTO {
+  @IsOptional()
+  @Transform(({ value }) => (isIntNumeric(value) ? Number(value) : null))
+  @IsInt()
+  @Min(0)
+  ideRol?: number;
 
-    @IsOptional()
-    @IsNumberString()
-    @Length(7, 15)
-    cedulaEmpl?: string;
-    
-    @IsOptional()
-    @IsString()
-    @Length(1, 50)
-    primerNombreEmpl?: string;
+  @IsOptional()
+  @IsNumberString()
+  @Length(7, 15)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
+  cedulaEmpl?: string;
 
-    @IsOptional()
-    @IsString()
-    @Length(1, 50)
-    apellidoPaternoEmpl?: string;
+  @IsOptional()
+  @IsString()
+  @Length(1, 50)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
+  primerNombreEmpl?: string;
 
-    @IsOptional()
-    @IsString()
-    @Length(1, 250)
-    tituloEmpl?: string;
+  @IsOptional()
+  @IsString()
+  @Length(1, 50)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
+  apellidoPaternoEmpl?: string;
 
-    @IsOptional()
-    @IsEnum(EnumEstadoEmpleado)
-    estadoEmpl?: EnumEstadoEmpleado;
+  @IsOptional()
+  @IsString()
+  @Length(1, 250)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
+  tituloEmpl?: string;
 
-    toArray(): any[] {
-        return [
-            this.ideRol?? null,
-            this.cedulaEmpl?? null,
-            this.primerNombreEmpl?? null,
-            this.apellidoPaternoEmpl?? null,
-            this.tituloEmpl?? null,
-            this.estadoEmpl?? null
-        ];
-    }
+  @IsOptional()
+  @IsIn(['activo', 'inactivo'])
+  estadoEmpl?: 'activo' | 'inactivo';
 }

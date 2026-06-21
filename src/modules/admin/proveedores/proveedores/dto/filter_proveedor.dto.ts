@@ -1,12 +1,18 @@
-import { IsOptional, IsInt, IsString, Length, Min, IsNumberString, IsEmail } from 'class-validator';
-import { Transform, Type } from 'class-transformer';
 import { isIntNumeric } from '@helpers/utilities';
-import { IFiltroProveedor } from '@models';
+import { Transform } from 'class-transformer';
+import {
+  IsEmail,
+  IsInt,
+  IsNumberString,
+  IsOptional,
+  IsString,
+  Length,
+  Min,
+} from 'class-validator';
 
-export class FilterProveedorDTO implements IFiltroProveedor {
-
+export class FilterProveedorDTO {
   @IsOptional()
-  @Transform(({value}) => isIntNumeric(value) ? (+value) : null )
+  @Transform(({ value }) => (isIntNumeric(value) ? Number(value) : null))
   @IsInt()
   @Min(0)
   ideEmpr?: number;
@@ -14,31 +20,34 @@ export class FilterProveedorDTO implements IFiltroProveedor {
   @IsOptional()
   @IsNumberString()
   @Length(7, 15)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
   cedulaProv?: string;
 
   @IsOptional()
   @IsString()
   @Length(1, 50)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
   primerNombreProv?: string;
 
   @IsOptional()
   @IsString()
   @Length(1, 50)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
   apellidoPaternoProv?: string;
 
   @IsOptional()
   @IsEmail()
   @Length(1, 100)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : null,
+  )
   emailProv?: string;
-
-
-  toArray(): any[] {
-    return [
-      this.ideEmpr ?? null,
-      this.cedulaProv ?? null,
-      this.primerNombreProv ?? null,
-      this.apellidoPaternoProv ?? null,
-      this.emailProv ?? null
-    ];
-  }
 }

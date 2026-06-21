@@ -1,38 +1,26 @@
-import { EnumEstadosCuenta, ICuenta } from '@models';
-import { IsString, Equals, IsInt, Min, IsEnum, Length } from 'class-validator';
+import { EnumEstadosCuenta } from '@models';
+import { Type } from 'class-transformer';
+import { IsEnum, IsInt, IsString, Length, Min } from 'class-validator';
 
-export class CreateCuentaDto implements ICuenta {
-
-  @IsInt()
-  @Equals(-1)
-  ideCuen: number;
-
+export class CreateCuentaDto {
+  @Type(() => Number)
   @IsInt()
   @Min(0)
-  ideEmpl: number;
+  ideEmpl!: number;
 
+  @Type(() => Number)
   @IsInt()
   @Min(0)
-  idePerf: number;
+  idePerf!: number;
 
   @IsString()
   @Length(1, 25)
-  usuarioCuen: string;
+  usuarioCuen!: string;
 
   @IsString()
   @Length(1, 250)
-  passwordCuen: string;
+  passwordCuen!: string;
 
   @IsEnum(EnumEstadosCuenta)
-  estadoCuen: EnumEstadosCuenta;
-
-  toArray(): any[] {
-    return [
-      this.ideEmpl,
-      this.idePerf,
-      this.usuarioCuen,
-      this.passwordCuen,
-      this.estadoCuen
-    ]
-  }
+  estadoCuen!: EnumEstadosCuenta;
 }

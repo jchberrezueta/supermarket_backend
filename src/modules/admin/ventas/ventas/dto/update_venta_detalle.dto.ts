@@ -1,55 +1,56 @@
-import { IsInt, Min, IsNumber, IsOptional } from 'class-validator';
-import { IDetalleVenta } from '@models';
+import { Type } from 'class-transformer';
+import { IsInt, IsNumber, Min } from 'class-validator';
 
-export class UpdateVentaDetalleDTO implements IDetalleVenta {
+export class UpdateVentaDetalleDTO {
+  /**
+   * Se permite -1 por compatibilidad con pantallas que envían
+   * detalles nuevos dentro de una actualización.
+   */
+  @Type(() => Number)
   @IsInt()
-  @Min(-1)  // Puede ser -1 para nuevos o >= 0 para existentes
-  ideDetaVent: number;
+  @Min(-1)
+  ideDetaVent!: number;
 
+  /**
+   * Se permite -1 por compatibilidad con el flujo anterior.
+   */
+  @Type(() => Number)
   @IsInt()
-  @Min(-1)  // Puede ser -1 para nuevos o >= 0 para existentes
-  ideVent: number;
+  @Min(-1)
+  ideVent!: number;
 
+  @Type(() => Number)
   @IsInt()
   @Min(0)
-  ideProd: number;
+  ideProd!: number;
 
+  @Type(() => Number)
   @IsInt()
   @Min(1)
-  cantidadProd: number;
+  cantidadProd!: number;
 
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
-  precioUnitarioProd: number;
+  precioUnitarioProd!: number;
 
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
-  subtotalProd: number;
+  subtotalProd!: number;
 
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
-  dctoPromoProd: number;
+  dctoPromoProd!: number;
 
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
-  ivaProd: number;
+  ivaProd!: number;
 
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
-  totalProd: number;
-
-  toArray(): any[] {
-    // Orden: ide_deta_vent, ide_vent, ide_prod, cantidad_prod, precio_unitario_prod, subtotal_prod, iva_prod, dcto_promo_prod, total_prod
-    return [
-      this.ideDetaVent,
-      this.ideVent,
-      this.ideProd,
-      this.cantidadProd,
-      this.precioUnitarioProd,
-      this.subtotalProd,
-      this.ivaProd,
-      this.dctoPromoProd,
-      this.totalProd,
-    ]
-  }
+  totalProd!: number;
 }

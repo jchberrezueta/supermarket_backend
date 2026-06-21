@@ -1,16 +1,32 @@
-import { IsInt, Min } from 'class-validator';
-import { CreatePerfilDto } from './create_perfil.dto';
+import { Transform, Type } from 'class-transformer';
+import { IsInt, IsString, Length, Min } from 'class-validator';
 
-export class UpdatePerfilDto extends (CreatePerfilDto) {
-  
+export class UpdatePerfilDto {
+  @Type(() => Number)
   @IsInt()
   @Min(0)
-  idePerf: number;
+  idePerf!: number;
 
-  toArray (): any[]  {
-    const lista = super.toArray();
-    lista.unshift(this.idePerf);
-    return lista;
-  };
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  ideRol!: number;
 
+  @IsString()
+  @Length(1, 100)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : null,
+  )
+  nombrePerf!: string;
+
+  @IsString()
+  @Length(1, 250)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : 'ninguna',
+  )
+  descripcionPerf!: string;
 }

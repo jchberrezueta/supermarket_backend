@@ -1,11 +1,14 @@
-import { IsOptional, IsString, Length, IsEnum } from 'class-validator';
-import { EnumEstadosEmpresa, IFiltroEmpresa } from '@models';
+import { EnumEstadosEmpresa } from '@models';
+import { Transform } from 'class-transformer';
+import { IsEnum, IsOptional, IsString, Length } from 'class-validator';
 
-export class FilterEmpresaDTO implements IFiltroEmpresa {
-
+export class FilterEmpresaDTO {
   @IsOptional()
   @IsString()
   @Length(1, 250)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
   nombreEmp?: string;
 
   @IsOptional()
@@ -15,13 +18,8 @@ export class FilterEmpresaDTO implements IFiltroEmpresa {
   @IsOptional()
   @IsString()
   @Length(1, 250)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
   responsableEmp?: string;
-
-  toArray(): any[] {
-    return [
-      this.nombreEmp ?? null,
-      this.estadoEmp ?? null,
-      this.responsableEmp ?? null,
-    ];
-  }
 }

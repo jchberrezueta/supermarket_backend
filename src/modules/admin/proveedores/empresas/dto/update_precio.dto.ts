@@ -1,16 +1,39 @@
-import { IsInt, Min } from 'class-validator';
-import { CreateEmpresaPrecioDTO } from './create_precio.dto';
+import { Type } from 'class-transformer';
+import { IsInt, IsNumber, Min } from 'class-validator';
 
-export class UpdateEmpresaPrecioDTO extends CreateEmpresaPrecioDTO {
+export class UpdateEmpresaPrecioDTO {
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  ideEmprProd!: number;
 
-    @IsInt()
-    @Min(0)
-    ideEmprProd: number;
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  ideEmpr!: number;
 
-    toArray (): any[]  {
-        const lista = super.toArray();
-        lista.unshift(this.ideEmprProd);
-        return lista;
-    };
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  ideProd!: number;
 
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  precioCompraProd!: number;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  dctoCompraProd!: number;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  dctoCaducidadProd!: number;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  ivaProd!: number;
 }

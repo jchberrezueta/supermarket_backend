@@ -1,16 +1,42 @@
-import { IsInt, Min } from 'class-validator';
-import { CreateMarcaDTO } from './create_marca.dto';
+import { Transform, Type } from 'class-transformer';
+import { IsInt, IsString, Length, Max, Min } from 'class-validator';
 
-export class UpdateMarcaDTO extends (CreateMarcaDTO) {
+export class UpdateMarcaDTO {
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  ideMarc!: number;
 
-    @IsInt()
-    @Min(0)
-    ideMarc: number;
+  @IsString()
+  @Length(1, 100)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : null,
+  )
+  nombreMarc!: string;
 
-    toArray (): any[]  {
-        const lista = super.toArray();
-        lista.unshift(this.ideMarc);
-        return lista;
-    };
+  @IsString()
+  @Length(1, 100)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : null,
+  )
+  paisOrigenMarc!: string;
 
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(10)
+  calidadMarc!: number;
+
+  @IsString()
+  @Length(1, 250)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : 'ninguna',
+  )
+  descripcionMarc!: string;
 }

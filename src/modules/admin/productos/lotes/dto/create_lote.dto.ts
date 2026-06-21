@@ -1,43 +1,20 @@
-import { 
-  IsString,
-  IsInt,
-  Min,
-  Equals,
-  IsDateString
-} from 'class-validator';
-import { Transform } from 'class-transformer';
-import { ILote } from '@models';
+import { Type } from 'class-transformer';
+import { IsDateString, IsIn, IsInt, Min } from 'class-validator';
 
-
-export class CreateLoteDTO implements ILote {
-  
-  @IsInt()
-  @Equals(-1)
-  ideLote: number;
-
+export class CreateLoteDTO {
+  @Type(() => Number)
   @IsInt()
   @Min(1)
-  ideProd: number;
+  ideProd!: number;
 
   @IsDateString()
-  fechaCaducidadLote: string;
+  fechaCaducidadLote!: string;
 
+  @Type(() => Number)
   @IsInt()
   @Min(0)
-  stockLote: number;
+  stockLote!: number;
 
-  @IsString()
-  @Transform(({value}) => 
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : 'correcto'
-  )
-  estadoLote: string;
-
-  toArray(): any[] {
-    return [
-      this.ideProd,
-      this.fechaCaducidadLote,
-      this.stockLote,
-      this.estadoLote
-    ];
-  }
+  @IsIn(['correcto', 'proximo', 'caducado', 'devuelto'])
+  estadoLote!: 'correcto' | 'proximo' | 'caducado' | 'devuelto';
 }

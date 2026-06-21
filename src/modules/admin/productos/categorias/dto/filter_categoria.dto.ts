@@ -1,28 +1,20 @@
-import { 
-  IsString,
-  IsOptional, 
-  IsNotEmpty
-} from 'class-validator';
 import { Transform } from 'class-transformer';
-import { Length } from 'class-validator';
-import { IFiltroCategoria } from '@models';
+import { IsOptional, IsString, Length } from 'class-validator';
 
-export class FilterCategoriaDTO implements IFiltroCategoria {
+export class FilterCategoriaDTO {
+  @IsOptional()
+  @IsString()
+  @Length(1, 100)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
+  nombreCate?: string;
 
-    @IsOptional()
-    @IsString()
-    @Length(1, 100)
-    nombreCate?: string;
-
-    @IsOptional()
-    @IsString()
-    @Length(1, 250)
-    descripcionCate?: string;
-
-    toArray(): any[] {
-      return [
-        this.nombreCate ?? null,
-        this.descripcionCate ?? null
-      ];
-    }
+  @IsOptional()
+  @IsString()
+  @Length(1, 250)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
+  descripcionCate?: string;
 }

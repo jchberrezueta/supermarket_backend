@@ -1,39 +1,28 @@
-import { 
-  IsString,
-  IsOptional, 
-  IsInt,
-  Max,
-  Min
-} from 'class-validator';
-import { Length } from 'class-validator';
-import { IFiltroMarca } from '@models';
 import { isIntNumeric } from '@helpers/utilities';
 import { Transform } from 'class-transformer';
+import { IsInt, IsOptional, IsString, Length, Max, Min } from 'class-validator';
 
-export class FilterMarcaDTO implements IFiltroMarca{
+export class FilterMarcaDTO {
+  @IsOptional()
+  @IsString()
+  @Length(1, 100)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
+  nombreMarc?: string;
 
-    @IsOptional()
-    @IsString()
-    @Length(1, 100)
-    nombreMarc?: string;
+  @IsOptional()
+  @IsString()
+  @Length(1, 100)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
+  paisOrigenMarc?: string;
 
-    @IsOptional()
-    @IsString()
-    @Length(1, 100)
-    paisOrigenMarc?: string;
-
-    @IsOptional()
-    @IsInt()
-    @Transform(({value}) => isIntNumeric(value) ? (+value) : null )
-    @Min(1)
-    @Max(10)
-    calidadMarc?: number;
-
-    toArray(): any[] {
-      return [
-        this.nombreMarc?? null,
-        this.paisOrigenMarc?? null,
-        this.calidadMarc?? null,
-      ];
-    }
+  @IsOptional()
+  @Transform(({ value }) => (isIntNumeric(value) ? Number(value) : null))
+  @IsInt()
+  @Min(1)
+  @Max(10)
+  calidadMarc?: number;
 }

@@ -1,18 +1,15 @@
-import { IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
-import { UpdateVentaDetalleDTO } from './update_venta_detalle.dto';
+import { IsArray, ValidateNested } from 'class-validator';
 import { UpdateVentaCabeceraDTO } from './update_venta_cabecera.dto';
-
+import { UpdateVentaDetalleDTO } from './update_venta_detalle.dto';
 
 export class UpdateVentaDTO {
-
   @ValidateNested()
-  @Type( () => UpdateVentaCabeceraDTO)
-  cabeceraVenta: UpdateVentaCabeceraDTO;
+  @Type(() => UpdateVentaCabeceraDTO)
+  cabeceraVenta!: UpdateVentaCabeceraDTO;
 
   @IsArray()
-  @ValidateNested({each: true})
-  @Type( () => UpdateVentaDetalleDTO)
-  detalleVenta: UpdateVentaDetalleDTO[];
-
+  @ValidateNested({ each: true })
+  @Type(() => UpdateVentaDetalleDTO)
+  detalleVenta!: UpdateVentaDetalleDTO[];
 }

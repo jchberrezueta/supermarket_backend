@@ -1,81 +1,71 @@
-import { 
-  IsString, 
-  IsEmail, 
-  IsDateString, 
-  IsEnum, 
-  MaxLength, 
-  Length,
-  IsNumberString,
-  IsInt,
-  Equals
-} from 'class-validator';
+import { EnumEstadosEmpresa } from '@models';
 import { Transform } from 'class-transformer';
-import { EnumEstadosEmpresa, IEmpresa } from '@models';
+import {
+  IsDateString,
+  IsEmail,
+  IsEnum,
+  IsNumberString,
+  IsString,
+  Length,
+  MaxLength,
+} from 'class-validator';
 
-export class CreateEmpresaDTO implements IEmpresa{
-
-  @IsInt()
-  @Equals(-1)
-  ideEmp: number;
+export class CreateEmpresaDTO {
+  @IsString()
+  @Length(1, 250)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : null,
+  )
+  nombreEmp!: string;
 
   @IsString()
   @Length(1, 250)
   @Transform(({ value }) =>
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : null,
   )
-  nombreEmp: string;
-
-  @IsString()
-  @Length(1, 250)
-  @Transform(({ value }) =>
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
-  )
-  responsableEmp: string;
+  responsableEmp!: string;
 
   @IsDateString()
-  fechaContratoEmp: string; // llega como string ISO
+  fechaContratoEmp!: string;
 
   @IsString()
   @Length(1, 250)
   @Transform(({ value }) =>
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : null,
   )
-  direccionEmp: string;
+  direccionEmp!: string;
 
   @IsNumberString()
   @Length(7, 15)
   @Transform(({ value }) =>
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
   )
-  telefonoEmp: string;
+  telefonoEmp!: string;
 
   @IsEmail()
   @MaxLength(100)
   @Transform(({ value }) =>
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : null,
   )
-  emailEmp: string;
+  emailEmp!: string;
 
   @IsEnum(EnumEstadosEmpresa)
-  estadoEmp: EnumEstadosEmpresa;
+  estadoEmp!: EnumEstadosEmpresa;
 
   @IsString()
   @Length(1, 250)
-  @Transform(({ value }) => 
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : 'ninguna'
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : 'ninguna',
   )
-  descripcionEmp: string;
-
-  toArray (): any[] {
-    return [
-      this.nombreEmp,
-      this.responsableEmp,
-      this.fechaContratoEmp,
-      this.direccionEmp,
-      this.telefonoEmp,
-      this.emailEmp,
-      this.estadoEmp,
-      this.descripcionEmp
-    ];
-  }
+  descripcionEmp!: string;
 }

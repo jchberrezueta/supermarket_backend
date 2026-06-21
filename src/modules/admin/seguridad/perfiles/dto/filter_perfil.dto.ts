@@ -1,34 +1,27 @@
 import { isIntNumeric } from '@helpers/utilities';
-import { IFiltroPerfil } from '@models';
 import { Transform } from 'class-transformer';
-import { IsOptional, IsInt, IsString, Min, Length } from 'class-validator';
+import { IsInt, IsOptional, IsString, Length, Min } from 'class-validator';
 
+export class FilterPerfilDto {
+  @IsOptional()
+  @Transform(({ value }) => (isIntNumeric(value) ? Number(value) : null))
+  @IsInt()
+  @Min(0)
+  ideRol?: number;
 
-export class FilterPerfilDto implements IFiltroPerfil {
+  @IsOptional()
+  @IsString()
+  @Length(1, 100)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
+  nombrePerf?: string;
 
-    @IsOptional()
-    @Transform(({value}) => isIntNumeric(value) ? (+value) : null )
-    @IsInt()
-    @Min(0)
-    ideRol?: number;
-
-    @IsOptional()
-    @IsString()
-    @Length(1, 100)
-    nombrePerf?: string;
-
-    @IsOptional()
-    @IsString()
-    @Length(1, 250)
-    descripcionPerf?: string;
-  
-
-    toArray(): any[] {
-        return [
-            this.ideRol?? null,
-            this.nombrePerf?? null,
-            this.descripcionPerf?? null
-        ]
-    }
-
+  @IsOptional()
+  @IsString()
+  @Length(1, 250)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
+  descripcionPerf?: string;
 }

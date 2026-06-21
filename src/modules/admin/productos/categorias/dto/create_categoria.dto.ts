@@ -1,38 +1,22 @@
-import { 
-  IsString,
-  IsOptional, 
-  IsNotEmpty,
-  IsInt,
-  Equals
-} from 'class-validator';
 import { Transform } from 'class-transformer';
-import { Length } from 'class-validator';
-import { ICategoria } from '@models';
+import { IsString, Length } from 'class-validator';
 
-export class CreateCategoriaDTO implements ICategoria {
-
-  @IsInt()
-  @Equals(-1)
-  ideCate: number;
-
+export class CreateCategoriaDTO {
   @IsString()
   @Length(1, 100)
-  @Transform(({value}) => 
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : null
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : null,
   )
-  nombreCate: string;
+  nombreCate!: string;
 
   @IsString()
   @Length(1, 250)
-  @Transform(({value}) => 
-    (typeof value === 'string' && value.trim() !== '') ? value.trim().toLowerCase() : 'ninguna'
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : 'ninguna',
   )
-  descripcionCate: string;
-
-  toArray(): any[] {
-    return [
-      this.nombreCate,
-      this.descripcionCate
-    ];
-  }
+  descripcionCate!: string;
 }

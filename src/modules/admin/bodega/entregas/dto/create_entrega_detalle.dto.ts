@@ -1,68 +1,60 @@
-import { EnumEstadoDetalleEntrega, IDetalleEntrega } from '@models';
-import { 
-  Equals,
-    IsEnum,
-    IsInt,
-    IsNumber,
-    Min
-} from 'class-validator';
+import { EnumEstadoDetalleEntrega } from '@models';
+import { Type } from 'class-transformer';
+import { IsEnum, IsInt, IsNumber, IsOptional, Min } from 'class-validator';
 
-export class CreateEntregaDetalleDTO implements IDetalleEntrega {
-
-  @IsInt()
-  @Equals(-1)
-  ideDetaEntr: number;
-
-  @IsInt()
-  @Equals(-1)
-  ideEntr: number;
-
+export class CreateEntregaDetalleDTO {
+  @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(0)
-  ideProd: number;
+  ideDetaEntr?: number;
 
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  ideEntr?: number;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  ideProd!: number;
+
+  @Type(() => Number)
   @IsInt()
   @Min(1)
-  cantidadProd: number;
+  cantidadProd!: number;
 
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
-  precioUnitarioProd: number;
+  precioUnitarioProd!: number;
 
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
-  subtotalProd: number;
+  subtotalProd!: number;
 
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
-  dctoCompraProd: number;
+  dctoCompraProd!: number;
 
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
-  ivaProd: number;
+  ivaProd!: number;
 
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
-  totalProd: number;
+  totalProd!: number;
 
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
-  dctoCaducProd: number;
+  dctoCaducProd!: number;
 
   @IsEnum(EnumEstadoDetalleEntrega)
-  estadoDetaEntr: EnumEstadoDetalleEntrega
-
-  toArray(): any[] {
-    return [
-      this.ideProd,
-      this.cantidadProd,
-      this.precioUnitarioProd,
-      this.subtotalProd,
-      this.dctoCompraProd,
-      this.ivaProd,
-      this.totalProd,
-      this.dctoCaducProd,
-      this.estadoDetaEntr
-    ]
-  }
+  estadoDetaEntr!: EnumEstadoDetalleEntrega;
 }
