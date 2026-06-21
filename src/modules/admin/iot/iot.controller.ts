@@ -22,6 +22,11 @@ export class IotController {
     return this.iotService.recibirLectura(dto);
   }
 
+  @Get('resumen-bodega')
+  obtenerResumenBodega(@Query('codigoDispositivo') codigoDispositivo?: string) {
+    return this.iotService.obtenerResumenBodega(codigoDispositivo);
+  }
+
   @Get('lecturas/ultima')
   obtenerUltimaLectura(@Query('codigoDispositivo') codigoDispositivo?: string) {
     return this.iotService.obtenerUltimaLectura(codigoDispositivo);

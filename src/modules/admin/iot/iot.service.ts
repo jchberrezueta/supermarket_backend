@@ -130,6 +130,87 @@ export class IotService {
     };
   }
 
+  async obtenerResumenBodega(codigoDispositivo?: string) {
+    const codigoDisp = codigoDispositivo
+      ? IotMapper.normalizarCodigo(codigoDispositivo)
+      : undefined;
+
+    const lectura = await this.iotRepository.obtenerUltimaLectura(codigoDisp);
+    const alertas = await this.iotRepository.listarAlertasAbiertas();
+
+    if (!lectura) {
+      return {
+        message: 'Resumen IoT de bodega obtenido correctamente.',
+        data: {
+          estadoAmbiental: 'sin_datos',
+          mensajeEstado: 'No existen lecturas IoT registradas para la bodega.',
+          ultimaLectura: null,
+          limites: {
+            temperaturaMaxima: this.temperaturaMaxima,
+            humedadMaxima: this.humedadMaxima,
+          },
+          totalAlertasAbiertas: 0,
+          alertasAbiertas: [],
+        },
+      };
+    }
+
+    const temperatura = Number(lectura.temperaturaLect);
+    const humedad = Number(lectura.humedadLect);
+
+    const temperaturaAlta = temperatura >= this.temperaturaMaxima;
+    const humedadAlta = humedad >= this.humedadMaxima;
+
+    let estadoAmbiental: 'normal' | 'alerta' | 'critico' = 'normal';
+    let mensajeEstado = 'Condiciones ambientales normales en bodega.';
+
+    if (temperaturaAlta && humedadAlta) {
+      estadoAmbiental = 'critico';
+      mensajeEstado =
+        'Temperatura y humedad sobrepasan los límites permitidos.';
+    } else if (temperaturaAlta) {
+      estadoAmbiental = 'alerta';
+      mensajeEstado = 'Temperatura alta detectada en bodega.';
+    } else if (humedadAlta) {
+      estadoAmbiental = 'alerta';
+      mensajeEstado = 'Humedad alta detectada en bodega.';
+    }
+
+    const alertasDispositivo = alertas.filter((alerta) => {
+      if (!codigoDisp) {
+        return alerta.ideDisp === lectura.ideDisp;
+      }
+
+      return alerta.dispositivo?.codigoDisp === codigoDisp;
+    });
+
+    return {
+      message: 'Resumen IoT de bodega obtenido correctamente.',
+      data: {
+        estadoAmbiental,
+        mensajeEstado,
+        dispositivo: {
+          ideDisp: lectura.ideDisp,
+          codigoDisp: lectura.dispositivo?.codigoDisp ?? null,
+          nombreDisp: lectura.dispositivo?.nombreDisp ?? null,
+          ubicacionDisp: lectura.dispositivo?.ubicacionDisp ?? null,
+        },
+        ultimaLectura: {
+          ideLect: lectura.ideLect,
+          temperaturaLect: temperatura,
+          humedadLect: humedad,
+          fechaLect: lectura.fechaLect,
+        },
+        limites: {
+          temperaturaMaxima: this.temperaturaMaxima,
+          humedadMaxima: this.humedadMaxima,
+        },
+        totalAlertasAbiertas: alertasDispositivo.length,
+        alertasAbiertas: alertasDispositivo.map(IotMapper.toAlertaResponse),
+      },
+    };
+  }
+
   private async generarAlertasSiAplica(
     ideDisp: number,
     ideLect: number,
