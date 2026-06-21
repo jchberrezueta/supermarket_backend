@@ -1,5 +1,5 @@
 import { isIntNumeric } from '@helpers/utilities';
-import { EnumEstadosCuenta, IFiltroCuenta } from '@models';
+import { EnumEstadosCuenta } from '@models';
 import { Transform } from 'class-transformer';
 import {
   IsEnum,
@@ -10,7 +10,7 @@ import {
   Min,
 } from 'class-validator';
 
-export class FiltroCuentaDto implements IFiltroCuenta {
+export class FiltroCuentaDto {
   @IsOptional()
   @Transform(({ value }) => (isIntNumeric(value) ? Number(value) : null))
   @IsInt()
