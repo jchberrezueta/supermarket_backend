@@ -6,6 +6,7 @@ import {
   ProveedoresModule,
   SeguridadModule,
   VentasModule,
+  IotModule,
 } from '@admin';
 import { DashboardModule } from './dashboard/dashboard.module';
 
@@ -18,6 +19,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     SeguridadModule,
     VentasModule,
     DashboardModule,
+    IotModule,
   ],
 })
 export class AdminModule {}
