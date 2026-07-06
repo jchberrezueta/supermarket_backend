@@ -15,7 +15,7 @@ export class CustomLogger extends ConsoleLogger implements LoggerService {
 
   error(message: string) {
     // Add custom error handling
-    super.error(message)
+    super.error(message);
   }
 
   warn(message: string) {

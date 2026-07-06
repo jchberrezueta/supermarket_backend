@@ -1,145 +1,144 @@
 export enum EnumEstadoVenta {
-    COMPLETADO = 'completado',
-    CANCELADO = 'cancelado',
-    DEVUELTO = 'devuelto'
+  COMPLETADO = 'completado',
+  CANCELADO = 'cancelado',
+  DEVUELTO = 'devuelto',
 }
 
 export interface IVenta {
-    ideVent: number;
-    ideEmpl: number;
-    ideClie: number;
-    numFacturaVent: string;
-    fechaVent: string;
-    cantidadVent: number;
-    subTotalVent: number;
-    totalVent: number;
-    dctoSocioVent: number;
-    dctoEdadVent: number;
-    estadoVent: EnumEstadoVenta;
+  ideVent: number;
+  ideEmpl: number;
+  ideClie: number;
+  numFacturaVent: string;
+  fechaVent: string;
+  cantidadVent: number;
+  subTotalVent: number;
+  totalVent: number;
+  dctoSocioVent: number;
+  dctoEdadVent: number;
+  estadoVent: EnumEstadoVenta;
 }
 
 export class CVenta implements IVenta {
+  constructor(
+    private _ideVent: number,
+    private _ideEmpl: number,
+    private _ideClie: number,
+    private _numFacturaVent: string,
+    private _fechaVent: string,
+    private _cantidadVent: number,
+    private _subTotalVent: number,
+    private _totalVent: number,
+    private _dctoSocioVent: number,
+    private _estadoVent: EnumEstadoVenta,
+    private _dctoEdadVent: number,
+  ) {}
 
-    constructor(
-        private _ideVent: number,
-        private _ideEmpl: number,
-        private _ideClie: number,
-        private _numFacturaVent: string,
-        private _fechaVent: string,
-        private _cantidadVent: number,
-        private _subTotalVent: number,
-        private _totalVent: number,
-        private _dctoSocioVent: number,
-        private _estadoVent: EnumEstadoVenta,
-        private _dctoEdadVent: number
-    ) {}
+  // --- Getters / Setters ---
 
-    // --- Getters / Setters ---
+  get ideVent() {
+    return this._ideVent;
+  }
+  set ideVent(value: number) {
+    this._ideVent = value;
+  }
 
-    get ideVent() {
-        return this._ideVent;
-    }
-    set ideVent(value: number) {
-        this._ideVent = value;
-    }
+  get ideEmpl() {
+    return this._ideEmpl;
+  }
+  set ideEmpl(value: number) {
+    this._ideEmpl = value;
+  }
 
-    get ideEmpl() {
-        return this._ideEmpl;
-    }
-    set ideEmpl(value: number) {
-        this._ideEmpl = value;
-    }
+  get ideClie() {
+    return this._ideClie;
+  }
+  set ideClie(value: number) {
+    this._ideClie = value;
+  }
 
-    get ideClie() {
-        return this._ideClie;
-    }
-    set ideClie(value: number) {
-        this._ideClie = value;
-    }
+  get numFacturaVent() {
+    return this._numFacturaVent;
+  }
+  set numFacturaVent(value: string) {
+    this._numFacturaVent = value;
+  }
 
-    get numFacturaVent() {
-        return this._numFacturaVent;
-    }
-    set numFacturaVent(value: string) {
-        this._numFacturaVent = value;
-    }
+  get fechaVent() {
+    return this._fechaVent;
+  }
+  set fechaVent(value: string) {
+    this._fechaVent = value;
+  }
 
-    get fechaVent() {
-        return this._fechaVent;
-    }
-    set fechaVent(value: string) {
-        this._fechaVent = value;
-    }
+  get cantidadVent() {
+    return this._cantidadVent;
+  }
+  set cantidadVent(value: number) {
+    this._cantidadVent = value;
+  }
 
-    get cantidadVent() {
-        return this._cantidadVent;
-    }
-    set cantidadVent(value: number) {
-        this._cantidadVent = value;
-    }
+  get subTotalVent() {
+    return this._subTotalVent;
+  }
+  set subTotalVent(value: number) {
+    this._subTotalVent = value;
+  }
 
-    get subTotalVent() {
-        return this._subTotalVent;
-    }
-    set subTotalVent(value: number) {
-        this._subTotalVent = value;
-    }
+  get totalVent() {
+    return this._totalVent;
+  }
+  set totalVent(value: number) {
+    this._totalVent = value;
+  }
 
-    get totalVent() {
-        return this._totalVent;
-    }
-    set totalVent(value: number) {
-        this._totalVent = value;
-    }
+  get dctoSocioVent() {
+    return this._dctoSocioVent;
+  }
+  set dctoSocioVent(value: number) {
+    this._dctoSocioVent = value;
+  }
 
-    get dctoSocioVent() {
-        return this._dctoSocioVent;
-    }
-    set dctoSocioVent(value: number) {
-        this._dctoSocioVent = value;
-    }
+  get estadoVent() {
+    return this._estadoVent;
+  }
+  set estadoVent(value: EnumEstadoVenta) {
+    this._estadoVent = value;
+  }
 
-    get estadoVent() {
-        return this._estadoVent;
-    }
-    set estadoVent(value: EnumEstadoVenta) {
-        this._estadoVent = value;
-    }
-
-    get dctoEdadVent() {
-        return this._dctoEdadVent;
-    }
-    set dctoEdadVent(value: number) {
-        this._dctoEdadVent = value;
-    }
+  get dctoEdadVent() {
+    return this._dctoEdadVent;
+  }
+  set dctoEdadVent(value: number) {
+    this._dctoEdadVent = value;
+  }
 }
 
 export interface IVentaResult {
-    ide_vent: number;
-    ide_empl: number;
-    ide_clie: number;
-    num_factura_vent: string;
-    fecha_vent: string;
-    cantidad_vent: number;
-    sub_total_vent: number;
-    total_vent: number;
-    dcto_socio_vent: number;
-    estado_vent: EnumEstadoVenta;
-    dcto_edad_vent: number;
+  ide_vent: number;
+  ide_empl: number;
+  ide_clie: number;
+  num_factura_vent: string;
+  fecha_vent: string;
+  cantidad_vent: number;
+  sub_total_vent: number;
+  total_vent: number;
+  dcto_socio_vent: number;
+  estado_vent: EnumEstadoVenta;
+  dcto_edad_vent: number;
 }
 
 export interface IFiltroVenta {
-    ideVent?: number;
-    ideEmpl?: number;
-    ideClie?: number;
-    numFacturaVent?: string;
-    fechaVentDesde?: string;
-    fechaVentHasta?: string;
-    cantidadVentMin?: number;
-    cantidadVentMax?: number;
-    subTotalVentMin?: number;
-    subTotalVentMax?: number;
-    totalVentMin?: number;
-    totalVentMax?: number;
-    estadoVent?: EnumEstadoVenta;
+  ideVent?: number;
+  ideEmpl?: number;
+  ideClie?: number;
+  numFacturaVent?: string;
+  fechaVentDesde?: string;
+  fechaVentHasta?: string;
+  cantidadVentMin?: number;
+  cantidadVentMax?: number;
+  subTotalVentMin?: number;
+  subTotalVentMax?: number;
+  totalVentMin?: number;
+  totalVentMax?: number;
+  estadoVent?: EnumEstadoVenta;
 }

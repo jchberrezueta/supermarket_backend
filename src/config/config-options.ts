@@ -1,7 +1,7 @@
-import { configLoader } from "./config-app";
+import { configLoader } from './config-app';
 
 export const configOptions = {
   isGlobal: true,
   envFilePath: ['.env'],
-  load: [configLoader]
+  load: [configLoader],
 };

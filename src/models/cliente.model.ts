@@ -1,142 +1,141 @@
 export interface ICliente {
-    ideClie: number;
-    cedulaClie: string;
-    fechaNacimientoClie: string;
-    edadClie: number;
-    telefonoClie: string;
-    primerNombreClie: string;
-    apellidoPaternoClie: string;
-    emailClie: string;
-    esSocio: 'si' | 'no';
-    esTerceraEdad: 'si' | 'no';
-    segundoNombreClie?: string | null;
-    apellidoMaternoClie?: string | null;
+  ideClie: number;
+  cedulaClie: string;
+  fechaNacimientoClie: string;
+  edadClie: number;
+  telefonoClie: string;
+  primerNombreClie: string;
+  apellidoPaternoClie: string;
+  emailClie: string;
+  esSocio: 'si' | 'no';
+  esTerceraEdad: 'si' | 'no';
+  segundoNombreClie?: string | null;
+  apellidoMaternoClie?: string | null;
 }
 
 export class CCliente implements ICliente {
+  constructor(
+    private _ideClie: number,
+    private _cedulaClie: string,
+    private _fechaNacimientoClie: string,
+    private _edadClie: number,
+    private _telefonoClie: string,
+    private _primerNombreClie: string,
+    private _apellidoPaternoClie: string,
+    private _emailClie: string,
+    private _esSocio: 'si' | 'no',
+    private _esTerceraEdad: 'si' | 'no',
+    private _segundoNombreClie?: string | null,
+    private _apellidoMaternoClie?: string | null,
+  ) {}
 
-    constructor(
-        private _ideClie: number,
-        private _cedulaClie: string,
-        private _fechaNacimientoClie: string,
-        private _edadClie: number,
-        private _telefonoClie: string,
-        private _primerNombreClie: string,
-        private _apellidoPaternoClie: string,
-        private _emailClie: string,
-        private _esSocio: 'si' | 'no',
-        private _esTerceraEdad: 'si' | 'no',
-        private _segundoNombreClie?: string | null,
-        private _apellidoMaternoClie?: string | null
-    ) {}
+  // --- Getters / Setters ---
 
-    // --- Getters / Setters ---
+  get ideClie() {
+    return this._ideClie;
+  }
+  set ideClie(value: number) {
+    this._ideClie = value;
+  }
 
-    get ideClie() {
-        return this._ideClie;
-    }
-    set ideClie(value: number) {
-        this._ideClie = value;
-    }
+  get cedulaClie() {
+    return this._cedulaClie;
+  }
+  set cedulaClie(value: string) {
+    this._cedulaClie = value;
+  }
 
-    get cedulaClie() {
-        return this._cedulaClie;
-    }
-    set cedulaClie(value: string) {
-        this._cedulaClie = value;
-    }
+  get fechaNacimientoClie() {
+    return this._fechaNacimientoClie;
+  }
+  set fechaNacimientoClie(value: string) {
+    this._fechaNacimientoClie = value;
+  }
 
-    get fechaNacimientoClie() {
-        return this._fechaNacimientoClie;
-    }
-    set fechaNacimientoClie(value: string) {
-        this._fechaNacimientoClie = value;
-    }
+  get edadClie() {
+    return this._edadClie;
+  }
+  set edadClie(value: number) {
+    this._edadClie = value;
+  }
 
-    get edadClie() {
-        return this._edadClie;
-    }
-    set edadClie(value: number) {
-        this._edadClie = value;
-    }
+  get telefonoClie() {
+    return this._telefonoClie;
+  }
+  set telefonoClie(value: string) {
+    this._telefonoClie = value;
+  }
 
-    get telefonoClie() {
-        return this._telefonoClie;
-    }
-    set telefonoClie(value: string) {
-        this._telefonoClie = value;
-    }
+  get primerNombreClie() {
+    return this._primerNombreClie;
+  }
+  set primerNombreClie(value: string) {
+    this._primerNombreClie = value;
+  }
 
-    get primerNombreClie() {
-        return this._primerNombreClie;
-    }
-    set primerNombreClie(value: string) {
-        this._primerNombreClie = value;
-    }
+  get apellidoPaternoClie() {
+    return this._apellidoPaternoClie;
+  }
+  set apellidoPaternoClie(value: string) {
+    this._apellidoPaternoClie = value;
+  }
 
-    get apellidoPaternoClie() {
-        return this._apellidoPaternoClie;
-    }
-    set apellidoPaternoClie(value: string) {
-        this._apellidoPaternoClie = value;
-    }
+  get emailClie() {
+    return this._emailClie;
+  }
+  set emailClie(value: string) {
+    this._emailClie = value;
+  }
 
-    get emailClie() {
-        return this._emailClie;
-    }
-    set emailClie(value: string) {
-        this._emailClie = value;
-    }
+  get esSocio() {
+    return this._esSocio;
+  }
+  set esSocio(value: 'si' | 'no') {
+    this._esSocio = value;
+  }
 
-    get esSocio() {
-        return this._esSocio;
-    }
-    set esSocio(value: 'si' | 'no') {
-        this._esSocio = value;
-    }
+  get esTerceraEdad() {
+    return this._esTerceraEdad;
+  }
+  set esTerceraEdad(value: 'si' | 'no') {
+    this._esTerceraEdad = value;
+  }
 
-    get esTerceraEdad() {
-        return this._esTerceraEdad;
-    }
-    set esTerceraEdad(value: 'si' | 'no') {
-        this._esTerceraEdad = value;
-    }
+  get segundoNombreClie() {
+    return this._segundoNombreClie;
+  }
+  set segundoNombreClie(value: string | null | undefined) {
+    this._segundoNombreClie = value;
+  }
 
-    get segundoNombreClie() {
-        return this._segundoNombreClie;
-    }
-    set segundoNombreClie(value: string | null | undefined) {
-        this._segundoNombreClie = value;
-    }
-
-    get apellidoMaternoClie() {
-        return this._apellidoMaternoClie;
-    }
-    set apellidoMaternoClie(value: string | null | undefined) {
-        this._apellidoMaternoClie = value;
-    }
+  get apellidoMaternoClie() {
+    return this._apellidoMaternoClie;
+  }
+  set apellidoMaternoClie(value: string | null | undefined) {
+    this._apellidoMaternoClie = value;
+  }
 }
 
 export interface IClienteResult {
-    ide_clie: number;
-    cedula_clie: string;
-    fecha_nacimiento_clie: string;
-    edad_clie: number;
-    telefono_clie: string;
-    primer_nombre_clie: string;
-    apellido_paterno_clie: string;
-    email_clie: string;
-    es_socio: 'si' | 'no';
-    es_tercera_edad: 'si' | 'no';
-    segundo_nombre_clie: string | null;
-    apellido_materno_clie: string | null;
+  ide_clie: number;
+  cedula_clie: string;
+  fecha_nacimiento_clie: string;
+  edad_clie: number;
+  telefono_clie: string;
+  primer_nombre_clie: string;
+  apellido_paterno_clie: string;
+  email_clie: string;
+  es_socio: 'si' | 'no';
+  es_tercera_edad: 'si' | 'no';
+  segundo_nombre_clie: string | null;
+  apellido_materno_clie: string | null;
 }
 
 export interface IFiltroCliente {
-    cedulaClie?: string;
-    primerNombreClie?: string;
-    apellidoPaternoClie?: string;
-    emailClie?: string;
-    esSocio?: 'si' | 'no';
-    esTerceraEdad?: 'si' | 'no';
+  cedulaClie?: string;
+  primerNombreClie?: string;
+  apellidoPaternoClie?: string;
+  emailClie?: string;
+  esSocio?: 'si' | 'no';
+  esTerceraEdad?: 'si' | 'no';
 }
