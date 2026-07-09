@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import {
   IsDateString,
   IsIn,
@@ -8,10 +9,65 @@ import {
   Length,
   Min,
 } from 'class-validator';
-import { Transform } from 'class-transformer';
+
+function toRequiredInt(value: unknown): number | unknown {
+  if (value === null || value === undefined || value === '') {
+    return value;
+  }
+
+  const numberValue = Number(value);
+
+  if (Number.isInteger(numberValue)) {
+    return numberValue;
+  }
+
+  return value;
+}
+
+function toRequiredNumber(value: unknown): number | unknown {
+  if (value === null || value === undefined || value === '') {
+    return value;
+  }
+
+  const numberValue = Number(value);
+
+  if (Number.isFinite(numberValue)) {
+    return numberValue;
+  }
+
+  return value;
+}
+
+function optionalNumber(value: unknown): number | undefined | unknown {
+  if (value === null || value === undefined || value === '') {
+    return undefined;
+  }
+
+  const numberValue = Number(value);
+
+  if (Number.isFinite(numberValue)) {
+    return numberValue;
+  }
+
+  return value;
+}
+
+function optionalIntOrNull(value: unknown): number | null | unknown {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
+  const numberValue = Number(value);
+
+  if (Number.isInteger(numberValue)) {
+    return numberValue;
+  }
+
+  return value;
+}
 
 export class CreateVentaCabeceraDto {
-  @Transform(({ value }) => Number(value))
+  @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
   @Min(0)
   ideClie!: number;
@@ -28,48 +84,52 @@ export class CreateVentaCabeceraDto {
   @IsDateString()
   fechaVent?: string;
 
-  @Transform(({ value }) => Number(value))
+  /**
+   * El service recalcula cantidad/subtotal/total desde los productos reales.
+   * Se mantiene requerido por compatibilidad con el contrato móvil actual.
+   */
+  @Transform(({ value }) => toRequiredNumber(value))
   @IsNumber()
   @Min(1)
   cantidadVent!: number;
 
-  @Transform(({ value }) => Number(value))
+  @Transform(({ value }) => toRequiredNumber(value))
   @IsNumber()
   @Min(0)
   subTotalVent!: number;
 
-  @Transform(({ value }) => Number(value))
+  @Transform(({ value }) => toRequiredNumber(value))
   @IsNumber()
   @Min(0)
   totalVent!: number;
 
-  @Transform(({ value }) => Number(value ?? 0))
+  @IsOptional()
+  @Transform(({ value }) => optionalNumber(value))
   @IsNumber()
   @Min(0)
-  @IsOptional()
-  dctoSocioVent = 0;
+  dctoSocioVent?: number;
 
-  @Transform(({ value }) => Number(value ?? 0))
+  @IsOptional()
+  @Transform(({ value }) => optionalNumber(value))
   @IsNumber()
   @Min(0)
-  @IsOptional()
-  dctoEdadVent = 0;
+  dctoEdadVent?: number;
 
+  @IsOptional()
   @IsString()
-  @IsOptional()
+  @Length(1, 25)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
+  )
   usuaIngre?: string;
 
   @IsOptional()
   @IsIn(['efectivo', 'tarjeta_credito', 'tarjeta_debito', 'paypal'])
   tipoPagoVent?: 'efectivo' | 'tarjeta_credito' | 'tarjeta_debito' | 'paypal';
 
-  @Transform(({ value }) =>
-    value === null || value === undefined || value === ''
-      ? undefined
-      : Number(value),
-  )
+  @IsOptional()
+  @Transform(({ value }) => optionalIntOrNull(value))
   @IsInt()
   @Min(0)
-  @IsOptional()
-  ideMetoPago?: number;
+  ideMetoPago?: number | null;
 }

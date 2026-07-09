@@ -32,48 +32,45 @@ export class EntregaEntity {
     type: 'numeric',
     precision: 10,
     scale: 2,
-    default: 0,
   })
   totalEntr!: string;
 
-  @Column({
-    name: 'estado_entr',
-    type: 'varchar',
-    length: 25,
-    default: 'incompleto',
-  })
+  @Column({ name: 'estado_entr', type: 'varchar', length: 25 })
   estadoEntr!: 'completo' | 'incompleto';
 
   @Column({
     name: 'observacion_entr',
     type: 'varchar',
     length: 250,
-    default: 'Ninguna',
+    nullable: true,
   })
-  observacionEntr!: string;
+  observacionEntr?: string | null;
 
-  @Column({ name: 'usua_ingre', type: 'varchar', length: 25, nullable: true })
-  usuaIngre?: string;
+  @Column({ name: 'usua_ingre', type: 'varchar', length: 25 })
+  usuaIngre!: string;
 
   @Column({
     name: 'fecha_ingre',
     type: 'timestamp',
-    nullable: true,
     default: () => 'CURRENT_TIMESTAMP',
   })
-  fechaIngre?: Date;
+  fechaIngre!: Date;
 
   @Column({ name: 'usua_actua', type: 'varchar', length: 25, nullable: true })
-  usuaActua?: string;
+  usuaActua?: string | null;
 
   @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
-  fechaActua?: Date;
+  fechaActua?: Date | null;
 
-  @ManyToOne(() => PedidoEntity, (pedido) => pedido.entregas)
+  @ManyToOne(() => PedidoEntity, (pedido) => pedido.entregas, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'ide_pedi' })
   pedido?: PedidoEntity;
 
-  @ManyToOne(() => ProveedorEntity, (proveedor) => proveedor.entregas)
+  @ManyToOne(() => ProveedorEntity, (proveedor) => proveedor.entregas, {
+    onDelete: 'RESTRICT',
+  })
   @JoinColumn({ name: 'ide_prov' })
   proveedor?: ProveedorEntity;
 

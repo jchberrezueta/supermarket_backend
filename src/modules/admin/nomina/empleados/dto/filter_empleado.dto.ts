@@ -1,4 +1,3 @@
-import { isIntNumeric } from '@helpers/utilities';
 import { Transform } from 'class-transformer';
 import {
   IsIn,
@@ -10,9 +9,23 @@ import {
   Min,
 } from 'class-validator';
 
+function optionalInt(value: unknown): number | undefined | unknown {
+  if (value === null || value === undefined || value === '') {
+    return undefined;
+  }
+
+  const numberValue = Number(value);
+
+  if (Number.isInteger(numberValue)) {
+    return numberValue;
+  }
+
+  return value;
+}
+
 export class FilterEmpleadoDTO {
   @IsOptional()
-  @Transform(({ value }) => (isIntNumeric(value) ? Number(value) : null))
+  @Transform(({ value }) => optionalInt(value))
   @IsInt()
   @Min(0)
   ideRol?: number;
@@ -21,7 +34,7 @@ export class FilterEmpleadoDTO {
   @IsNumberString()
   @Length(7, 15)
   @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
   )
   cedulaEmpl?: string;
 
@@ -29,7 +42,7 @@ export class FilterEmpleadoDTO {
   @IsString()
   @Length(1, 50)
   @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
   )
   primerNombreEmpl?: string;
 
@@ -37,7 +50,7 @@ export class FilterEmpleadoDTO {
   @IsString()
   @Length(1, 50)
   @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
   )
   apellidoPaternoEmpl?: string;
 
@@ -45,7 +58,7 @@ export class FilterEmpleadoDTO {
   @IsString()
   @Length(1, 250)
   @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
   )
   tituloEmpl?: string;
 

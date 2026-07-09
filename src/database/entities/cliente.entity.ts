@@ -1,8 +1,16 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  Index,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { CuentaClienteEntity } from './cuenta_cliente.entity';
+import { MetodoPagoClienteEntity } from './metodo_pago_cliente.entity';
 import { VentaEntity } from './venta.entity';
 
 @Entity({ name: 'cliente' })
+@Index('cliente_cedula_clie_key', ['cedulaClie'], { unique: true })
 export class ClienteEntity {
   @PrimaryGeneratedColumn({ name: 'ide_clie' })
   ideClie!: number;
@@ -25,23 +33,13 @@ export class ClienteEntity {
   @Column({ name: 'apellido_paterno_clie', type: 'varchar', length: 50 })
   apellidoPaternoClie!: string;
 
-  @Column({
-    name: 'email_clie',
-    type: 'varchar',
-    length: 100,
-    default: 'Ninguno',
-  })
+  @Column({ name: 'email_clie', type: 'varchar', length: 100 })
   emailClie!: string;
 
-  @Column({ name: 'es_socio', type: 'varchar', length: 2, default: 'no' })
+  @Column({ name: 'es_socio', type: 'varchar', length: 2 })
   esSocio!: 'si' | 'no';
 
-  @Column({
-    name: 'es_tercera_edad',
-    type: 'varchar',
-    length: 2,
-    default: 'no',
-  })
+  @Column({ name: 'es_tercera_edad', type: 'varchar', length: 2 })
   esTerceraEdad!: 'si' | 'no';
 
   @Column({
@@ -60,22 +58,21 @@ export class ClienteEntity {
   })
   apellidoMaternoClie?: string | null;
 
-  @Column({ name: 'usua_ingre', type: 'varchar', length: 25, nullable: true })
-  usuaIngre?: string;
+  @Column({ name: 'usua_ingre', type: 'varchar', length: 25 })
+  usuaIngre!: string;
 
   @Column({
     name: 'fecha_ingre',
     type: 'timestamp',
-    nullable: true,
     default: () => 'CURRENT_TIMESTAMP',
   })
-  fechaIngre?: Date;
+  fechaIngre!: Date;
 
   @Column({ name: 'usua_actua', type: 'varchar', length: 25, nullable: true })
-  usuaActua?: string;
+  usuaActua?: string | null;
 
   @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
-  fechaActua?: Date;
+  fechaActua?: Date | null;
 
   @OneToMany(() => VentaEntity, (venta) => venta.cliente)
   ventas?: VentaEntity[];
@@ -85,6 +82,9 @@ export class ClienteEntity {
     (cuentaCliente) => cuentaCliente.cliente,
   )
   cuentasCliente?: CuentaClienteEntity[];
+
+  @OneToMany(() => MetodoPagoClienteEntity, (metodoPago) => metodoPago.cliente)
+  metodosPago?: MetodoPagoClienteEntity[];
 }
 
 export { ClienteEntity as Cliente };

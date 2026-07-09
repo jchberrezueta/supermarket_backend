@@ -1,19 +1,34 @@
 import { EnumEstadosEmpresa } from '@models';
-import { Transform, Type } from 'class-transformer';
+import { Transform } from 'class-transformer';
 import {
   IsDateString,
   IsEmail,
   IsEnum,
   IsInt,
   IsNumberString,
+  IsOptional,
   IsString,
   Length,
   MaxLength,
   Min,
 } from 'class-validator';
 
+function toRequiredInt(value: unknown): number | unknown {
+  if (value === null || value === undefined || value === '') {
+    return value;
+  }
+
+  const numberValue = Number(value);
+
+  if (Number.isInteger(numberValue)) {
+    return numberValue;
+  }
+
+  return value;
+}
+
 export class UpdateEmpresaDTO {
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
   @Min(0)
   ideEmp!: number;
@@ -67,12 +82,13 @@ export class UpdateEmpresaDTO {
   @IsEnum(EnumEstadosEmpresa)
   estadoEmp!: EnumEstadosEmpresa;
 
+  @IsOptional()
   @IsString()
   @Length(1, 250)
   @Transform(({ value }) =>
     typeof value === 'string' && value.trim() !== ''
       ? value.trim().toLowerCase()
-      : 'ninguna',
+      : null,
   )
-  descripcionEmp!: string;
+  descripcionEmp?: string | null;
 }

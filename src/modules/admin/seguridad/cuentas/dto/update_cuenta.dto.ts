@@ -1,5 +1,5 @@
 import { EnumEstadosCuenta } from '@models';
-import { Type } from 'class-transformer';
+import { Transform } from 'class-transformer';
 import {
   IsEnum,
   IsInt,
@@ -7,41 +7,58 @@ import {
   IsString,
   Length,
   Min,
-  ValidateIf,
 } from 'class-validator';
 
+function toRequiredInt(value: unknown): number | unknown {
+  if (value === null || value === undefined || value === '') {
+    return value;
+  }
+
+  const numberValue = Number(value);
+
+  if (Number.isInteger(numberValue)) {
+    return numberValue;
+  }
+
+  return value;
+}
+
 export class UpdateCuentaDto {
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
   @Min(0)
   ideCuen!: number;
 
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
   @Min(0)
   ideEmpl!: number;
 
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
   @Min(0)
   idePerf!: number;
 
   @IsString()
   @Length(1, 25)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : null,
+  )
   usuarioCuen!: string;
 
   /**
    * En actualización la contraseña es opcional:
-   * - si viene vacía, se conserva la clave actual
+   * - si no viene o viene vacía, se conserva la clave actual
    * - si viene con valor, el service la encripta
    */
   @IsOptional()
-  @ValidateIf(
-    (_, value) =>
-      value !== undefined && value !== null && String(value).trim() !== '',
-  )
   @IsString()
   @Length(1, 250)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
+  )
   passwordCuen?: string;
 
   @IsEnum(EnumEstadosCuenta)

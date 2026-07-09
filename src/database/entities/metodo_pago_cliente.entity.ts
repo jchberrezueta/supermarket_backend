@@ -57,17 +57,19 @@ export class MetodoPagoClienteEntity {
     name: 'es_predeterminado',
     type: 'varchar',
     length: 2,
+    nullable: true,
     default: 'no',
   })
-  esPredeterminado!: 'si' | 'no';
+  esPredeterminado?: 'si' | 'no' | null;
 
   @Column({
     name: 'estado',
     type: 'varchar',
     length: 15,
+    nullable: true,
     default: 'activo',
   })
-  estado!: 'activo' | 'inactivo';
+  estado?: 'activo' | 'inactivo' | null;
 
   @Column({
     name: 'alias',
@@ -93,9 +95,7 @@ export class MetodoPagoClienteEntity {
   @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
   fechaActua?: Date | null;
 
-  @ManyToOne(() => ClienteEntity, {
-    onDelete: 'CASCADE',
-  })
+  @ManyToOne(() => ClienteEntity, (cliente) => cliente.metodosPago)
   @JoinColumn({ name: 'ide_clie' })
   cliente?: ClienteEntity;
 }

@@ -1,8 +1,9 @@
-import { EnumEstadosPedido, EnumMotivosPedido } from '@models';
-import { Transform, Type } from 'class-transformer';
+import { EnumMotivosPedido } from '@models';
+import { Transform } from 'class-transformer';
 import {
   IsDateString,
   IsEnum,
+  IsIn,
   IsInt,
   IsNumber,
   IsOptional,
@@ -11,13 +12,41 @@ import {
   Min,
 } from 'class-validator';
 
+function toRequiredInt(value: unknown): number | unknown {
+  if (value === null || value === undefined || value === '') {
+    return value;
+  }
+
+  const numberValue = Number(value);
+
+  if (Number.isInteger(numberValue)) {
+    return numberValue;
+  }
+
+  return value;
+}
+
+function toRequiredNumber(value: unknown): number | unknown {
+  if (value === null || value === undefined || value === '') {
+    return value;
+  }
+
+  const numberValue = Number(value);
+
+  if (Number.isFinite(numberValue)) {
+    return numberValue;
+  }
+
+  return value;
+}
+
 export class UpdatePedidoCabeceraDTO {
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
   @Min(0)
   idePedi!: number;
 
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
   @Min(0)
   ideEmpr!: number;
@@ -28,18 +57,18 @@ export class UpdatePedidoCabeceraDTO {
   @IsDateString()
   fechaEntrPedi!: string;
 
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
   @Min(0)
   cantidadTotalPedi!: number;
 
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredNumber(value))
   @IsNumber()
   @Min(0)
   totalPedi!: number;
 
-  @IsEnum(EnumEstadosPedido)
-  estadoPedi!: EnumEstadosPedido;
+  @IsIn(['progreso', 'completado', 'incompleto', 'emitido'])
+  estadoPedi!: 'progreso' | 'completado' | 'incompleto' | 'emitido';
 
   @IsEnum(EnumMotivosPedido)
   motivoPedi!: EnumMotivosPedido;
@@ -50,7 +79,7 @@ export class UpdatePedidoCabeceraDTO {
   @Transform(({ value }) =>
     typeof value === 'string' && value.trim() !== ''
       ? value.trim().toLowerCase()
-      : 'ninguna',
+      : null,
   )
-  observacionPedi?: string;
+  observacionPedi?: string | null;
 }

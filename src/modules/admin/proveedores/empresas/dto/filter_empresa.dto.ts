@@ -7,7 +7,7 @@ export class FilterEmpresaDTO {
   @IsString()
   @Length(1, 250)
   @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
   )
   nombreEmp?: string;
 
@@ -19,7 +19,7 @@ export class FilterEmpresaDTO {
   @IsString()
   @Length(1, 250)
   @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
   )
   responsableEmp?: string;
 }

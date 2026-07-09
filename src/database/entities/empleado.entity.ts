@@ -1,15 +1,18 @@
 import {
   Column,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { CuentaEntity } from './cuenta.entity';
 import { RolEntity } from './rol.entity';
 import { VentaEntity } from './venta.entity';
 
 @Entity({ name: 'empleado' })
+@Index('empleado_cedula_empl_key', ['cedulaEmpl'], { unique: true })
 export class EmpleadoEntity {
   @PrimaryGeneratedColumn({ name: 'ide_empl' })
   ideEmpl!: number;
@@ -40,24 +43,13 @@ export class EmpleadoEntity {
     type: 'numeric',
     precision: 10,
     scale: 2,
-    default: 0,
   })
   rmuEmpl!: string;
 
-  @Column({
-    name: 'titulo_empl',
-    type: 'varchar',
-    length: 250,
-    default: 'libre',
-  })
+  @Column({ name: 'titulo_empl', type: 'varchar', length: 250 })
   tituloEmpl!: string;
 
-  @Column({
-    name: 'estado_empl',
-    type: 'varchar',
-    length: 25,
-    default: 'inactivo',
-  })
+  @Column({ name: 'estado_empl', type: 'varchar', length: 25 })
   estadoEmpl!: 'activo' | 'inactivo';
 
   @Column({
@@ -79,28 +71,30 @@ export class EmpleadoEntity {
   @Column({ name: 'fecha_termino_empl', type: 'date', nullable: true })
   fechaTerminoEmpl?: Date | null;
 
-  @Column({ name: 'usua_ingre', type: 'varchar', length: 25, nullable: true })
-  usuaIngre?: string;
+  @Column({ name: 'usua_ingre', type: 'varchar', length: 25 })
+  usuaIngre!: string;
 
   @Column({
     name: 'fecha_ingre',
     type: 'timestamp',
-    nullable: true,
     default: () => 'CURRENT_TIMESTAMP',
   })
-  fechaIngre?: Date;
+  fechaIngre!: Date;
 
   @Column({ name: 'usua_actua', type: 'varchar', length: 25, nullable: true })
-  usuaActua?: string;
+  usuaActua?: string | null;
 
   @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
-  fechaActua?: Date;
+  fechaActua?: Date | null;
 
   @ManyToOne(() => RolEntity, (rol) => rol.empleados, {
     onDelete: 'RESTRICT',
   })
   @JoinColumn({ name: 'ide_rol' })
   rol?: RolEntity;
+
+  @OneToMany(() => CuentaEntity, (cuenta) => cuenta.empleado)
+  cuentas?: CuentaEntity[];
 
   @OneToMany(() => VentaEntity, (venta) => venta.empleado)
   ventas?: VentaEntity[];

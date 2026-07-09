@@ -1,7 +1,7 @@
 import {
   Column,
-  CreateDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   OneToMany,
@@ -10,7 +10,9 @@ import {
 import { IotAlertaEntity } from './iot_alerta.entity';
 import { IotDispositivoEntity } from './iot_dispositivo.entity';
 
-@Entity('iot_lecturas')
+@Entity({ name: 'iot_lecturas' })
+@Index('idx_iot_lecturas_fecha', ['fechaLect'])
+@Index('idx_iot_lecturas_ide_disp', ['ideDisp'])
 export class IotLecturaEntity {
   @PrimaryGeneratedColumn({ name: 'ide_lect' })
   ideLect!: number;
@@ -24,7 +26,11 @@ export class IotLecturaEntity {
   @Column({ name: 'humedad_lect', type: 'double precision' })
   humedadLect!: number;
 
-  @CreateDateColumn({ name: 'fecha_lect', type: 'timestamp' })
+  @Column({
+    name: 'fecha_lect',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   fechaLect!: Date;
 
   @ManyToOne(
@@ -40,3 +46,5 @@ export class IotLecturaEntity {
   @OneToMany(() => IotAlertaEntity, (alerta) => alerta.lectura)
   alertas?: IotAlertaEntity[];
 }
+
+export { IotLecturaEntity as IotLectura };

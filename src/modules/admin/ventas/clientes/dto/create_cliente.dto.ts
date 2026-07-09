@@ -1,4 +1,4 @@
-import { Transform, Type } from 'class-transformer';
+import { Transform } from 'class-transformer';
 import {
   IsDateString,
   IsEmail,
@@ -11,6 +11,20 @@ import {
   Min,
 } from 'class-validator';
 
+function toRequiredInt(value: unknown): number | unknown {
+  if (value === null || value === undefined || value === '') {
+    return value;
+  }
+
+  const numberValue = Number(value);
+
+  if (Number.isInteger(numberValue)) {
+    return numberValue;
+  }
+
+  return value;
+}
+
 export class CreateClienteDTO {
   @IsNumberString()
   @Length(7, 15)
@@ -22,7 +36,7 @@ export class CreateClienteDTO {
   @IsDateString()
   fechaNacimientoClie!: string;
 
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
   @Min(0)
   edadClie!: number;

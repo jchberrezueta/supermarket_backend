@@ -1,24 +1,46 @@
 import { EnumEstadosCuenta } from '@models';
-import { Type } from 'class-transformer';
+import { Transform } from 'class-transformer';
 import { IsEnum, IsInt, IsString, Length, Min } from 'class-validator';
 
+function toRequiredInt(value: unknown): number | unknown {
+  if (value === null || value === undefined || value === '') {
+    return value;
+  }
+
+  const numberValue = Number(value);
+
+  if (Number.isInteger(numberValue)) {
+    return numberValue;
+  }
+
+  return value;
+}
+
 export class CreateCuentaDto {
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
   @Min(0)
   ideEmpl!: number;
 
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
   @Min(0)
   idePerf!: number;
 
   @IsString()
   @Length(1, 25)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : null,
+  )
   usuarioCuen!: string;
 
   @IsString()
   @Length(1, 250)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
   passwordCuen!: string;
 
   @IsEnum(EnumEstadosCuenta)

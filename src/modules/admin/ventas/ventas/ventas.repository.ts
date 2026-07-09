@@ -1,6 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DetalleVentaEntity, VentaEntity } from '@entities';
+import {
+  ClienteEntity,
+  DetalleVentaEntity,
+  EmpleadoEntity,
+  MetodoPagoClienteEntity,
+  ProductoEntity,
+  VentaEntity,
+} from '@entities';
 import { EntityManager, Repository } from 'typeorm';
 import { MoneyUtil } from '@common/utils/money.util';
 import { CreateVentaCabeceraDTO } from './dto/create_venta_cabecera.dto';
@@ -112,6 +119,62 @@ export class VentasRepository {
     });
   }
 
+  async buscarClientePorId(
+    ideClie: number,
+    manager: EntityManager,
+  ): Promise<ClienteEntity | null> {
+    return manager.getRepository(ClienteEntity).findOne({
+      where: {
+        ideClie,
+      },
+    });
+  }
+
+  async buscarEmpleadoActivoPorId(
+    ideEmpl: number,
+    manager: EntityManager,
+  ): Promise<EmpleadoEntity | null> {
+    return manager.getRepository(EmpleadoEntity).findOne({
+      where: {
+        ideEmpl,
+        estadoEmpl: 'activo',
+      },
+    });
+  }
+
+  async buscarMetodoPagoActivoPorCliente(
+    ideMetoPago: number,
+    ideClie: number,
+    manager: EntityManager,
+  ): Promise<MetodoPagoClienteEntity | null> {
+    return manager.getRepository(MetodoPagoClienteEntity).findOne({
+      where: {
+        ideMetoPago,
+        ideClie,
+        estado: 'activo',
+      },
+    });
+  }
+
+  async buscarProductoPorIdForUpdate(
+    ideProd: number,
+    manager: EntityManager,
+  ): Promise<ProductoEntity | null> {
+    return manager
+      .getRepository(ProductoEntity)
+      .createQueryBuilder('producto')
+      .setLock('pessimistic_write')
+      .where('producto.ideProd = :ideProd', { ideProd })
+      .getOne();
+  }
+
+  async guardarProducto(
+    producto: ProductoEntity,
+    manager: EntityManager,
+  ): Promise<ProductoEntity> {
+    return manager.getRepository(ProductoEntity).save(producto);
+  }
+
   async crearVenta(
     cabecera: CreateVentaCabeceraDTO,
     totales: {
@@ -134,7 +197,8 @@ export class VentasRepository {
       dctoSocioVent: MoneyUtil.toMoneyString(cabecera.dctoSocioVent),
       dctoEdadVent: MoneyUtil.toMoneyString(cabecera.dctoEdadVent),
       estadoVent: cabecera.estadoVent as VentaEntity['estadoVent'],
-      tipoPagoVent: cabecera.tipoPagoVent as VentaEntity['tipoPagoVent'],
+      tipoPagoVent: (cabecera.tipoPagoVent ??
+        'efectivo') as VentaEntity['tipoPagoVent'],
       ideMetoPago: cabecera.ideMetoPago ?? null,
       usuaIngre: 'admin',
     });
@@ -162,6 +226,9 @@ export class VentasRepository {
     venta.dctoSocioVent = MoneyUtil.toMoneyString(cabecera.dctoSocioVent);
     venta.dctoEdadVent = MoneyUtil.toMoneyString(cabecera.dctoEdadVent);
     venta.estadoVent = cabecera.estadoVent as VentaEntity['estadoVent'];
+    venta.tipoPagoVent = (cabecera.tipoPagoVent ??
+      'efectivo') as VentaEntity['tipoPagoVent'];
+    venta.ideMetoPago = cabecera.ideMetoPago ?? null;
     venta.usuaActua = 'admin';
     venta.fechaActua = new Date();
 

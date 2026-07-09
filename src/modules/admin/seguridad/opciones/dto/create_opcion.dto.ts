@@ -1,5 +1,4 @@
-import { isIntNumeric } from '@helpers/utilities';
-import { Transform, Type } from 'class-transformer';
+import { Transform } from 'class-transformer';
 import {
   IsIn,
   IsInt,
@@ -8,6 +7,34 @@ import {
   Length,
   Min,
 } from 'class-validator';
+
+function toRequiredInt(value: unknown): number | unknown {
+  if (value === null || value === undefined || value === '') {
+    return value;
+  }
+
+  const numberValue = Number(value);
+
+  if (Number.isInteger(numberValue)) {
+    return numberValue;
+  }
+
+  return value;
+}
+
+function optionalIntOrNull(value: unknown): number | null | unknown {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
+  const numberValue = Number(value);
+
+  if (Number.isInteger(numberValue)) {
+    return numberValue;
+  }
+
+  return value;
+}
 
 export class CreateOpcionDto {
   @IsString()
@@ -27,26 +54,21 @@ export class CreateOpcionDto {
   @IsIn(['si', 'no'])
   activoOpci!: 'si' | 'no';
 
+  @IsOptional()
   @IsString()
   @Length(1, 250)
   @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== '' ? value.trim() : 'ninguna',
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
   )
-  descripcionOpci!: string;
+  descripcionOpci?: string | null;
 
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
   @Min(0)
   nivelOpci!: number;
 
   @IsOptional()
-  @Transform(({ value }) =>
-    value === null || value === undefined || String(value).trim() === ''
-      ? null
-      : isIntNumeric(value)
-        ? Number(value)
-        : value,
-  )
+  @Transform(({ value }) => optionalIntOrNull(value))
   @IsInt()
   @Min(0)
   padreOpci?: number | null;

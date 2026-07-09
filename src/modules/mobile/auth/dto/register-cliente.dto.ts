@@ -1,15 +1,29 @@
 import { Transform } from 'class-transformer';
 import {
-  IsString,
-  Length,
+  IsDateString,
   IsEmail,
-  Min,
+  IsIn,
   IsInt,
   IsNumberString,
-  IsDateString,
-  IsIn,
   IsOptional,
+  IsString,
+  Length,
+  Min,
 } from 'class-validator';
+
+function toRequiredInt(value: unknown): number | unknown {
+  if (value === null || value === undefined || value === '') {
+    return value;
+  }
+
+  const numberValue = Number(value);
+
+  if (Number.isInteger(numberValue)) {
+    return numberValue;
+  }
+
+  return value;
+}
 
 export class RegisterClienteDto {
   @IsNumberString()
@@ -17,21 +31,22 @@ export class RegisterClienteDto {
   @Transform(({ value }) =>
     typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
   )
-  cedulaClie: string;
+  cedulaClie!: string;
 
   @IsDateString()
-  fechaNacimientoClie: string;
+  fechaNacimientoClie!: string;
 
+  @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
   @Min(1)
-  edadClie: number;
+  edadClie!: number;
 
   @IsNumberString()
   @Length(7, 15)
   @Transform(({ value }) =>
     typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
   )
-  telefonoClie: string;
+  telefonoClie!: string;
 
   @IsString()
   @Length(1, 50)
@@ -40,7 +55,7 @@ export class RegisterClienteDto {
       ? value.trim().toLowerCase()
       : null,
   )
-  primerNombreClie: string;
+  primerNombreClie!: string;
 
   @IsString()
   @Length(1, 50)
@@ -49,7 +64,7 @@ export class RegisterClienteDto {
       ? value.trim().toLowerCase()
       : null,
   )
-  apellidoPaternoClie: string;
+  apellidoPaternoClie!: string;
 
   @IsEmail()
   @Length(1, 100)
@@ -58,17 +73,27 @@ export class RegisterClienteDto {
       ? value.trim().toLowerCase()
       : null,
   )
-  emailClie: string;
+  emailClie!: string;
 
   @IsString()
   @Length(6, 255)
-  password: string;
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
+  password!: string;
 
+  /**
+   * Se mantiene default por compatibilidad con clientes móviles anteriores.
+   * La BD no tiene default; el service también asegura 'no' si no llega.
+   */
   @IsOptional()
   @IsString()
   @IsIn(['si', 'no'])
   esSocio?: 'si' | 'no' = 'no';
 
+  /**
+   * Se mantiene default por compatibilidad con clientes móviles anteriores.
+   */
   @IsOptional()
   @IsString()
   @IsIn(['si', 'no'])
@@ -95,7 +120,7 @@ export class RegisterClienteDto {
   apellidoMaternoClie?: string | null;
 
   /**
-   * Retorna array para fn_insertar_cliente
+   * Retorna array para compatibilidad con flujo legacy.
    */
   toArrayCliente(): any[] {
     return [

@@ -1,4 +1,4 @@
-import { Transform, Type } from 'class-transformer';
+import { Transform } from 'class-transformer';
 import {
   IsIn,
   IsInt,
@@ -9,18 +9,46 @@ import {
   Min,
 } from 'class-validator';
 
+function toRequiredNumber(value: unknown): number | unknown {
+  if (value === null || value === undefined || value === '') {
+    return value;
+  }
+
+  const numberValue = Number(value);
+
+  if (Number.isFinite(numberValue)) {
+    return numberValue;
+  }
+
+  return value;
+}
+
+function toRequiredInt(value: unknown): number | unknown {
+  if (value === null || value === undefined || value === '') {
+    return value;
+  }
+
+  const numberValue = Number(value);
+
+  if (Number.isInteger(numberValue)) {
+    return numberValue;
+  }
+
+  return value;
+}
+
 export class UpdateProductoDTO {
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
   @Min(0)
   ideProd!: number;
 
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
   @Min(0)
   ideCate!: number;
 
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
   @Min(0)
   ideMarc!: number;
@@ -51,22 +79,22 @@ export class UpdateProductoDTO {
   )
   urlImgProd?: string | null;
 
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredNumber(value))
   @IsNumber()
   @Min(0)
   precioVentaProd!: number;
 
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredNumber(value))
   @IsNumber()
   @Min(0)
   ivaProd!: number;
 
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredNumber(value))
   @IsNumber()
   @Min(0)
   dctoPromoProd!: number;
 
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
   @Min(0)
   stockProd!: number;
@@ -77,12 +105,13 @@ export class UpdateProductoDTO {
   @IsIn(['activo', 'inactivo'])
   estadoProd!: 'activo' | 'inactivo';
 
+  @IsOptional()
   @IsString()
   @Length(1, 250)
   @Transform(({ value }) =>
     typeof value === 'string' && value.trim() !== ''
       ? value.trim().toLowerCase()
-      : 'ninguna',
+      : null,
   )
-  descripcionProd!: string;
+  descripcionProd?: string | null;
 }

@@ -1,5 +1,5 @@
 import { EnumEstadoEntrega } from '@models';
-import { Transform, Type } from 'class-transformer';
+import { Transform } from 'class-transformer';
 import {
   IsDateString,
   IsEnum,
@@ -11,18 +11,46 @@ import {
   Min,
 } from 'class-validator';
 
+function toRequiredInt(value: unknown): number | unknown {
+  if (value === null || value === undefined || value === '') {
+    return value;
+  }
+
+  const numberValue = Number(value);
+
+  if (Number.isInteger(numberValue)) {
+    return numberValue;
+  }
+
+  return value;
+}
+
+function toRequiredNumber(value: unknown): number | unknown {
+  if (value === null || value === undefined || value === '') {
+    return value;
+  }
+
+  const numberValue = Number(value);
+
+  if (Number.isFinite(numberValue)) {
+    return numberValue;
+  }
+
+  return value;
+}
+
 export class UpdateEntregaCabeceraDTO {
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
   @Min(0)
   ideEntr!: number;
 
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
   @Min(0)
   idePedi!: number;
 
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
   @Min(0)
   ideProv!: number;
@@ -30,12 +58,12 @@ export class UpdateEntregaCabeceraDTO {
   @IsDateString()
   fechaEntr!: string;
 
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
   @Min(1)
   cantidadTotalEntr!: number;
 
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredNumber(value))
   @IsNumber()
   @Min(0)
   totalEntr!: number;
@@ -49,7 +77,7 @@ export class UpdateEntregaCabeceraDTO {
   @Transform(({ value }) =>
     typeof value === 'string' && value.trim() !== ''
       ? value.trim().toLowerCase()
-      : 'ninguna',
+      : null,
   )
-  observacionEntr?: string;
+  observacionEntr?: string | null;
 }

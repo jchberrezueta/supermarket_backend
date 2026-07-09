@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsString, Length } from 'class-validator';
+import { IsOptional, IsString, Length } from 'class-validator';
 
 export class CreateCategoriaDTO {
   @IsString()
@@ -11,12 +11,13 @@ export class CreateCategoriaDTO {
   )
   nombreCate!: string;
 
+  @IsOptional()
   @IsString()
   @Length(1, 250)
   @Transform(({ value }) =>
     typeof value === 'string' && value.trim() !== ''
       ? value.trim().toLowerCase()
-      : 'ninguna',
+      : null,
   )
-  descripcionCate!: string;
+  descripcionCate?: string | null;
 }

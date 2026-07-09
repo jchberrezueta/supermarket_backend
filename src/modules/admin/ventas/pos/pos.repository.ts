@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   ClienteEntity,
   DetalleVentaEntity,
+  MetodoPagoClienteEntity,
   ProductoEntity,
   VentaEntity,
 } from '@entities';
@@ -40,6 +41,36 @@ export class PosRepository {
       .getOne();
   }
 
+  async findClienteByCedula(cedula: string, manager: EntityManager) {
+    return manager
+      .getRepository(ClienteEntity)
+      .createQueryBuilder('cliente')
+      .where('cliente.cedulaClie = :cedula', { cedula })
+      .getOne();
+  }
+
+  async findClienteById(ideClie: number, manager: EntityManager) {
+    return manager
+      .getRepository(ClienteEntity)
+      .createQueryBuilder('cliente')
+      .where('cliente.ideClie = :ideClie', { ideClie })
+      .getOne();
+  }
+
+  async findMetodoPagoActivoByCliente(
+    ideMetoPago: number,
+    ideClie: number,
+    manager: EntityManager,
+  ) {
+    return manager.getRepository(MetodoPagoClienteEntity).findOne({
+      where: {
+        ideMetoPago,
+        ideClie,
+        estado: 'activo',
+      },
+    });
+  }
+
   async guardarVenta(venta: Partial<VentaEntity>, manager: EntityManager) {
     const ventaRepository = manager.getRepository(VentaEntity);
     const nuevaVenta = ventaRepository.create(venta);
@@ -76,21 +107,5 @@ export class PosRepository {
       .createQueryBuilder('detalle')
       .where('detalle.ideVent = :ideVent', { ideVent })
       .getMany();
-  }
-
-  async findClienteByCedula(cedula: string, manager: EntityManager) {
-    return manager
-      .getRepository(ClienteEntity)
-      .createQueryBuilder('cliente')
-      .where('cliente.cedulaClie = :cedula', { cedula })
-      .getOne();
-  }
-
-  async findClienteById(ideClie: number, manager: EntityManager) {
-    return manager
-      .getRepository(ClienteEntity)
-      .createQueryBuilder('cliente')
-      .where('cliente.ideClie = :ideClie', { ideClie })
-      .getOne();
   }
 }

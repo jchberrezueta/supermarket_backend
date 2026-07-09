@@ -49,11 +49,7 @@ export class PerfilesRepository {
       .leftJoinAndSelect('perfil.rol', 'rol')
       .orderBy('perfil.nombrePerf', 'ASC');
 
-    if (
-      filtros.ideRol !== undefined &&
-      filtros.ideRol !== null &&
-      filtros.ideRol > 0
-    ) {
+    if (filtros.ideRol !== undefined && filtros.ideRol !== null) {
       qb.andWhere('perfil.ideRol = :ideRol', {
         ideRol: filtros.ideRol,
       });

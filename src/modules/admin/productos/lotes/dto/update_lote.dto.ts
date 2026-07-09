@@ -1,21 +1,35 @@
-import { Type } from 'class-transformer';
+import { Transform } from 'class-transformer';
 import { IsDateString, IsIn, IsInt, Min } from 'class-validator';
 
+function toRequiredInt(value: unknown): number | unknown {
+  if (value === null || value === undefined || value === '') {
+    return value;
+  }
+
+  const numberValue = Number(value);
+
+  if (Number.isInteger(numberValue)) {
+    return numberValue;
+  }
+
+  return value;
+}
+
 export class UpdateLoteDTO {
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
   @Min(0)
   ideLote!: number;
 
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
-  @Min(1)
+  @Min(0)
   ideProd!: number;
 
   @IsDateString()
   fechaCaducidadLote!: string;
 
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
   @Min(0)
   stockLote!: number;

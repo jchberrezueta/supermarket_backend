@@ -1,4 +1,4 @@
-import { Transform, Type } from 'class-transformer';
+import { Transform } from 'class-transformer';
 import {
   IsDateString,
   IsIn,
@@ -11,13 +11,41 @@ import {
   Min,
 } from 'class-validator';
 
+function toRequiredInt(value: unknown): number | unknown {
+  if (value === null || value === undefined || value === '') {
+    return value;
+  }
+
+  const numberValue = Number(value);
+
+  if (Number.isInteger(numberValue)) {
+    return numberValue;
+  }
+
+  return value;
+}
+
+function toRequiredNumber(value: unknown): number | unknown {
+  if (value === null || value === undefined || value === '') {
+    return value;
+  }
+
+  const numberValue = Number(value);
+
+  if (Number.isFinite(numberValue)) {
+    return numberValue;
+  }
+
+  return value;
+}
+
 export class UpdateEmpleadoDTO {
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
   @Min(0)
   ideEmpl!: number;
 
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
   @Min(0)
   ideRol!: number;
@@ -32,7 +60,7 @@ export class UpdateEmpleadoDTO {
   @IsDateString()
   fechaNacimientoEmpl!: string;
 
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
   @Min(0)
   edadEmpl!: number;
@@ -58,7 +86,7 @@ export class UpdateEmpleadoDTO {
   )
   apellidoPaternoEmpl!: string;
 
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredNumber(value))
   @IsNumber()
   @Min(0)
   rmuEmpl!: number;
@@ -68,7 +96,7 @@ export class UpdateEmpleadoDTO {
   @Transform(({ value }) =>
     typeof value === 'string' && value.trim() !== ''
       ? value.trim().toLowerCase()
-      : 'libre',
+      : null,
   )
   tituloEmpl!: string;
 

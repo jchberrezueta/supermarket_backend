@@ -6,7 +6,7 @@ export class FilterRolDTO {
   @IsString()
   @Length(1, 100)
   @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
   )
   nombreRol?: string;
 
@@ -14,7 +14,7 @@ export class FilterRolDTO {
   @IsString()
   @Length(1, 250)
   @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
   )
   descripcionRol?: string;
 }

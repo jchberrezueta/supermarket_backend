@@ -21,20 +21,14 @@ export class AccesoUsuarioEntity {
   @Column({
     name: 'fecha_acce',
     type: 'timestamp',
-    nullable: true,
     default: () => 'CURRENT_TIMESTAMP',
   })
-  fechaAcce?: Date;
+  fechaAcce!: Date;
 
-  @Column({ name: 'num_int_fall_acce', type: 'int', default: 0 })
+  @Column({ name: 'num_int_fall_acce', type: 'int' })
   numIntFallAcce!: number;
 
-  @Column({
-    name: 'ip_acce',
-    type: 'varchar',
-    length: 15,
-    default: '999.999.999.999',
-  })
+  @Column({ name: 'ip_acce', type: 'varchar', length: 15 })
   ipAcce!: string;
 
   @Column({
@@ -55,7 +49,7 @@ export class AccesoUsuarioEntity {
   })
   longitudAcce?: string | null;
 
-  @ManyToOne(() => CuentaEntity, {
+  @ManyToOne(() => CuentaEntity, (cuenta) => cuenta.accesos, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'ide_cuen' })

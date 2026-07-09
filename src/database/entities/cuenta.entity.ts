@@ -1,6 +1,7 @@
 import {
   Column,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   OneToMany,
@@ -11,6 +12,7 @@ import { EmpleadoEntity } from './empleado.entity';
 import { PerfilEntity } from './perfil.entity';
 
 @Entity({ name: 'cuenta' })
+@Index('cuenta_usuario_cuen_key', ['usuarioCuen'], { unique: true })
 export class CuentaEntity {
   @PrimaryGeneratedColumn({ name: 'ide_cuen' })
   ideCuen!: number;
@@ -27,39 +29,33 @@ export class CuentaEntity {
   @Column({ name: 'password_cuen', type: 'varchar', length: 250 })
   passwordCuen!: string;
 
-  @Column({
-    name: 'estado_cuen',
-    type: 'varchar',
-    length: 25,
-    default: 'inactivo',
-  })
+  @Column({ name: 'estado_cuen', type: 'varchar', length: 25 })
   estadoCuen!: 'activo' | 'inactivo' | 'bloqueado';
 
-  @Column({ name: 'usua_ingre', type: 'varchar', length: 25, nullable: true })
-  usuaIngre?: string;
+  @Column({ name: 'usua_ingre', type: 'varchar', length: 25 })
+  usuaIngre!: string;
 
   @Column({
     name: 'fecha_ingre',
     type: 'timestamp',
-    nullable: true,
     default: () => 'CURRENT_TIMESTAMP',
   })
-  fechaIngre?: Date;
+  fechaIngre!: Date;
 
   @Column({ name: 'usua_actua', type: 'varchar', length: 25, nullable: true })
-  usuaActua?: string;
+  usuaActua?: string | null;
 
   @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
-  fechaActua?: Date;
+  fechaActua?: Date | null;
 
-  @ManyToOne(() => EmpleadoEntity, {
-    onDelete: 'RESTRICT',
+  @ManyToOne(() => EmpleadoEntity, (empleado) => empleado.cuentas, {
+    onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'ide_empl' })
   empleado?: EmpleadoEntity;
 
-  @ManyToOne(() => PerfilEntity, {
-    onDelete: 'RESTRICT',
+  @ManyToOne(() => PerfilEntity, (perfil) => perfil.cuentas, {
+    onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'ide_perf' })
   perfil?: PerfilEntity;

@@ -32,52 +32,42 @@ export class PedidoEntity {
     type: 'numeric',
     precision: 10,
     scale: 2,
-    default: 0,
   })
   totalPedi!: string;
 
-  @Column({
-    name: 'estado_pedi',
-    type: 'varchar',
-    length: 25,
-    default: 'progreso',
-  })
+  @Column({ name: 'estado_pedi', type: 'varchar', length: 25 })
   estadoPedi!: 'progreso' | 'completado' | 'incompleto' | 'emitido';
 
-  @Column({
-    name: 'motivo_pedi',
-    type: 'varchar',
-    length: 25,
-    default: 'peticion',
-  })
+  @Column({ name: 'motivo_pedi', type: 'varchar', length: 25 })
   motivoPedi!: 'peticion' | 'devolucion';
 
   @Column({
     name: 'observacion_pedi',
     type: 'varchar',
     length: 250,
-    default: 'Ninguna',
+    nullable: true,
   })
-  observacionPedi!: string;
+  observacionPedi?: string | null;
 
-  @Column({ name: 'usua_ingre', type: 'varchar', length: 25, nullable: true })
-  usuaIngre?: string;
+  @Column({ name: 'usua_ingre', type: 'varchar', length: 25 })
+  usuaIngre!: string;
 
   @Column({
     name: 'fecha_ingre',
     type: 'timestamp',
-    nullable: true,
     default: () => 'CURRENT_TIMESTAMP',
   })
-  fechaIngre?: Date;
+  fechaIngre!: Date;
 
   @Column({ name: 'usua_actua', type: 'varchar', length: 25, nullable: true })
-  usuaActua?: string;
+  usuaActua?: string | null;
 
   @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
-  fechaActua?: Date;
+  fechaActua?: Date | null;
 
-  @ManyToOne(() => EmpresaEntity, (empresa) => empresa.pedidos)
+  @ManyToOne(() => EmpresaEntity, (empresa) => empresa.pedidos, {
+    onDelete: 'RESTRICT',
+  })
   @JoinColumn({ name: 'ide_empr' })
   empresa?: EmpresaEntity;
 

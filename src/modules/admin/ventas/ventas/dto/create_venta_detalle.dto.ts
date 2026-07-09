@@ -1,5 +1,47 @@
-import { Type } from 'class-transformer';
+import { Transform } from 'class-transformer';
 import { IsInt, IsNumber, IsOptional, Min } from 'class-validator';
+
+function toRequiredInt(value: unknown): number | unknown {
+  if (value === null || value === undefined || value === '') {
+    return value;
+  }
+
+  const numberValue = Number(value);
+
+  if (Number.isInteger(numberValue)) {
+    return numberValue;
+  }
+
+  return value;
+}
+
+function toRequiredNumber(value: unknown): number | unknown {
+  if (value === null || value === undefined || value === '') {
+    return value;
+  }
+
+  const numberValue = Number(value);
+
+  if (Number.isFinite(numberValue)) {
+    return numberValue;
+  }
+
+  return value;
+}
+
+function optionalInt(value: unknown): number | undefined | unknown {
+  if (value === null || value === undefined || value === '') {
+    return undefined;
+  }
+
+  const numberValue = Number(value);
+
+  if (Number.isInteger(numberValue)) {
+    return numberValue;
+  }
+
+  return value;
+}
 
 export class CreateVentaDetalleDTO {
   /**
@@ -7,7 +49,7 @@ export class CreateVentaDetalleDTO {
    * Se mantiene para compatibilidad si el frontend lo envía.
    */
   @IsOptional()
-  @Type(() => Number)
+  @Transform(({ value }) => optionalInt(value))
   @IsInt()
   @Min(0)
   ideDetaVent?: number;
@@ -17,42 +59,42 @@ export class CreateVentaDetalleDTO {
    * Se mantiene para compatibilidad si el frontend lo envía.
    */
   @IsOptional()
-  @Type(() => Number)
+  @Transform(({ value }) => optionalInt(value))
   @IsInt()
   @Min(0)
   ideVent?: number;
 
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
   @Min(0)
   ideProd!: number;
 
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
   @Min(1)
   cantidadProd!: number;
 
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredNumber(value))
   @IsNumber()
   @Min(0)
   precioUnitarioProd!: number;
 
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredNumber(value))
   @IsNumber()
   @Min(0)
   subtotalProd!: number;
 
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredNumber(value))
   @IsNumber()
   @Min(0)
   dctoPromoProd!: number;
 
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredNumber(value))
   @IsNumber()
   @Min(0)
   ivaProd!: number;
 
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredNumber(value))
   @IsNumber()
   @Min(0)
   totalProd!: number;

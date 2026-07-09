@@ -5,6 +5,7 @@ import {
   IsEmail,
   IsEnum,
   IsNumberString,
+  IsOptional,
   IsString,
   Length,
   MaxLength,
@@ -60,12 +61,13 @@ export class CreateEmpresaDTO {
   @IsEnum(EnumEstadosEmpresa)
   estadoEmp!: EnumEstadosEmpresa;
 
+  @IsOptional()
   @IsString()
   @Length(1, 250)
   @Transform(({ value }) =>
     typeof value === 'string' && value.trim() !== ''
       ? value.trim().toLowerCase()
-      : 'ninguna',
+      : null,
   )
-  descripcionEmp!: string;
+  descripcionEmp?: string | null;
 }

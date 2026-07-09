@@ -6,7 +6,7 @@ export class FilterOpcionDto {
   @IsString()
   @Length(1, 100)
   @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
   )
   nombreOpci?: string;
 
@@ -14,7 +14,7 @@ export class FilterOpcionDto {
   @IsString()
   @Length(1, 500)
   @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
   )
   rutaOpci?: string;
 

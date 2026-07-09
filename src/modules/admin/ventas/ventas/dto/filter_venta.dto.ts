@@ -1,4 +1,3 @@
-import { isIntNumeric } from '@helpers/utilities';
 import { EnumEstadoVenta } from '@models';
 import { Transform } from 'class-transformer';
 import {
@@ -11,15 +10,42 @@ import {
   Min,
 } from 'class-validator';
 
+function optionalInt(value: unknown): number | undefined | unknown {
+  if (value === null || value === undefined || value === '') {
+    return undefined;
+  }
+
+  const numberValue = Number(value);
+
+  if (Number.isInteger(numberValue)) {
+    return numberValue;
+  }
+
+  return value;
+}
+
+function optionalString(value: unknown): string | undefined | unknown {
+  if (value === null || value === undefined) {
+    return undefined;
+  }
+
+  if (typeof value === 'string') {
+    const text = value.trim();
+    return text !== '' ? text : undefined;
+  }
+
+  return value;
+}
+
 export class FilterVentaDTO {
   @IsOptional()
-  @Transform(({ value }) => (isIntNumeric(value) ? Number(value) : null))
+  @Transform(({ value }) => optionalInt(value))
   @IsInt()
   @Min(0)
   ideEmpl?: number;
 
   @IsOptional()
-  @Transform(({ value }) => (isIntNumeric(value) ? Number(value) : null))
+  @Transform(({ value }) => optionalInt(value))
   @IsInt()
   @Min(0)
   ideClie?: number;
@@ -27,9 +53,7 @@ export class FilterVentaDTO {
   @IsOptional()
   @IsString()
   @Length(1, 25)
-  @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
-  )
+  @Transform(({ value }) => optionalString(value))
   numFacturaVent?: string;
 
   @IsOptional()
@@ -37,10 +61,12 @@ export class FilterVentaDTO {
   estadoVent?: EnumEstadoVenta;
 
   @IsOptional()
+  @Transform(({ value }) => optionalString(value))
   @IsDateString()
   fechaDesde?: string;
 
   @IsOptional()
+  @Transform(({ value }) => optionalString(value))
   @IsDateString()
   fechaHasta?: string;
 }

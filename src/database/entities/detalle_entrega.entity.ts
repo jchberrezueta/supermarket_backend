@@ -27,7 +27,6 @@ export class DetalleEntregaEntity {
     type: 'numeric',
     precision: 10,
     scale: 2,
-    default: 0,
   })
   precioUnitarioProd!: string;
 
@@ -36,7 +35,6 @@ export class DetalleEntregaEntity {
     type: 'numeric',
     precision: 10,
     scale: 2,
-    default: 0,
   })
   subtotalProd!: string;
 
@@ -45,7 +43,6 @@ export class DetalleEntregaEntity {
     type: 'numeric',
     precision: 10,
     scale: 2,
-    default: 0,
   })
   dctoCompraProd!: string;
 
@@ -54,7 +51,6 @@ export class DetalleEntregaEntity {
     type: 'numeric',
     precision: 10,
     scale: 2,
-    default: 0,
   })
   ivaProd!: string;
 
@@ -63,7 +59,6 @@ export class DetalleEntregaEntity {
     type: 'numeric',
     precision: 10,
     scale: 2,
-    default: 0,
   })
   totalProd!: string;
 
@@ -72,23 +67,21 @@ export class DetalleEntregaEntity {
     type: 'numeric',
     precision: 10,
     scale: 2,
-    default: 0,
   })
   dctoCaducProd!: string;
 
-  @Column({
-    name: 'estado_deta_entr',
-    type: 'varchar',
-    length: 25,
-    default: 'incompleto',
-  })
+  @Column({ name: 'estado_deta_entr', type: 'varchar', length: 25 })
   estadoDetaEntr!: 'completo' | 'incompleto';
 
-  @ManyToOne(() => EntregaEntity)
+  @ManyToOne(() => EntregaEntity, (entrega) => entrega.detalles, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'ide_entr' })
   entrega?: EntregaEntity;
 
-  @ManyToOne(() => ProductoEntity, (producto) => producto.detallesEntrega)
+  @ManyToOne(() => ProductoEntity, (producto) => producto.detallesEntrega, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'ide_prod' })
   producto?: ProductoEntity;
 }

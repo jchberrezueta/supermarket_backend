@@ -12,33 +12,32 @@ export class OpcionesEntity {
   @Column({ name: 'ruta_opci', type: 'varchar', length: 500 })
   rutaOpci!: string;
 
-  @Column({ name: 'activo_opci', type: 'varchar', length: 2, default: 'no' })
+  @Column({ name: 'activo_opci', type: 'varchar', length: 2 })
   activoOpci!: 'si' | 'no';
 
   @Column({
     name: 'descripcion_opci',
     type: 'varchar',
     length: 250,
-    default: 'Ninguna',
+    nullable: true,
   })
-  descripcionOpci!: string;
+  descripcionOpci?: string | null;
 
-  @Column({ name: 'usua_ingre', type: 'varchar', length: 25, nullable: true })
-  usuaIngre?: string;
+  @Column({ name: 'usua_ingre', type: 'varchar', length: 25 })
+  usuaIngre!: string;
 
   @Column({
     name: 'fecha_ingre',
     type: 'timestamp',
-    nullable: true,
     default: () => 'CURRENT_TIMESTAMP',
   })
-  fechaIngre?: Date;
+  fechaIngre!: Date;
 
   @Column({ name: 'usua_actua', type: 'varchar', length: 25, nullable: true })
-  usuaActua?: string;
+  usuaActua?: string | null;
 
   @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
-  fechaActua?: Date;
+  fechaActua?: Date | null;
 
   @Column({ name: 'nivel_opci', type: 'int' })
   nivelOpci!: number;

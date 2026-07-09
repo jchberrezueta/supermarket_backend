@@ -26,38 +26,32 @@ export class EmpresaEntity {
   @Column({ name: 'email_empr', type: 'varchar', length: 100 })
   emailEmpr!: string;
 
-  @Column({
-    name: 'estado_empr',
-    type: 'varchar',
-    length: 25,
-    default: 'inactivo',
-  })
+  @Column({ name: 'estado_empr', type: 'varchar', length: 25 })
   estadoEmpr!: 'activo' | 'inactivo';
 
   @Column({
     name: 'descripcion_empr',
     type: 'varchar',
     length: 250,
-    default: 'Ninguna',
+    nullable: true,
   })
-  descripcionEmpr!: string;
+  descripcionEmpr?: string | null;
 
-  @Column({ name: 'usua_ingre', type: 'varchar', length: 25, nullable: true })
-  usuaIngre?: string;
+  @Column({ name: 'usua_ingre', type: 'varchar', length: 25 })
+  usuaIngre!: string;
 
   @Column({
     name: 'fecha_ingre',
     type: 'timestamp',
-    nullable: true,
     default: () => 'CURRENT_TIMESTAMP',
   })
-  fechaIngre?: Date;
+  fechaIngre!: Date;
 
   @Column({ name: 'usua_actua', type: 'varchar', length: 25, nullable: true })
-  usuaActua?: string;
+  usuaActua?: string | null;
 
   @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
-  fechaActua?: Date;
+  fechaActua?: Date | null;
 
   @OneToMany(() => PedidoEntity, (pedido) => pedido.empresa)
   pedidos?: PedidoEntity[];

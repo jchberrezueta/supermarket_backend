@@ -1,6 +1,7 @@
 import {
   Column,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   OneToMany,
@@ -10,6 +11,7 @@ import { EmpresaEntity } from './empresas.entity';
 import { EntregaEntity } from './entrega.entity';
 
 @Entity({ name: 'proveedor' })
+@Index('proveedor_cedula_prov_key', ['cedulaProv'], { unique: true })
 export class ProveedorEntity {
   @PrimaryGeneratedColumn({ name: 'ide_prov' })
   ideProv!: number;
@@ -44,7 +46,7 @@ export class ProveedorEntity {
     length: 50,
     nullable: true,
   })
-  segundoNombreProv?: string;
+  segundoNombreProv?: string | null;
 
   @Column({
     name: 'apellido_materno_prov',
@@ -52,26 +54,27 @@ export class ProveedorEntity {
     length: 50,
     nullable: true,
   })
-  apellidoMaternoProv?: string;
+  apellidoMaternoProv?: string | null;
 
-  @Column({ name: 'usua_ingre', type: 'varchar', length: 25, nullable: true })
-  usuaIngre?: string;
+  @Column({ name: 'usua_ingre', type: 'varchar', length: 25 })
+  usuaIngre!: string;
 
   @Column({
     name: 'fecha_ingre',
     type: 'timestamp',
-    nullable: true,
     default: () => 'CURRENT_TIMESTAMP',
   })
-  fechaIngre?: Date;
+  fechaIngre!: Date;
 
   @Column({ name: 'usua_actua', type: 'varchar', length: 25, nullable: true })
-  usuaActua?: string;
+  usuaActua?: string | null;
 
   @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
-  fechaActua?: Date;
+  fechaActua?: Date | null;
 
-  @ManyToOne(() => EmpresaEntity, (empresa) => empresa.proveedores)
+  @ManyToOne(() => EmpresaEntity, (empresa) => empresa.proveedores, {
+    onDelete: 'RESTRICT',
+  })
   @JoinColumn({ name: 'ide_empr' })
   empresa?: EmpresaEntity;
 

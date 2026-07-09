@@ -27,7 +27,6 @@ export class DetalleVentaEntity {
     type: 'numeric',
     precision: 10,
     scale: 2,
-    default: 0,
   })
   precioUnitarioProd!: string;
 
@@ -36,7 +35,6 @@ export class DetalleVentaEntity {
     type: 'numeric',
     precision: 10,
     scale: 2,
-    default: 0,
   })
   subtotalProd!: string;
 
@@ -45,7 +43,6 @@ export class DetalleVentaEntity {
     type: 'numeric',
     precision: 10,
     scale: 2,
-    default: 0,
   })
   dctoPromoProd!: string;
 
@@ -54,7 +51,6 @@ export class DetalleVentaEntity {
     type: 'numeric',
     precision: 10,
     scale: 2,
-    default: 0,
   })
   ivaProd!: string;
 
@@ -63,15 +59,18 @@ export class DetalleVentaEntity {
     type: 'numeric',
     precision: 10,
     scale: 2,
-    default: 0,
   })
   totalProd!: string;
 
-  @ManyToOne(() => VentaEntity, (venta) => venta.detalles)
+  @ManyToOne(() => VentaEntity, (venta) => venta.detalles, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'ide_vent' })
   venta?: VentaEntity;
 
-  @ManyToOne(() => ProductoEntity, (producto) => producto.detallesVenta)
+  @ManyToOne(() => ProductoEntity, (producto) => producto.detallesVenta, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'ide_prod' })
   producto?: ProductoEntity;
 }

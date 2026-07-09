@@ -19,36 +19,35 @@ export class PerfilOpcionesEntity {
   @Column({ name: 'ide_opci', type: 'int' })
   ideOpci!: number;
 
-  @Column({ name: 'listar', type: 'varchar', length: 2, default: 'no' })
+  @Column({ name: 'listar', type: 'varchar', length: 2 })
   listar!: 'si' | 'no';
 
-  @Column({ name: 'insertar', type: 'varchar', length: 2, default: 'no' })
+  @Column({ name: 'insertar', type: 'varchar', length: 2 })
   insertar!: 'si' | 'no';
 
-  @Column({ name: 'modificar', type: 'varchar', length: 2, default: 'no' })
+  @Column({ name: 'modificar', type: 'varchar', length: 2 })
   modificar!: 'si' | 'no';
 
-  @Column({ name: 'eliminar', type: 'varchar', length: 2, default: 'no' })
+  @Column({ name: 'eliminar', type: 'varchar', length: 2 })
   eliminar!: 'si' | 'no';
 
-  @Column({ name: 'usua_ingre', type: 'varchar', length: 25, nullable: true })
-  usuaIngre?: string;
+  @Column({ name: 'usua_ingre', type: 'varchar', length: 25 })
+  usuaIngre!: string;
 
   @Column({
     name: 'fecha_ingre',
     type: 'timestamp',
-    nullable: true,
     default: () => 'CURRENT_TIMESTAMP',
   })
-  fechaIngre?: Date;
+  fechaIngre!: Date;
 
   @Column({ name: 'usua_actua', type: 'varchar', length: 25, nullable: true })
-  usuaActua?: string;
+  usuaActua?: string | null;
 
   @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
-  fechaActua?: Date;
+  fechaActua?: Date | null;
 
-  @ManyToOne(() => PerfilEntity, {
+  @ManyToOne(() => PerfilEntity, (perfil) => perfil.perfilesOpciones, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'ide_perf' })

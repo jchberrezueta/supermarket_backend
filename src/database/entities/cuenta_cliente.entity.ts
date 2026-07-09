@@ -1,6 +1,7 @@
 import {
   Column,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
@@ -8,6 +9,8 @@ import {
 import { ClienteEntity } from './cliente.entity';
 
 @Entity({ name: 'cuenta_cliente' })
+@Index('cuenta_cliente_usuario_clie_key', ['usuarioClie'], { unique: true })
+@Index('cuenta_cliente_email_clie_key', ['emailClie'], { unique: true })
 export class CuentaClienteEntity {
   @PrimaryGeneratedColumn({ name: 'ide_cuen_clie' })
   ideCuenClie!: number;
@@ -30,13 +33,12 @@ export class CuentaClienteEntity {
   @Column({
     name: 'fecha_ingre',
     type: 'timestamp',
-    nullable: true,
     default: () => 'CURRENT_TIMESTAMP',
   })
-  fechaIngre?: Date;
+  fechaIngre!: Date;
 
   @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
-  fechaActua?: Date;
+  fechaActua?: Date | null;
 
   @ManyToOne(() => ClienteEntity, (cliente) => cliente.cuentasCliente, {
     onDelete: 'CASCADE',

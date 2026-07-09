@@ -6,7 +6,7 @@ import {
 import { InjectDataSource } from '@nestjs/typeorm';
 import { IdUtil } from '@common/index';
 import { ProductoEntity } from '@entities';
-import { DataSource } from 'typeorm';
+import { DataSource, EntityManager } from 'typeorm';
 import { ConfirmarVentaPosDto } from './dto/confirmar_venta_pos.dto';
 import { ItemVentaPosDto } from './dto/item_venta_pos.dto';
 import {
@@ -19,6 +19,12 @@ import {
   StockPolicyService,
 } from './domain/stock-policy.service';
 import { PosRepository } from './pos.repository';
+
+type TipoPagoVenta =
+  | 'efectivo'
+  | 'tarjeta_credito'
+  | 'tarjeta_debito'
+  | 'paypal';
 
 @Injectable()
 export class PosService {
@@ -112,6 +118,13 @@ export class PosService {
         );
       }
 
+      const pagoValidado = await this.resolverMetodoPagoVenta(
+        dto.tipoPagoVent,
+        ideMetoPago,
+        ideClie,
+        manager,
+      );
+
       const detallesCalculados: PosDetalleCalculado[] = [];
       const alertasStock: PosAlertaStock[] = [];
       const productosBloqueados = new Map<number, ProductoEntity>();
@@ -160,8 +173,8 @@ export class PosService {
           dctoSocioVent: '0.00',
           dctoEdadVent: '0.00',
           estadoVent: 'completado',
-          tipoPagoVent: dto.tipoPagoVent ?? 'efectivo',
-          ideMetoPago,
+          tipoPagoVent: pagoValidado.tipoPagoVent,
+          ideMetoPago: pagoValidado.ideMetoPago,
           usuaIngre: 'pos',
         },
         manager,
@@ -330,6 +343,54 @@ export class PosService {
         },
       };
     });
+  }
+
+  private async resolverMetodoPagoVenta(
+    tipoPagoSolicitado: TipoPagoVenta | undefined,
+    ideMetoPago: number | null,
+    ideClie: number,
+    manager: EntityManager,
+  ): Promise<{
+    tipoPagoVent: TipoPagoVenta;
+    ideMetoPago: number | null;
+  }> {
+    const tipoPagoBase = tipoPagoSolicitado ?? 'efectivo';
+
+    if (ideMetoPago === null) {
+      if (tipoPagoBase !== 'efectivo') {
+        throw new BadRequestException(
+          'Debe seleccionar un método de pago válido para ventas con tarjeta o PayPal.',
+        );
+      }
+
+      return {
+        tipoPagoVent: 'efectivo',
+        ideMetoPago: null,
+      };
+    }
+
+    const metodoPago = await this.posRepository.findMetodoPagoActivoByCliente(
+      ideMetoPago,
+      ideClie,
+      manager,
+    );
+
+    if (!metodoPago) {
+      throw new BadRequestException(
+        'El método de pago seleccionado no existe, no está activo o no pertenece al cliente.',
+      );
+    }
+
+    if (tipoPagoSolicitado && metodoPago.tipoPago !== tipoPagoSolicitado) {
+      throw new BadRequestException(
+        'El tipo de pago no coincide con el método de pago seleccionado.',
+      );
+    }
+
+    return {
+      tipoPagoVent: metodoPago.tipoPago,
+      ideMetoPago,
+    };
   }
 
   private validarItemsVenta(items: ItemVentaPosDto[]): void {

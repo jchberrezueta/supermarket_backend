@@ -18,19 +18,14 @@ export class LoteEntity {
   @Column({ name: 'fecha_caducidad_lote', type: 'date' })
   fechaCaducidadLote!: Date;
 
-  @Column({ name: 'stock_lote', type: 'int', default: 0 })
+  @Column({ name: 'stock_lote', type: 'int' })
   stockLote!: number;
 
-  @Column({
-    name: 'estado_lote',
-    type: 'varchar',
-    length: 25,
-    default: 'correcto',
-  })
+  @Column({ name: 'estado_lote', type: 'varchar', length: 25 })
   estadoLote!: 'correcto' | 'proximo' | 'caducado' | 'devuelto';
 
   @ManyToOne(() => ProductoEntity, (producto) => producto.lotes, {
-    onDelete: 'RESTRICT',
+    onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'ide_prod' })
   producto?: ProductoEntity;

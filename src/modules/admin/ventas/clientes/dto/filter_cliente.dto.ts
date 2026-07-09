@@ -12,7 +12,7 @@ export class FilterClienteDTO {
   @IsNumberString()
   @Length(7, 15)
   @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
   )
   cedulaClie?: string;
 
@@ -20,7 +20,7 @@ export class FilterClienteDTO {
   @IsString()
   @Length(1, 50)
   @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
   )
   primerNombreClie?: string;
 
@@ -28,7 +28,7 @@ export class FilterClienteDTO {
   @IsString()
   @Length(1, 50)
   @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
   )
   apellidoPaternoClie?: string;
 

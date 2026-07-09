@@ -10,9 +10,9 @@ import { CategoriaEntity } from './categoria.entity';
 import { DetalleEntregaEntity } from './detalle_entrega.entity';
 import { DetallePedidoEntity } from './detalle_pedido.entity';
 import { DetalleVentaEntity } from './detalle_venta.entity';
+import { EmpresaPreciosEntity } from './empresa_precios.entity';
 import { LoteEntity } from './lote.entity';
 import { MarcaEntity } from './marca.entity';
-import { EmpresaPreciosEntity } from './empresa_precios.entity';
 
 @Entity({ name: 'producto' })
 export class ProductoEntity {
@@ -36,7 +36,6 @@ export class ProductoEntity {
     type: 'numeric',
     precision: 10,
     scale: 2,
-    default: 0,
   })
   precioVentaProd!: string;
 
@@ -45,7 +44,6 @@ export class ProductoEntity {
     type: 'numeric',
     precision: 10,
     scale: 2,
-    default: 0,
   })
   ivaProd!: string;
 
@@ -54,62 +52,59 @@ export class ProductoEntity {
     type: 'numeric',
     precision: 10,
     scale: 2,
-    default: 0,
   })
   dctoPromoProd!: string;
 
-  @Column({ name: 'stock_prod', type: 'int', default: 0 })
+  @Column({ name: 'stock_prod', type: 'int' })
   stockProd!: number;
 
-  @Column({
-    name: 'disponible_prod',
-    type: 'varchar',
-    length: 25,
-    default: 'no',
-  })
+  @Column({ name: 'disponible_prod', type: 'varchar', length: 25 })
   disponibleProd!: 'si' | 'no';
 
-  @Column({
-    name: 'estado_prod',
-    type: 'varchar',
-    length: 25,
-    default: 'inactivo',
-  })
+  @Column({ name: 'estado_prod', type: 'varchar', length: 25 })
   estadoProd!: 'activo' | 'inactivo';
 
   @Column({
     name: 'descripcion_prod',
     type: 'varchar',
     length: 250,
-    default: 'Ninguna',
+    nullable: true,
   })
-  descripcionProd!: string;
+  descripcionProd?: string | null;
 
-  @Column({ name: 'usua_ingre', type: 'varchar', length: 25, nullable: true })
-  usuaIngre?: string;
+  @Column({ name: 'usua_ingre', type: 'varchar', length: 25 })
+  usuaIngre!: string;
 
   @Column({
     name: 'fecha_ingre',
     type: 'timestamp',
-    nullable: true,
     default: () => 'CURRENT_TIMESTAMP',
   })
-  fechaIngre?: Date;
+  fechaIngre!: Date;
 
   @Column({ name: 'usua_actua', type: 'varchar', length: 25, nullable: true })
-  usuaActua?: string;
+  usuaActua?: string | null;
 
   @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
-  fechaActua?: Date;
+  fechaActua?: Date | null;
 
-  @Column({ name: 'url_img_prod', type: 'varchar', length: 500 })
-  urlImgProd!: string;
+  @Column({
+    name: 'url_img_prod',
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+  })
+  urlImgProd?: string | null;
 
-  @ManyToOne(() => CategoriaEntity, (categoria) => categoria.productos)
+  @ManyToOne(() => CategoriaEntity, (categoria) => categoria.productos, {
+    onDelete: 'RESTRICT',
+  })
   @JoinColumn({ name: 'ide_cate' })
   categoria?: CategoriaEntity;
 
-  @ManyToOne(() => MarcaEntity, (marca) => marca.productos)
+  @ManyToOne(() => MarcaEntity, (marca) => marca.productos, {
+    onDelete: 'RESTRICT',
+  })
   @JoinColumn({ name: 'ide_marc' })
   marca?: MarcaEntity;
 

@@ -1,4 +1,3 @@
-import { isIntNumeric } from '@helpers/utilities';
 import { Transform } from 'class-transformer';
 import {
   IsDateString,
@@ -9,9 +8,23 @@ import {
   Min,
 } from 'class-validator';
 
+function optionalInt(value: unknown): number | undefined | unknown {
+  if (value === null || value === undefined || value === '') {
+    return undefined;
+  }
+
+  const numberValue = Number(value);
+
+  if (Number.isInteger(numberValue)) {
+    return numberValue;
+  }
+
+  return value;
+}
+
 export class FilterAccesoUsuarioDto {
   @IsOptional()
-  @Transform(({ value }) => (isIntNumeric(value) ? Number(value) : null))
+  @Transform(({ value }) => optionalInt(value))
   @IsInt()
   @Min(0)
   ideCuen?: number;
@@ -20,7 +33,7 @@ export class FilterAccesoUsuarioDto {
   @IsString()
   @Length(1, 15)
   @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
   )
   ipAcce?: string;
 
@@ -28,7 +41,7 @@ export class FilterAccesoUsuarioDto {
   @IsString()
   @Length(1, 250)
   @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
   )
   navegadorAcce?: string;
 

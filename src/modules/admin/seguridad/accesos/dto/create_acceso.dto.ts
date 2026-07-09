@@ -1,4 +1,4 @@
-import { Transform, Type } from 'class-transformer';
+import { Transform } from 'class-transformer';
 import {
   IsDateString,
   IsInt,
@@ -9,8 +9,50 @@ import {
   Min,
 } from 'class-validator';
 
+function toRequiredInt(value: unknown): number | unknown {
+  if (value === null || value === undefined || value === '') {
+    return value;
+  }
+
+  const numberValue = Number(value);
+
+  if (Number.isInteger(numberValue)) {
+    return numberValue;
+  }
+
+  return value;
+}
+
+function optionalInt(value: unknown): number | undefined | unknown {
+  if (value === null || value === undefined || value === '') {
+    return undefined;
+  }
+
+  const numberValue = Number(value);
+
+  if (Number.isInteger(numberValue)) {
+    return numberValue;
+  }
+
+  return value;
+}
+
+function optionalNumberOrNull(value: unknown): number | null | unknown {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
+  const numberValue = Number(value);
+
+  if (Number.isFinite(numberValue)) {
+    return numberValue;
+  }
+
+  return value;
+}
+
 export class CreateAccesoUsuarioDto {
-  @Type(() => Number)
+  @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
   @Min(0)
   ideCuen!: number;
@@ -26,25 +68,27 @@ export class CreateAccesoUsuarioDto {
   @IsDateString()
   fechaAcce?: string;
 
-  @Type(() => Number)
+  @IsOptional()
+  @Transform(({ value }) => optionalInt(value))
   @IsInt()
   @Min(0)
-  numIntFallAcce!: number;
+  numIntFallAcce?: number;
 
+  @IsOptional()
   @IsString()
   @Length(1, 15)
   @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
   )
-  ipAcce!: string;
+  ipAcce?: string;
 
   @IsOptional()
-  @Type(() => Number)
+  @Transform(({ value }) => optionalNumberOrNull(value))
   @IsNumber()
   latitudAcce?: number | null;
 
   @IsOptional()
-  @Type(() => Number)
+  @Transform(({ value }) => optionalNumberOrNull(value))
   @IsNumber()
   longitudAcce?: number | null;
 }

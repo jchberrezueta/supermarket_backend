@@ -8,11 +8,18 @@ import { IdUtil, MoneyUtil } from '@common/index';
 import {
   ClienteEntity,
   DetalleVentaEntity,
+  MetodoPagoClienteEntity,
   ProductoEntity,
   VentaEntity,
 } from '@entities';
 import { DataSource, EntityManager } from 'typeorm';
 import { CreateVentaClienteDto, CreateVentaDetalleDto } from './dto';
+
+type TipoPagoVenta =
+  | 'efectivo'
+  | 'tarjeta_credito'
+  | 'tarjeta_debito'
+  | 'paypal';
 
 export interface DetalleVentaCalculado {
   ideProd: number;
@@ -41,18 +48,6 @@ export class MobileVentasService {
     private readonly dataSource: DataSource,
   ) {}
 
-  /**
-   * Crear una nueva venta desde la app móvil.
-   *
-   * Flujo:
-   * - Valida cliente autenticado.
-   * - Consolida productos repetidos.
-   * - Bloquea productos con FOR UPDATE dentro de transacción.
-   * - Valida stock.
-   * - Crea cabecera.
-   * - Crea detalles.
-   * - Descuenta inventario.
-   */
   async crearVenta(body: CreateVentaClienteDto, idClienteToken: number) {
     const ideClie = IdUtil.requireId(
       idClienteToken,
@@ -72,8 +67,18 @@ export class MobileVentasService {
         throw new BadRequestException('El cliente autenticado no existe.');
       }
 
+      const cabecera = body.cabeceraVenta;
+
+      const pagoValidado = await this.resolverMetodoPagoCliente(
+        cabecera.tipoPagoVent,
+        cabecera.ideMetoPago ?? null,
+        ideClie,
+        manager,
+      );
+
       const itemsConsolidados = this.consolidarItems(body.detalleVenta);
       const detallesCalculados: DetalleVentaCalculado[] = [];
+      const productosBloqueados = new Map<number, ProductoEntity>();
 
       for (const item of itemsConsolidados) {
         const producto = await this.buscarProductoActivoForUpdate(
@@ -96,10 +101,11 @@ export class MobileVentasService {
         detallesCalculados.push(
           this.calcularDetalleDesdeProducto(producto, item.cantidadProd),
         );
+
+        productosBloqueados.set(producto.ideProd, producto);
       }
 
       const totales = this.calcularTotales(detallesCalculados);
-      const cabecera = body.cabeceraVenta;
 
       const ventaRepository = manager.getRepository(VentaEntity);
 
@@ -125,14 +131,8 @@ export class MobileVentasService {
           ),
         ),
         estadoVent: 'completado',
-        tipoPagoVent: cabecera.tipoPagoVent ?? 'efectivo',
-        ideMetoPago:
-          cabecera.ideMetoPago === null || cabecera.ideMetoPago === undefined
-            ? null
-            : IdUtil.requireId(
-                cabecera.ideMetoPago,
-                'El ID del método de pago no es válido.',
-              ),
+        tipoPagoVent: pagoValidado.tipoPagoVent,
+        ideMetoPago: pagoValidado.ideMetoPago,
         usuaIngre: cabecera.usuaIngre || 'mobile',
       });
 
@@ -154,34 +154,20 @@ export class MobileVentasService {
 
         await manager.getRepository(DetalleVentaEntity).save(detalleVenta);
 
-        await manager
-          .getRepository(ProductoEntity)
-          .createQueryBuilder()
-          .update(ProductoEntity)
-          .set({
-            stockProd: () => `"stock_prod" - ${detalle.cantidadProd}`,
-            usuaActua: 'mobile',
-            fechaActua: new Date(),
-          })
-          .where('ide_prod = :ideProd', { ideProd: detalle.ideProd })
-          .execute();
+        const producto = productosBloqueados.get(detalle.ideProd);
 
-        const productoActualizado = await manager
-          .getRepository(ProductoEntity)
-          .findOne({
-            where: {
-              ideProd: detalle.ideProd,
-            },
-          });
-
-        if (productoActualizado) {
-          productoActualizado.disponibleProd =
-            productoActualizado.stockProd > 0 ? 'si' : 'no';
-          productoActualizado.usuaActua = 'mobile';
-          productoActualizado.fechaActua = new Date();
-
-          await manager.getRepository(ProductoEntity).save(productoActualizado);
+        if (!producto) {
+          throw new BadRequestException(
+            `El producto con ID ${detalle.ideProd} ya no está disponible.`,
+          );
         }
+
+        producto.stockProd -= detalle.cantidadProd;
+        producto.disponibleProd = producto.stockProd > 0 ? 'si' : 'no';
+        producto.usuaActua = 'mobile';
+        producto.fechaActua = new Date();
+
+        await manager.getRepository(ProductoEntity).save(producto);
       }
 
       return {
@@ -208,9 +194,6 @@ export class MobileVentasService {
     };
   }
 
-  /**
-   * Obtener historial de compras del cliente autenticado.
-   */
   async obtenerHistorialCliente(idCliente: number) {
     const ideClie = IdUtil.parseId(idCliente);
 
@@ -233,12 +216,6 @@ export class MobileVentasService {
     return ventas.map((venta) => this.mapearVentaACamelCase(venta));
   }
 
-  /**
-   * Obtener detalle de una venta específica.
-   *
-   * Protegido por cliente: solo devuelve la venta si pertenece
-   * al cliente autenticado.
-   */
   async obtenerDetalleVenta(idVenta: number, idCliente: number) {
     const ideVent = IdUtil.requireId(
       idVenta,
@@ -344,6 +321,66 @@ export class MobileVentasService {
         estadoProd: 'activo',
       })
       .getOne();
+  }
+
+  private async resolverMetodoPagoCliente(
+    tipoPagoSolicitado: TipoPagoVenta | undefined,
+    ideMetoPagoRaw: number | null | undefined,
+    ideClie: number,
+    manager: EntityManager,
+  ): Promise<{
+    tipoPagoVent: TipoPagoVenta;
+    ideMetoPago: number | null;
+  }> {
+    const tipoPagoBase = tipoPagoSolicitado ?? 'efectivo';
+
+    const ideMetoPago =
+      ideMetoPagoRaw === null || ideMetoPagoRaw === undefined
+        ? null
+        : IdUtil.requireId(
+            ideMetoPagoRaw,
+            'El ID del método de pago no es válido.',
+          );
+
+    if (ideMetoPago === null) {
+      if (tipoPagoBase !== 'efectivo') {
+        throw new BadRequestException(
+          'Debe seleccionar un método de pago válido para ventas con tarjeta o PayPal.',
+        );
+      }
+
+      return {
+        tipoPagoVent: 'efectivo',
+        ideMetoPago: null,
+      };
+    }
+
+    const metodoPago = await manager
+      .getRepository(MetodoPagoClienteEntity)
+      .findOne({
+        where: {
+          ideMetoPago,
+          ideClie,
+          estado: 'activo',
+        },
+      });
+
+    if (!metodoPago) {
+      throw new BadRequestException(
+        'El método de pago seleccionado no existe, no está activo o no pertenece al cliente.',
+      );
+    }
+
+    if (tipoPagoSolicitado && metodoPago.tipoPago !== tipoPagoSolicitado) {
+      throw new BadRequestException(
+        'El tipo de pago no coincide con el método de pago seleccionado.',
+      );
+    }
+
+    return {
+      tipoPagoVent: metodoPago.tipoPago,
+      ideMetoPago,
+    };
   }
 
   private calcularDetalleDesdeProducto(
