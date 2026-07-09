@@ -1,6 +1,6 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import { ApiResponseFactory, ComboMapper } from '@common/index';
+import { ApiResponseFactory, ComboMapper, IdUtil } from '@common/index';
 import { DataSource } from 'typeorm';
 import { CreateProveedorDTO } from './dto/create_proveedor.dto';
 import { FilterProveedorDTO } from './dto/filter_proveedor.dto';
@@ -28,11 +28,7 @@ export class ProveedoresService {
   }
 
   async buscar(id: number) {
-    const ideProv = Number(id);
-
-    if (!ideProv || Number.isNaN(ideProv)) {
-      throw new BadRequestException('El ID del proveedor no es válido.');
-    }
+    const ideProv = IdUtil.requireId(id, 'El ID del proveedor no es válido.');
 
     const proveedor = await this.dataSource.transaction((manager) =>
       this.proveedoresRepository.buscarPorId(ideProv, manager),
@@ -75,11 +71,10 @@ export class ProveedoresService {
   }
 
   async actualizar(body: UpdateProveedorDTO) {
-    const ideProv = Number(body.ideProv);
-
-    if (!ideProv || Number.isNaN(ideProv)) {
-      throw new BadRequestException('El ID del proveedor no es válido.');
-    }
+    const ideProv = IdUtil.requireId(
+      body.ideProv,
+      'El ID del proveedor no es válido.',
+    );
 
     try {
       const proveedor = await this.dataSource.transaction(async (manager) => {
@@ -113,11 +108,7 @@ export class ProveedoresService {
   }
 
   async eliminar(id: number) {
-    const ideProv = Number(id);
-
-    if (!ideProv || Number.isNaN(ideProv)) {
-      throw new BadRequestException('El ID del proveedor no es válido.');
-    }
+    const ideProv = IdUtil.requireId(id, 'El ID del proveedor no es válido.');
 
     try {
       const affected = await this.dataSource.transaction((manager) =>
@@ -169,11 +160,7 @@ export class ProveedoresService {
   }
 
   async buscarProveedor(id: number) {
-    const ideProv = Number(id);
-
-    if (!ideProv || Number.isNaN(ideProv)) {
-      throw new BadRequestException('El ID del proveedor no es válido.');
-    }
+    const ideProv = IdUtil.requireId(id, 'El ID del proveedor no es válido.');
 
     const proveedor = await this.dataSource.transaction((manager) =>
       this.proveedoresRepository.buscarPorId(ideProv, manager),

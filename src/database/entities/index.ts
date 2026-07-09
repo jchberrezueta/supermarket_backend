@@ -20,3 +20,4 @@ export * from './producto.entity';
 export * from './proveedor.entity';
 export * from './rol.entity';
 export * from './venta.entity';
+export * from './metodo_pago_cliente.entity';

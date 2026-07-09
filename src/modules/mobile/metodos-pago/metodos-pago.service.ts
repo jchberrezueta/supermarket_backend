@@ -1,178 +1,338 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { DatabaseService } from '@database';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { IdUtil } from '@common/index';
+import { MetodoPagoClienteEntity } from '@entities';
+import { DataSource, EntityManager } from 'typeorm';
 import { CreateMetodoPagoDto, UpdateMetodoPagoDto } from './dto';
 
 /**
  * Servicio para gestionar los métodos de pago de los clientes.
- * Soporta tarjetas de crédito/débito y PayPal.
+ *
+ * Antes dependía de funciones PostgreSQL:
+ * - fn_insertar_metodo_pago_cliente
+ * - fn_actualizar_metodo_pago_cliente
+ * - fn_eliminar_metodo_pago_cliente
+ *
+ * Ahora usa TypeORM y transacciones.
  */
 @Injectable()
 export class MetodosPagoService {
+  constructor(
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
+  ) {}
 
-    constructor(private readonly db: DatabaseService) {}
+  async crearMetodoPago(body: CreateMetodoPagoDto) {
+    const ideClie = IdUtil.requireId(
+      body.ideClie,
+      'El ID del cliente no es válido.',
+    );
 
-    /**
-     * Crear un nuevo método de pago
-     */
-    async crearMetodoPago(body: CreateMetodoPagoDto) {
-        const params = [
-            body.ideClie,
-            body.tipoPago,
-            body.nombreTitular,
-            body.numeroTarjetaMasked || null,
-            body.marcaTarjeta || null,
-            body.fechaExpiracion || null,
-            body.emailPaypal || null,
-            body.esPredeterminado || 'no',
-            body.alias || null,
-            body.usuaIngre || 'mobile'
-        ];
-
-        try {
-            const result = await this.db.executeFunctionWrite('fn_insertar_metodo_pago_cliente', params);
-
-            if (!result || result.p_result !== 1) {
-                throw new BadRequestException(result?.p_response || 'Error al crear el método de pago');
-            }
-
-            return {
-                success: true,
-                message: 'Método de pago registrado correctamente',
-                ideMetoPago: result.p_id
-            };
-        } catch (error) {
-            throw new BadRequestException(`Error de BD: ${error.message}`);
-        }
-    }
-
-    /**
-     * Listar métodos de pago activos del cliente
-     */
-    async listarMetodosPago(idCliente: number) {
-        if (!idCliente) return [];
-
-        const query = `
-            SELECT ide_meto_pago, ide_clie, tipo_pago, nombre_titular,
-                   numero_tarjeta_masked, marca_tarjeta, fecha_expiracion,
-                   email_paypal, es_predeterminado, alias, estado, fecha_ingre
-            FROM metodo_pago_cliente 
-            WHERE ide_clie = $1 AND estado = 'activo'
-            ORDER BY es_predeterminado DESC, fecha_ingre DESC
-        `;
-        
-        const result = await this.db.executeQuery(query, [idCliente]);
-        return (result || []).map((m: any) => this.mapearMetodoPagoACamelCase(m));
-    }
-
-    /**
-     * Obtener método de pago por ID (verifica que pertenezca al cliente)
-     */
-    async obtenerMetodoPago(ideMetoPago: number, idCliente: number) {
-        const query = `
-            SELECT * FROM metodo_pago_cliente 
-            WHERE ide_meto_pago = $1 AND ide_clie = $2 AND estado = 'activo'
-        `;
-        
-        const result = await this.db.executeQuery(query, [ideMetoPago, idCliente]);
-        
-        if (!result?.length) {
-            throw new NotFoundException('Método de pago no encontrado');
+    try {
+      const metodoPago = await this.dataSource.transaction(async (manager) => {
+        if (body.esPredeterminado === 'si') {
+          await this.quitarPredeterminadosCliente(ideClie, manager);
         }
 
-        return this.mapearMetodoPagoACamelCase(result[0]);
+        const repository = manager.getRepository(MetodoPagoClienteEntity);
+
+        const metodo = repository.create({
+          ideClie,
+          tipoPago: body.tipoPago as MetodoPagoClienteEntity['tipoPago'],
+          nombreTitular: body.nombreTitular,
+          numeroTarjetaMasked: body.numeroTarjetaMasked ?? null,
+          marcaTarjeta:
+            (body.marcaTarjeta as MetodoPagoClienteEntity['marcaTarjeta']) ??
+            null,
+          fechaExpiracion: body.fechaExpiracion ?? null,
+          emailPaypal: body.emailPaypal ?? null,
+          esPredeterminado: this.normalizarSiNo(body.esPredeterminado),
+          alias: body.alias ?? null,
+          estado: 'activo',
+          usuaIngre: body.usuaIngre || 'mobile',
+        });
+
+        return repository.save(metodo);
+      });
+
+      return {
+        success: true,
+        message: 'Método de pago registrado correctamente',
+        ideMetoPago: metodoPago.ideMetoPago,
+      };
+    } catch (error) {
+      throw new BadRequestException(
+        error?.message || 'No se pudo crear el método de pago.',
+      );
+    }
+  }
+
+  async listarMetodosPago(idCliente: number) {
+    const ideClie = IdUtil.parseId(idCliente);
+
+    if (ideClie === null) {
+      return [];
     }
 
-    /**
-     * Actualizar método de pago
-     */
-    async actualizarMetodoPago(body: UpdateMetodoPagoDto) {
-        const params = [
-            body.ideMetoPago,
-            body.nombreTitular || null,
-            body.fechaExpiracion || null,
-            body.esPredeterminado || null,
-            body.alias || null,
-            body.usuaActua || 'mobile'
-        ];
+    const metodos = await this.dataSource.transaction((manager) =>
+      manager.getRepository(MetodoPagoClienteEntity).find({
+        where: {
+          ideClie,
+          estado: 'activo',
+        },
+        order: {
+          esPredeterminado: 'DESC',
+          fechaIngre: 'DESC',
+        },
+      }),
+    );
 
-        try {
-            const result = await this.db.executeFunctionWrite('fn_actualizar_metodo_pago_cliente', params);
+    return metodos.map((metodo) => this.mapearMetodoPagoACamelCase(metodo));
+  }
 
-            if (!result || result.p_result !== 1) {
-                throw new BadRequestException(result?.p_response || 'Error al actualizar el método de pago');
-            }
+  async obtenerMetodoPago(ideMetoPago: number, idCliente: number) {
+    const idMetodoPago = IdUtil.requireId(
+      ideMetoPago,
+      'El ID del método de pago no es válido.',
+    );
+    const ideClie = IdUtil.requireId(
+      idCliente,
+      'El ID del cliente no es válido.',
+    );
 
-            return {
-                success: true,
-                message: 'Método de pago actualizado correctamente'
-            };
-        } catch (error) {
-            throw new BadRequestException(`Error de BD: ${error.message}`);
+    const metodo = await this.dataSource.transaction((manager) =>
+      manager.getRepository(MetodoPagoClienteEntity).findOne({
+        where: {
+          ideMetoPago: idMetodoPago,
+          ideClie,
+          estado: 'activo',
+        },
+      }),
+    );
+
+    if (!metodo) {
+      throw new NotFoundException('Método de pago no encontrado');
+    }
+
+    return this.mapearMetodoPagoACamelCase(metodo);
+  }
+
+  async actualizarMetodoPago(body: UpdateMetodoPagoDto, idCliente: number) {
+    const ideMetoPago = IdUtil.requireId(
+      body.ideMetoPago,
+      'El ID del método de pago no es válido.',
+    );
+    const ideClie = IdUtil.requireId(
+      idCliente,
+      'El ID del cliente no es válido.',
+    );
+
+    try {
+      await this.dataSource.transaction(async (manager) => {
+        const repository = manager.getRepository(MetodoPagoClienteEntity);
+
+        const metodo = await repository.findOne({
+          where: {
+            ideMetoPago,
+            ideClie,
+            estado: 'activo',
+          },
+        });
+
+        if (!metodo) {
+          throw new NotFoundException('Método de pago no encontrado');
         }
-    }
 
-    /**
-     * Eliminar método de pago (soft delete)
-     */
-    async eliminarMetodoPago(ideMetoPago: number, usuaActua: string = 'mobile') {
-        const params = [ideMetoPago, usuaActua];
-
-        try {
-            const result = await this.db.executeFunctionWrite('fn_eliminar_metodo_pago_cliente', params);
-
-            if (!result || result.p_result !== 1) {
-                throw new BadRequestException(result?.p_response || 'Error al eliminar el método de pago');
-            }
-
-            return {
-                success: true,
-                message: 'Método de pago eliminado correctamente'
-            };
-        } catch (error) {
-            throw new BadRequestException(`Error de BD: ${error.message}`);
+        if (body.esPredeterminado === 'si') {
+          await this.quitarPredeterminadosCliente(ideClie, manager);
         }
+
+        if (body.nombreTitular !== undefined && body.nombreTitular !== null) {
+          metodo.nombreTitular = body.nombreTitular;
+        }
+
+        if (
+          body.fechaExpiracion !== undefined &&
+          body.fechaExpiracion !== null
+        ) {
+          metodo.fechaExpiracion = body.fechaExpiracion;
+        }
+
+        if (
+          body.esPredeterminado !== undefined &&
+          body.esPredeterminado !== null
+        ) {
+          metodo.esPredeterminado = this.normalizarSiNo(body.esPredeterminado);
+        }
+
+        if (body.alias !== undefined) {
+          metodo.alias = body.alias ?? null;
+        }
+
+        metodo.usuaActua = body.usuaActua || 'mobile';
+        metodo.fechaActua = new Date();
+
+        await repository.save(metodo);
+      });
+
+      return {
+        success: true,
+        message: 'Método de pago actualizado correctamente',
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
+      throw new BadRequestException(
+        error?.message || 'No se pudo actualizar el método de pago.',
+      );
     }
+  }
 
-    /**
-     * Establecer un método como predeterminado (quita el flag de los demás)
-     */
-    async establecerPredeterminado(ideMetoPago: number, idCliente: number) {
-        // Quitar predeterminado de todos los métodos del cliente
-        await this.db.executeQuery(
-            `UPDATE metodo_pago_cliente 
-             SET es_predeterminado = 'no', fecha_actua = CURRENT_TIMESTAMP
-             WHERE ide_clie = $1`,
-            [idCliente]
-        );
+  async eliminarMetodoPago(
+    ideMetoPago: number,
+    idCliente: number,
+    usuaActua = 'mobile',
+  ) {
+    const idMetodoPago = IdUtil.requireId(
+      ideMetoPago,
+      'El ID del método de pago no es válido.',
+    );
+    const ideClie = IdUtil.requireId(
+      idCliente,
+      'El ID del cliente no es válido.',
+    );
 
-        // Establecer el nuevo predeterminado
-        await this.db.executeQuery(
-            `UPDATE metodo_pago_cliente 
-             SET es_predeterminado = 'si', fecha_actua = CURRENT_TIMESTAMP
-             WHERE ide_meto_pago = $1 AND ide_clie = $2`,
-            [ideMetoPago, idCliente]
-        );
+    try {
+      await this.dataSource.transaction(async (manager) => {
+        const repository = manager.getRepository(MetodoPagoClienteEntity);
 
-        return { success: true, message: 'Método de pago establecido como predeterminado' };
+        const metodo = await repository.findOne({
+          where: {
+            ideMetoPago: idMetodoPago,
+            ideClie,
+            estado: 'activo',
+          },
+        });
+
+        if (!metodo) {
+          throw new NotFoundException('Método de pago no encontrado');
+        }
+
+        metodo.estado = 'inactivo';
+        metodo.esPredeterminado = 'no';
+        metodo.usuaActua = usuaActua;
+        metodo.fechaActua = new Date();
+
+        await repository.save(metodo);
+      });
+
+      return {
+        success: true,
+        message: 'Método de pago eliminado correctamente',
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
+      throw new BadRequestException(
+        error?.message || 'No se pudo eliminar el método de pago.',
+      );
     }
+  }
 
-    /**
-     * Mapear de snake_case a camelCase
-     */
-    private mapearMetodoPagoACamelCase(m: any) {
-        return {
-            ideMetoPago: m.ide_meto_pago,
-            ideClie: m.ide_clie,
-            tipoPago: m.tipo_pago,
-            nombreTitular: m.nombre_titular,
-            numeroTarjetaMasked: m.numero_tarjeta_masked,
-            marcaTarjeta: m.marca_tarjeta,
-            fechaExpiracion: m.fecha_expiracion,
-            emailPaypal: m.email_paypal,
-            esPredeterminado: m.es_predeterminado,
-            alias: m.alias,
-            estado: m.estado,
-            fechaIngre: m.fecha_ingre
-        };
+  async establecerPredeterminado(ideMetoPago: number, idCliente: number) {
+    const idMetodoPago = IdUtil.requireId(
+      ideMetoPago,
+      'El ID del método de pago no es válido.',
+    );
+    const ideClie = IdUtil.requireId(
+      idCliente,
+      'El ID del cliente no es válido.',
+    );
+
+    try {
+      await this.dataSource.transaction(async (manager) => {
+        const repository = manager.getRepository(MetodoPagoClienteEntity);
+
+        const metodo = await repository.findOne({
+          where: {
+            ideMetoPago: idMetodoPago,
+            ideClie,
+            estado: 'activo',
+          },
+        });
+
+        if (!metodo) {
+          throw new NotFoundException('Método de pago no encontrado');
+        }
+
+        await this.quitarPredeterminadosCliente(ideClie, manager);
+
+        metodo.esPredeterminado = 'si';
+        metodo.fechaActua = new Date();
+        metodo.usuaActua = 'mobile';
+
+        await repository.save(metodo);
+      });
+
+      return {
+        success: true,
+        message: 'Método de pago establecido como predeterminado',
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
+      throw new BadRequestException(
+        error?.message ||
+          'No se pudo establecer el método de pago como predeterminado.',
+      );
     }
+  }
+
+  private async quitarPredeterminadosCliente(
+    ideClie: number,
+    manager: EntityManager,
+  ): Promise<void> {
+    await manager
+      .getRepository(MetodoPagoClienteEntity)
+      .createQueryBuilder()
+      .update(MetodoPagoClienteEntity)
+      .set({
+        esPredeterminado: 'no',
+        fechaActua: new Date(),
+      })
+      .where('ide_clie = :ideClie', { ideClie })
+      .andWhere('estado = :estado', { estado: 'activo' })
+      .execute();
+  }
+
+  private normalizarSiNo(value: unknown): 'si' | 'no' {
+    return value === 'si' ? 'si' : 'no';
+  }
+
+  private mapearMetodoPagoACamelCase(metodo: MetodoPagoClienteEntity) {
+    return {
+      ideMetoPago: metodo.ideMetoPago,
+      ideClie: metodo.ideClie,
+      tipoPago: metodo.tipoPago,
+      nombreTitular: metodo.nombreTitular,
+      numeroTarjetaMasked: metodo.numeroTarjetaMasked,
+      marcaTarjeta: metodo.marcaTarjeta,
+      fechaExpiracion: metodo.fechaExpiracion,
+      emailPaypal: metodo.emailPaypal,
+      esPredeterminado: metodo.esPredeterminado,
+      alias: metodo.alias,
+      estado: metodo.estado,
+      fechaIngre: metodo.fechaIngre,
+    };
+  }
 }

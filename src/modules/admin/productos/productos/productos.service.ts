@@ -1,10 +1,6 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import { ApiResponseFactory, ComboMapper } from '@common/index';
+import { ApiResponseFactory, ComboMapper, IdUtil } from '@common/index';
 import { DataSource } from 'typeorm';
 import { CreateProductoDTO } from './dto/create_producto.dto';
 import { FilterProductoDTO } from './dto/filter_producto.dto';
@@ -32,11 +28,7 @@ export class ProductosService {
   }
 
   async buscar(id: number) {
-    const ideProd = Number(id);
-
-    if (!ideProd || Number.isNaN(ideProd)) {
-      throw new BadRequestException('El ID del producto no es válido.');
-    }
+    const ideProd = IdUtil.requireId(id, 'El ID del producto no es válido.');
 
     const producto = await this.dataSource.transaction((manager) =>
       this.productosRepository.buscarPorId(ideProd, manager),
@@ -83,11 +75,10 @@ export class ProductosService {
   }
 
   async actualizar(body: UpdateProductoDTO) {
-    const ideProd = Number(body.ideProd);
-
-    if (!ideProd || Number.isNaN(ideProd)) {
-      throw new BadRequestException('El ID del producto no es válido.');
-    }
+    const ideProd = IdUtil.requireId(
+      body.ideProd,
+      'El ID del producto no es válido.',
+    );
 
     try {
       const producto = await this.dataSource.transaction(async (manager) => {
@@ -121,11 +112,7 @@ export class ProductosService {
   }
 
   async eliminar(id: number) {
-    const ideProd = Number(id);
-
-    if (!ideProd || Number.isNaN(ideProd)) {
-      throw new BadRequestException('El ID del producto no es válido.');
-    }
+    const ideProd = IdUtil.requireId(id, 'El ID del producto no es válido.');
 
     try {
       const affected = await this.dataSource.transaction((manager) =>

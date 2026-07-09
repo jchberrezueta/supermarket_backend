@@ -1,6 +1,6 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import { ApiResponseFactory, ComboMapper } from '@common/index';
+import { ApiResponseFactory, ComboMapper, IdUtil } from '@common/index';
 import { DataSource } from 'typeorm';
 import { CreatePerfilDto } from './dto/create_perfil.dto';
 import { FilterPerfilDto } from './dto/filter_perfil.dto';
@@ -28,11 +28,7 @@ export class PerfilesService {
   }
 
   async buscar(id: number) {
-    const idePerf = Number(id);
-
-    if (!idePerf || Number.isNaN(idePerf)) {
-      throw new BadRequestException('El ID del perfil no es válido.');
-    }
+    const idePerf = IdUtil.requireId(id, 'El ID del perfil no es válido.');
 
     const perfil = await this.dataSource.transaction((manager) =>
       this.perfilesRepository.buscarPorId(idePerf, manager),
@@ -75,11 +71,10 @@ export class PerfilesService {
   }
 
   async actualizar(body: UpdatePerfilDto) {
-    const idePerf = Number(body.idePerf);
-
-    if (!idePerf || Number.isNaN(idePerf)) {
-      throw new BadRequestException('El ID del perfil no es válido.');
-    }
+    const idePerf = IdUtil.requireId(
+      body.idePerf,
+      'El ID del perfil no es válido.',
+    );
 
     try {
       const perfil = await this.dataSource.transaction(async (manager) => {
@@ -109,11 +104,7 @@ export class PerfilesService {
   }
 
   async eliminar(id: number) {
-    const idePerf = Number(id);
-
-    if (!idePerf || Number.isNaN(idePerf)) {
-      throw new BadRequestException('El ID del perfil no es válido.');
-    }
+    const idePerf = IdUtil.requireId(id, 'El ID del perfil no es válido.');
 
     try {
       const affected = await this.dataSource.transaction((manager) =>

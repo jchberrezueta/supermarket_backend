@@ -1,6 +1,6 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import { ApiResponseFactory, ComboMapper } from '@common/index';
+import { ApiResponseFactory, ComboMapper, IdUtil } from '@common/index';
 import { DataSource } from 'typeorm';
 import { CategoriasMapper } from './categorias.mapper';
 import { CategoriasRepository } from './categorias.repository';
@@ -28,11 +28,7 @@ export class CategoriasService {
   }
 
   async buscar(id: number) {
-    const ideCate = Number(id);
-
-    if (!ideCate || Number.isNaN(ideCate)) {
-      throw new BadRequestException('El ID de la categoría no es válido.');
-    }
+    const ideCate = IdUtil.requireId(id, 'El ID de la categoría no es válido.');
 
     const categoria = await this.dataSource.transaction((manager) =>
       this.categoriasRepository.buscarPorId(ideCate, manager),
@@ -75,11 +71,10 @@ export class CategoriasService {
   }
 
   async actualizar(body: UpdateCategoriaDTO) {
-    const ideCate = Number(body.ideCate);
-
-    if (!ideCate || Number.isNaN(ideCate)) {
-      throw new BadRequestException('El ID de la categoría no es válido.');
-    }
+    const ideCate = IdUtil.requireId(
+      body.ideCate,
+      'El ID de la categoría no es válido.',
+    );
 
     try {
       const categoria = await this.dataSource.transaction(async (manager) => {
@@ -113,11 +108,7 @@ export class CategoriasService {
   }
 
   async eliminar(id: number) {
-    const ideCate = Number(id);
-
-    if (!ideCate || Number.isNaN(ideCate)) {
-      throw new BadRequestException('El ID de la categoría no es válido.');
-    }
+    const ideCate = IdUtil.requireId(id, 'El ID de la categoría no es válido.');
 
     try {
       const affected = await this.dataSource.transaction((manager) =>

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { IotAlertaEntity } from '../../../database/entities/iot_alerta.entity';
 import { IotDispositivoEntity } from '../../../database/entities/iot_dispositivo.entity';
 import { IotLecturaEntity } from '../../../database/entities/iot_lectura.entity';
@@ -20,37 +20,54 @@ export class IotRepository {
 
   buscarDispositivoPorCodigo(
     codigoDisp: string,
+    manager?: EntityManager,
   ): Promise<IotDispositivoEntity | null> {
-    return this.dispositivosRepository.findOne({
+    return this.getDispositivoRepository(manager).findOne({
       where: { codigoDisp },
     });
   }
 
-  listarDispositivos(): Promise<IotDispositivoEntity[]> {
-    return this.dispositivosRepository.find({
+  listarDispositivos(manager?: EntityManager): Promise<IotDispositivoEntity[]> {
+    return this.getDispositivoRepository(manager).find({
       order: { ideDisp: 'ASC' },
     });
   }
 
   guardarDispositivo(
     data: Partial<IotDispositivoEntity>,
+    manager?: EntityManager,
   ): Promise<IotDispositivoEntity> {
-    const dispositivo = this.dispositivosRepository.create(data);
-    return this.dispositivosRepository.save(dispositivo);
+    const repository = this.getDispositivoRepository(manager);
+    const dispositivo = repository.create(data);
+
+    return repository.save(dispositivo);
   }
 
-  guardarLectura(data: Partial<IotLecturaEntity>): Promise<IotLecturaEntity> {
-    const lectura = this.lecturasRepository.create(data);
-    return this.lecturasRepository.save(lectura);
+  guardarLectura(
+    data: Partial<IotLecturaEntity>,
+    manager?: EntityManager,
+  ): Promise<IotLecturaEntity> {
+    const repository = this.getLecturaRepository(manager);
+    const lectura = repository.create(data);
+
+    return repository.save(lectura);
   }
 
-  guardarAlerta(data: Partial<IotAlertaEntity>): Promise<IotAlertaEntity> {
-    const alerta = this.alertasRepository.create(data);
-    return this.alertasRepository.save(alerta);
+  guardarAlerta(
+    data: Partial<IotAlertaEntity>,
+    manager?: EntityManager,
+  ): Promise<IotAlertaEntity> {
+    const repository = this.getAlertaRepository(manager);
+    const alerta = repository.create(data);
+
+    return repository.save(alerta);
   }
 
-  obtenerUltimaLectura(codigoDisp?: string): Promise<IotLecturaEntity | null> {
-    const query = this.lecturasRepository
+  obtenerUltimaLectura(
+    codigoDisp?: string,
+    manager?: EntityManager,
+  ): Promise<IotLecturaEntity | null> {
+    const query = this.getLecturaRepository(manager)
       .createQueryBuilder('lectura')
       .leftJoinAndSelect('lectura.dispositivo', 'dispositivo')
       .orderBy('lectura.fechaLect', 'DESC');
@@ -62,8 +79,11 @@ export class IotRepository {
     return query.getOne();
   }
 
-  listarLecturas(limit = 50): Promise<IotLecturaEntity[]> {
-    return this.lecturasRepository.find({
+  listarLecturas(
+    limit = 50,
+    manager?: EntityManager,
+  ): Promise<IotLecturaEntity[]> {
+    return this.getLecturaRepository(manager).find({
       relations: { dispositivo: true },
       order: { fechaLect: 'DESC' },
       take: limit,
@@ -73,8 +93,9 @@ export class IotRepository {
   buscarAlertaAbiertaPorTipo(
     ideDisp: number,
     tipoAler: string,
+    manager?: EntityManager,
   ): Promise<IotAlertaEntity | null> {
-    return this.alertasRepository.findOne({
+    return this.getAlertaRepository(manager).findOne({
       where: {
         ideDisp,
         tipoAler,
@@ -86,11 +107,41 @@ export class IotRepository {
     });
   }
 
-  listarAlertasAbiertas(): Promise<IotAlertaEntity[]> {
-    return this.alertasRepository.find({
+  listarAlertasAbiertas(manager?: EntityManager): Promise<IotAlertaEntity[]> {
+    return this.getAlertaRepository(manager).find({
       relations: { dispositivo: true, lectura: true },
       where: { estadoAler: 'abierta' },
       order: { fechaAler: 'DESC' },
     });
+  }
+
+  private getDispositivoRepository(
+    manager?: EntityManager,
+  ): Repository<IotDispositivoEntity> {
+    if (manager) {
+      return manager.getRepository(IotDispositivoEntity);
+    }
+
+    return this.dispositivosRepository;
+  }
+
+  private getLecturaRepository(
+    manager?: EntityManager,
+  ): Repository<IotLecturaEntity> {
+    if (manager) {
+      return manager.getRepository(IotLecturaEntity);
+    }
+
+    return this.lecturasRepository;
+  }
+
+  private getAlertaRepository(
+    manager?: EntityManager,
+  ): Repository<IotAlertaEntity> {
+    if (manager) {
+      return manager.getRepository(IotAlertaEntity);
+    }
+
+    return this.alertasRepository;
   }
 }

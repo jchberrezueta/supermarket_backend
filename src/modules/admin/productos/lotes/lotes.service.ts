@@ -1,6 +1,6 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import { ApiResponseFactory, ComboMapper } from '@common/index';
+import { ApiResponseFactory, ComboMapper, IdUtil } from '@common/index';
 import { DataSource } from 'typeorm';
 import { CreateLoteDTO } from './dto/create_lote.dto';
 import { FilterLoteDTO } from './dto/filter_lote.dto';
@@ -32,11 +32,7 @@ export class LotesService {
   }
 
   async buscar(id: number) {
-    const ideLote = Number(id);
-
-    if (!ideLote || Number.isNaN(ideLote)) {
-      throw new BadRequestException('El ID del lote no es válido.');
-    }
+    const ideLote = IdUtil.requireId(id, 'El ID del lote no es válido.');
 
     const lote = await this.dataSource.transaction((manager) =>
       this.lotesRepository.buscarPorId(ideLote, manager),
@@ -83,11 +79,10 @@ export class LotesService {
   }
 
   async actualizar(body: UpdateLoteDTO) {
-    const ideLote = Number(body.ideLote);
-
-    if (!ideLote || Number.isNaN(ideLote)) {
-      throw new BadRequestException('El ID del lote no es válido.');
-    }
+    const ideLote = IdUtil.requireId(
+      body.ideLote,
+      'El ID del lote no es válido.',
+    );
 
     try {
       const lote = await this.dataSource.transaction(async (manager) => {
@@ -117,11 +112,7 @@ export class LotesService {
   }
 
   async eliminar(id: number) {
-    const ideLote = Number(id);
-
-    if (!ideLote || Number.isNaN(ideLote)) {
-      throw new BadRequestException('El ID del lote no es válido.');
-    }
+    const ideLote = IdUtil.requireId(id, 'El ID del lote no es válido.');
 
     try {
       const affected = await this.dataSource.transaction((manager) =>

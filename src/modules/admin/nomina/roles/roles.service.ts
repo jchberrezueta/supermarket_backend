@@ -1,6 +1,6 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import { ApiResponseFactory, ComboMapper } from '@common/index';
+import { ApiResponseFactory, ComboMapper, IdUtil } from '@common/index';
 import { DataSource } from 'typeorm';
 import { CreateRolDTO } from './dto/create_rol.dto';
 import { FilterRolDTO } from './dto/filter_rol.dto';
@@ -28,11 +28,7 @@ export class RolesService {
   }
 
   async buscar(id: number) {
-    const ideRol = Number(id);
-
-    if (!ideRol || Number.isNaN(ideRol)) {
-      throw new BadRequestException('El ID del rol no es válido.');
-    }
+    const ideRol = IdUtil.requireId(id, 'El ID del rol no es válido.');
 
     const rol = await this.dataSource.transaction((manager) =>
       this.rolesRepository.buscarPorId(ideRol, manager),
@@ -75,11 +71,7 @@ export class RolesService {
   }
 
   async actualizar(body: UpdateRolDTO) {
-    const ideRol = Number(body.ideRol);
-
-    if (!ideRol || Number.isNaN(ideRol)) {
-      throw new BadRequestException('El ID del rol no es válido.');
-    }
+    const ideRol = IdUtil.requireId(body.ideRol, 'El ID del rol no es válido.');
 
     try {
       const rol = await this.dataSource.transaction(async (manager) => {
@@ -109,11 +101,7 @@ export class RolesService {
   }
 
   async eliminar(id: number) {
-    const ideRol = Number(id);
-
-    if (!ideRol || Number.isNaN(ideRol)) {
-      throw new BadRequestException('El ID del rol no es válido.');
-    }
+    const ideRol = IdUtil.requireId(id, 'El ID del rol no es válido.');
 
     try {
       const affected = await this.dataSource.transaction((manager) =>

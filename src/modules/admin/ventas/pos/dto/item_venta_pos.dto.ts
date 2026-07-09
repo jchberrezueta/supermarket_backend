@@ -2,7 +2,7 @@ import { IsInt, Min } from 'class-validator';
 
 export class ItemVentaPosDto {
   @IsInt()
-  @Min(1)
+  @Min(0)
   ideProd!: number;
 
   @IsInt()

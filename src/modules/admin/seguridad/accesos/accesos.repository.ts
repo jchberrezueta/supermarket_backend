@@ -50,11 +50,7 @@ export class AccesosRepository {
       .orderBy('acceso.fechaAcce', 'DESC')
       .addOrderBy('acceso.ideAcce', 'DESC');
 
-    if (
-      filtros.ideCuen !== undefined &&
-      filtros.ideCuen !== null &&
-      filtros.ideCuen > 0
-    ) {
+    if (filtros.ideCuen !== undefined && filtros.ideCuen !== null) {
       qb.andWhere('acceso.ideCuen = :ideCuen', {
         ideCuen: filtros.ideCuen,
       });

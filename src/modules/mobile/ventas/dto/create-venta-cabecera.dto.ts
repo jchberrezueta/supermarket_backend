@@ -1,82 +1,75 @@
-import { IsString, IsNumber, IsDateString, Length, Min, IsOptional } from 'class-validator';
+import {
+  IsDateString,
+  IsIn,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Length,
+  Min,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class CreateVentaCabeceraDto {
+  @Transform(({ value }) => Number(value))
+  @IsInt()
+  @Min(0)
+  ideClie!: number;
 
-    @Transform(({ value }) => Number(value))
-    @IsNumber()
-    @Min(1)
-    ideClie: number;
+  @IsOptional()
+  @IsString()
+  @Length(1, 50)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
+  )
+  numFacturaVent?: string;
 
-    @IsString()
-    @Length(1, 50)
-    @Transform(({ value }) => (
-        (typeof value === 'string' && value.trim() !== '') ? value.trim() : null
-    ))
-    numFacturaVent: string;
+  @IsOptional()
+  @IsDateString()
+  fechaVent?: string;
 
-    @IsDateString()
-    fechaVent: string;
+  @Transform(({ value }) => Number(value))
+  @IsNumber()
+  @Min(1)
+  cantidadVent!: number;
 
-    @Transform(({ value }) => Number(value))
-    @IsNumber()
-    @Min(1)
-    cantidadVent: number;
+  @Transform(({ value }) => Number(value))
+  @IsNumber()
+  @Min(0)
+  subTotalVent!: number;
 
-    @Transform(({ value }) => Number(value))
-    @IsNumber()
-    @Min(0)
-    subTotalVent: number;
+  @Transform(({ value }) => Number(value))
+  @IsNumber()
+  @Min(0)
+  totalVent!: number;
 
-    @Transform(({ value }) => Number(value))
-    @IsNumber()
-    @Min(0)
-    totalVent: number;
+  @Transform(({ value }) => Number(value ?? 0))
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  dctoSocioVent = 0;
 
-    @IsNumber()
-    @Min(0)
-    @IsOptional()
-    dctoSocioVent: number = 0;  // Descuento por ser socio
+  @Transform(({ value }) => Number(value ?? 0))
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  dctoEdadVent = 0;
 
-    @IsNumber()
-    @Min(0)
-    @IsOptional()
-    dctoEdadVent: number = 0;   // Descuento por tercera edad
+  @IsString()
+  @IsOptional()
+  usuaIngre?: string;
 
-    @IsString()
-    @IsOptional()
-    usuaIngre?: string;
+  @IsOptional()
+  @IsIn(['efectivo', 'tarjeta_credito', 'tarjeta_debito', 'paypal'])
+  tipoPagoVent?: 'efectivo' | 'tarjeta_credito' | 'tarjeta_debito' | 'paypal';
 
-    @IsString()
-    @IsOptional()
-    tipoPagoVent?: string;  // 'efectivo', 'tarjeta_credito', 'tarjeta_debito', 'paypal'
-
-    @IsNumber()
-    @IsOptional()
-    ideMetoPago?: number;   // ID del método de pago guardado (null si es efectivo)
-
-    /**
-     * Convierte a array para fn_insertar_venta
-     * Orden: p_ide_empl, p_ide_clie, p_num_factura_vent, p_fecha_vent, 
-     *        p_cantidad_vent, p_sub_total_vent, p_dcto_socio_vent, 
-     *        p_dcto_edad_vent, p_total_vent, p_estado_vent, p_usua_ingre,
-     *        p_tipo_pago_vent, p_ide_meto_pago
-     */
-    toArray(): any[] {
-        return [
-            null,               // p_ide_empl - ventas desde móvil no tienen empleado
-            this.ideClie,       // p_ide_clie
-            this.numFacturaVent,// p_num_factura_vent
-            this.fechaVent,     // p_fecha_vent
-            this.cantidadVent,  // p_cantidad_vent
-            this.subTotalVent,  // p_sub_total_vent
-            this.dctoSocioVent, // p_dcto_socio_vent
-            this.dctoEdadVent,  // p_dcto_edad_vent
-            this.totalVent,     // p_total_vent
-            'completado',       // p_estado_vent
-            this.usuaIngre || 'mobile', // p_usua_ingre
-            this.tipoPagoVent || 'efectivo', // p_tipo_pago_vent
-            this.ideMetoPago || null  // p_ide_meto_pago
-        ];
-    }
+  @Transform(({ value }) =>
+    value === null || value === undefined || value === ''
+      ? undefined
+      : Number(value),
+  )
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  ideMetoPago?: number;
 }

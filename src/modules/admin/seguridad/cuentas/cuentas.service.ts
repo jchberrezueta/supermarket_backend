@@ -1,14 +1,22 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import { ApiResponseFactory, ComboMapper } from '@common/index';
+import { ApiResponseFactory, ComboMapper, IdUtil } from '@common/index';
 import { DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { CreateCuentaDto } from './dto/create_cuenta.dto';
 import { FiltroCuentaDto } from './dto/filter_cuenta.dto';
 import { UpdateCuentaDto } from './dto/update_cuenta.dto';
 import { CuentasMapper } from './cuentas.mapper';
-import { CuentasRepository } from './cuentas.repository';
-import { IdUtil } from '@common/utils/id.util';
+import { CuentasRepository, SidebarOptionRaw } from './cuentas.repository';
+
+export interface SidebarOption {
+  id: number;
+  titulo: string;
+  ruta: string;
+  icono: string | null;
+  activo: 'si' | 'no';
+  hijas: SidebarOption[];
+}
 
 @Injectable()
 export class CuentasService {
@@ -30,11 +38,7 @@ export class CuentasService {
   }
 
   async buscar(id: number) {
-    const ideCuen = IdUtil.parseId(id);
-
-    if (ideCuen === null) {
-      throw new BadRequestException('El ID de la cuenta no es válido.');
-    }
+    const ideCuen = IdUtil.requireId(id, 'El ID de la cuenta no es válido.');
 
     const cuenta = await this.dataSource.transaction((manager) =>
       this.cuentasRepository.buscarPorId(ideCuen, manager),
@@ -58,11 +62,7 @@ export class CuentasService {
   }
 
   async eliminar(id: number) {
-    const ideCuen = IdUtil.parseId(id);
-
-    if (ideCuen === null) {
-      throw new BadRequestException('El ID de la cuenta no es válido.');
-    }
+    const ideCuen = IdUtil.requireId(id, 'El ID de la cuenta no es válido.');
 
     try {
       const affected = await this.dataSource.transaction((manager) =>
@@ -111,11 +111,10 @@ export class CuentasService {
   }
 
   async actualizar(body: UpdateCuentaDto) {
-    const ideCuen = IdUtil.parseId(body.ideCuen);
-
-    if (ideCuen === null) {
-      throw new BadRequestException('El ID de la cuenta no es válido.');
-    }
+    const ideCuen = IdUtil.requireId(
+      body.ideCuen,
+      'El ID de la cuenta no es válido.',
+    );
 
     try {
       const passwordHash =
@@ -191,9 +190,14 @@ export class CuentasService {
   }
 
   /**
-   * Adapter temporal:
-   * aún conserva obtener_rutas_json para no romper el menú/sidebar.
-   * Luego lo reemplazamos por construcción de árbol en TypeScript.
+   * Sidebar construido en TypeScript.
+   *
+   * Antes dependía de:
+   * - jsonb_agg
+   * - obtener_rutas_json
+   *
+   * Eso era PostgreSQL puro. Ahora el repository obtiene las opciones
+   * permitidas con TypeORM y este service arma el árbol del menú.
    */
   async getSidebarRutas(idCuenta: string) {
     const ideCuen = IdUtil.parseId(idCuenta);
@@ -202,22 +206,11 @@ export class CuentasService {
       return [];
     }
 
-    const query = `
-    SELECT 
-      jsonb_agg(obtener_rutas_json(d.ide_opci, b.ide_perf)) AS menu
-    FROM cuenta a
-    LEFT JOIN perfil b ON b.ide_perf = a.ide_perf
-    LEFT JOIN perfil_opciones c ON c.ide_perf = b.ide_perf
-    LEFT JOIN opciones d ON d.ide_opci = c.ide_opci
-    WHERE a.ide_cuen = $1
-      AND a.estado_cuen = 'activo'
-      AND d.padre_opci IS NULL
-      AND d.activo_opci = 'si'
-  `;
+    const opciones = await this.dataSource.transaction((manager) =>
+      this.cuentasRepository.listarOpcionesSidebar(ideCuen, manager),
+    );
 
-    const result = await this.dataSource.query(query, [ideCuen]);
-
-    return result?.[0]?.menu ?? [];
+    return this.construirArbolSidebar(opciones);
   }
 
   /**
@@ -302,5 +295,46 @@ export class CuentasService {
       (perfil) => perfil.nombrePerf,
       (perfil) => perfil.idePerf,
     );
+  }
+
+  private construirArbolSidebar(opciones: SidebarOptionRaw[]): SidebarOption[] {
+    const mapa = new Map<number, SidebarOption>();
+    const raices: SidebarOption[] = [];
+
+    for (const opcion of opciones) {
+      mapa.set(opcion.id, {
+        id: opcion.id,
+        titulo: opcion.titulo,
+        ruta: opcion.ruta,
+        icono: opcion.icono ?? null,
+        activo: opcion.activo,
+        hijas: [],
+      });
+    }
+
+    for (const opcion of opciones) {
+      const nodo = mapa.get(opcion.id);
+
+      if (!nodo) {
+        continue;
+      }
+
+      const esRaiz = opcion.padre === null || opcion.padre === undefined;
+
+      if (esRaiz) {
+        raices.push(nodo);
+        continue;
+      }
+
+      const padre = mapa.get(opcion.padre);
+
+      if (padre) {
+        padre.hijas.push(nodo);
+      } else {
+        raices.push(nodo);
+      }
+    }
+
+    return raices;
   }
 }

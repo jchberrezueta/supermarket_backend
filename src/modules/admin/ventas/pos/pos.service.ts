@@ -4,9 +4,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
+import { IdUtil } from '@common/index';
 import { ProductoEntity } from '@entities';
 import { DataSource } from 'typeorm';
 import { ConfirmarVentaPosDto } from './dto/confirmar_venta_pos.dto';
+import { ItemVentaPosDto } from './dto/item_venta_pos.dto';
 import {
   PosCalculatorService,
   PosDetalleCalculado,
@@ -70,19 +72,27 @@ export class PosService {
   }
 
   async confirmarVenta(dto: ConfirmarVentaPosDto, user: any) {
-    if (!dto.items || dto.items.length === 0) {
-      throw new BadRequestException(
-        'Debe agregar al menos un producto a la venta.',
-      );
-    }
+    this.validarItemsVenta(dto.items);
 
-    const ideEmpl = user.ideEmpl ?? dto.ideEmpl;
+    const ideClie = IdUtil.requireId(
+      dto.ideClie,
+      'El ID del cliente no es válido.',
+    );
 
-    if (ideEmpl === undefined || ideEmpl === null || Number.isNaN(ideEmpl)) {
-      throw new BadRequestException(
-        'No se pudo identificar el cajero de la venta.',
-      );
-    }
+    const ideEmplRaw = user?.ideEmpl ?? dto.ideEmpl;
+
+    const ideEmpl = IdUtil.requireId(
+      ideEmplRaw,
+      'No se pudo identificar el cajero de la venta.',
+    );
+
+    const ideMetoPago =
+      dto.ideMetoPago === null || dto.ideMetoPago === undefined
+        ? null
+        : IdUtil.requireId(
+            dto.ideMetoPago,
+            'El ID del método de pago no es válido.',
+          );
 
     return this.dataSource.transaction(async (manager) => {
       const itemsConsolidados = this.posCalculatorService.consolidarItems(
@@ -92,7 +102,7 @@ export class PosService {
       const numeroFactura = this.invoiceNumberService.generarNumeroFactura();
 
       const cliente = await this.posRepository.findClienteById(
-        dto.ideClie,
+        ideClie,
         manager,
       );
 
@@ -107,15 +117,20 @@ export class PosService {
       const productosBloqueados = new Map<number, ProductoEntity>();
 
       for (const item of itemsConsolidados) {
+        const ideProd = IdUtil.requireId(
+          item.ideProd,
+          'El ID del producto no es válido.',
+        );
+
         const producto =
           await this.posRepository.findProductoActivoByIdForUpdate(
-            item.ideProd,
+            ideProd,
             manager,
           );
 
         if (!producto) {
           throw new BadRequestException(
-            `El producto con ID ${item.ideProd} no existe o no está activo.`,
+            `El producto con ID ${ideProd} no existe o no está activo.`,
           );
         }
 
@@ -135,7 +150,7 @@ export class PosService {
 
       const venta = await this.posRepository.guardarVenta(
         {
-          ideClie: dto.ideClie,
+          ideClie,
           ideEmpl,
           numFacturaVent: numeroFactura,
           fechaVent: new Date(),
@@ -146,7 +161,7 @@ export class PosService {
           dctoEdadVent: '0.00',
           estadoVent: 'completado',
           tipoPagoVent: dto.tipoPagoVent ?? 'efectivo',
-          ideMetoPago: dto.ideMetoPago ?? null,
+          ideMetoPago,
           usuaIngre: 'pos',
         },
         manager,
@@ -216,13 +231,14 @@ export class PosService {
   }
 
   async cancelarVenta(ideVent: number) {
-    if (!ideVent || ideVent <= 0) {
-      throw new BadRequestException('El ID de la venta no es válido.');
-    }
+    const idVenta = IdUtil.requireId(
+      ideVent,
+      'El ID de la venta no es válido.',
+    );
 
     return this.dataSource.transaction(async (manager) => {
       const venta = await this.posRepository.findVentaByIdForUpdate(
-        ideVent,
+        idVenta,
         manager,
       );
 
@@ -241,7 +257,7 @@ export class PosService {
       }
 
       const detalles = await this.posRepository.findDetallesByVenta(
-        ideVent,
+        idVenta,
         manager,
       );
 
@@ -258,14 +274,19 @@ export class PosService {
       }> = [];
 
       for (const detalle of detalles) {
-        const producto = await this.posRepository.findProductoByIdForUpdate(
+        const ideProd = IdUtil.requireId(
           detalle.ideProd,
+          'El ID del producto no es válido.',
+        );
+
+        const producto = await this.posRepository.findProductoByIdForUpdate(
+          ideProd,
           manager,
         );
 
         if (!producto) {
           throw new BadRequestException(
-            `No se encontró el producto ${detalle.ideProd} para revertir stock.`,
+            `No se encontró el producto ${ideProd} para revertir stock.`,
           );
         }
 
@@ -309,5 +330,34 @@ export class PosService {
         },
       };
     });
+  }
+
+  private validarItemsVenta(items: ItemVentaPosDto[]): void {
+    if (!Array.isArray(items) || items.length === 0) {
+      throw new BadRequestException(
+        'Debe agregar al menos un producto a la venta.',
+      );
+    }
+
+    for (const item of items) {
+      const ideProd = IdUtil.parseId(item.ideProd);
+
+      if (ideProd === null) {
+        throw new BadRequestException(
+          'Todos los ítems deben tener un producto válido.',
+        );
+      }
+
+      if (
+        item.cantidad === null ||
+        item.cantidad === undefined ||
+        Number.isNaN(Number(item.cantidad)) ||
+        Number(item.cantidad) <= 0
+      ) {
+        throw new BadRequestException(
+          'Todos los ítems deben tener una cantidad válida.',
+        );
+      }
+    }
   }
 }

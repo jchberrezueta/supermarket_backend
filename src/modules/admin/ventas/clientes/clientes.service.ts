@@ -1,6 +1,6 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import { ApiResponseFactory, ComboMapper } from '@common/index';
+import { ApiResponseFactory, ComboMapper, IdUtil } from '@common/index';
 import { DataSource } from 'typeorm';
 import { ClientesMapper } from './clientes.mapper';
 import { ClientesRepository } from './clientes.repository';
@@ -28,11 +28,7 @@ export class ClientesService {
   }
 
   async buscar(id: number) {
-    const ideClie = Number(id);
-
-    if (!ideClie || Number.isNaN(ideClie)) {
-      throw new BadRequestException('El ID del cliente no es válido.');
-    }
+    const ideClie = IdUtil.requireId(id, 'El ID del cliente no es válido.');
 
     const cliente = await this.dataSource.transaction((manager) =>
       this.clientesRepository.buscarPorId(ideClie, manager),
@@ -75,11 +71,10 @@ export class ClientesService {
   }
 
   async actualizar(body: UpdateClienteDTO) {
-    const ideClie = Number(body.ideClie);
-
-    if (!ideClie || Number.isNaN(ideClie)) {
-      throw new BadRequestException('El ID del cliente no es válido.');
-    }
+    const ideClie = IdUtil.requireId(
+      body.ideClie,
+      'El ID del cliente no es válido.',
+    );
 
     try {
       const cliente = await this.dataSource.transaction(async (manager) => {
@@ -109,11 +104,7 @@ export class ClientesService {
   }
 
   async eliminar(id: number) {
-    const ideClie = Number(id);
-
-    if (!ideClie || Number.isNaN(ideClie)) {
-      throw new BadRequestException('El ID del cliente no es válido.');
-    }
+    const ideClie = IdUtil.requireId(id, 'El ID del cliente no es válido.');
 
     try {
       const affected = await this.dataSource.transaction((manager) =>

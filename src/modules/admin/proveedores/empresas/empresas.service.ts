@@ -1,10 +1,6 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import { ApiResponseFactory, ComboMapper } from '@common/index';
+import { ApiResponseFactory, ComboMapper, IdUtil } from '@common/index';
 import { DataSource } from 'typeorm';
 import { CreateEmpresaDTO } from './dto/create_empresa.dto';
 import { CreateEmpresaPrecioDTO } from './dto/create_precio.dto';
@@ -34,11 +30,7 @@ export class EmpresasService {
   }
 
   async buscar(id: number) {
-    const ideEmpr = Number(id);
-
-    if (!ideEmpr || Number.isNaN(ideEmpr)) {
-      throw new BadRequestException('El ID de la empresa no es válido.');
-    }
+    const ideEmpr = IdUtil.requireId(id, 'El ID de la empresa no es válido.');
 
     const empresa = await this.dataSource.transaction((manager) =>
       this.empresasRepository.buscarPorId(ideEmpr, manager),
@@ -81,11 +73,10 @@ export class EmpresasService {
   }
 
   async actualizar(body: UpdateEmpresaDTO) {
-    const ideEmpr = Number(body.ideEmp);
-
-    if (!ideEmpr || Number.isNaN(ideEmpr)) {
-      throw new BadRequestException('El ID de la empresa no es válido.');
-    }
+    const ideEmpr = IdUtil.requireId(
+      body.ideEmp,
+      'El ID de la empresa no es válido.',
+    );
 
     try {
       const empresa = await this.dataSource.transaction(async (manager) => {
@@ -115,11 +106,7 @@ export class EmpresasService {
   }
 
   async eliminar(id: number) {
-    const ideEmpr = Number(id);
-
-    if (!ideEmpr || Number.isNaN(ideEmpr)) {
-      throw new BadRequestException('El ID de la empresa no es válido.');
-    }
+    const ideEmpr = IdUtil.requireId(id, 'El ID de la empresa no es válido.');
 
     try {
       const affected = await this.dataSource.transaction((manager) =>
@@ -179,11 +166,7 @@ export class EmpresasService {
   }
 
   async listarPreciosProductosEmpresa(id: number) {
-    const ideEmpr = Number(id);
-
-    if (!ideEmpr || Number.isNaN(ideEmpr)) {
-      throw new BadRequestException('El ID de la empresa no es válido.');
-    }
+    const ideEmpr = IdUtil.requireId(id, 'El ID de la empresa no es válido.');
 
     const precios = await this.dataSource.transaction((manager) =>
       this.empresasRepository.listarPreciosPorEmpresa(ideEmpr, manager),
@@ -215,13 +198,10 @@ export class EmpresasService {
   }
 
   async actualizarPrecio(body: UpdateEmpresaPrecioDTO) {
-    const ideEmprProd = Number(body.ideEmprProd);
-
-    if (!ideEmprProd || Number.isNaN(ideEmprProd)) {
-      throw new BadRequestException(
-        'El ID del precio de empresa no es válido.',
-      );
-    }
+    const ideEmprProd = IdUtil.requireId(
+      body.ideEmprProd,
+      'El ID del precio de empresa no es válido.',
+    );
 
     try {
       const precio = await this.dataSource.transaction(async (manager) => {

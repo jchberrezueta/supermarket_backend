@@ -1,3 +1,5 @@
+import { BadRequestException } from '@nestjs/common';
+
 export class IdUtil {
   static parseId(
     value: unknown,
@@ -30,6 +32,20 @@ export class IdUtil {
     }
 
     return numericValue;
+  }
+
+  static requireId(
+    value: unknown,
+    message = 'El ID no es válido.',
+    options: { allowZero?: boolean } = { allowZero: true },
+  ): number {
+    const id = this.parseId(value, options);
+
+    if (id === null) {
+      throw new BadRequestException(message);
+    }
+
+    return id;
   }
 
   static isValidId(

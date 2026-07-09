@@ -4,7 +4,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import { ApiResponseFactory, ComboMapper, MoneyUtil } from '@common/index';
+import {
+  ApiResponseFactory,
+  ComboMapper,
+  IdUtil,
+  MoneyUtil,
+} from '@common/index';
 import { DataSource } from 'typeorm';
 import { CreateEntregaDTO } from './dto/create_entrega.dto';
 import { CreateEntregaDetalleDTO } from './dto/create_entrega_detalle.dto';
@@ -39,11 +44,7 @@ export class EntregasService {
   }
 
   async buscar(id: number) {
-    const ideEntr = Number(id);
-
-    if (!ideEntr || Number.isNaN(ideEntr)) {
-      throw new BadRequestException('El ID de la entrega no es válido.');
-    }
+    const ideEntr = IdUtil.requireId(id, 'El ID de la entrega no es válido.');
 
     const entrega = await this.dataSource.transaction((manager) =>
       this.entregasRepository.buscarPorId(ideEntr, manager),
@@ -109,11 +110,10 @@ export class EntregasService {
     const detalles = body.detalleEntrega ?? [];
     this.validarDetalleEntrega(detalles, false);
 
-    const ideEntr = Number(body.cabeceraEntrega.ideEntr);
-
-    if (!ideEntr || Number.isNaN(ideEntr)) {
-      throw new BadRequestException('El ID de la entrega no es válido.');
-    }
+    const ideEntr = IdUtil.requireId(
+      body.cabeceraEntrega.ideEntr,
+      'El ID de la entrega no es válido.',
+    );
 
     try {
       const entrega = await this.dataSource.transaction(async (manager) => {
@@ -160,11 +160,7 @@ export class EntregasService {
   }
 
   async eliminar(id: number) {
-    const ideEntr = Number(id);
-
-    if (!ideEntr || Number.isNaN(ideEntr)) {
-      throw new BadRequestException('El ID de la entrega no es válido.');
-    }
+    const ideEntr = IdUtil.requireId(id, 'El ID de la entrega no es válido.');
 
     try {
       const affected = await this.dataSource.transaction((manager) =>
@@ -202,11 +198,10 @@ export class EntregasService {
   }
 
   async listarDetallesEntrega(idEntrega: number) {
-    const ideEntr = Number(idEntrega);
-
-    if (!ideEntr || Number.isNaN(ideEntr)) {
-      throw new BadRequestException('El ID de la entrega no es válido.');
-    }
+    const ideEntr = IdUtil.requireId(
+      idEntrega,
+      'El ID de la entrega no es válido.',
+    );
 
     const detalles = await this.dataSource.transaction((manager) =>
       this.entregasRepository.listarDetallesPorEntrega(ideEntr, manager),
@@ -240,13 +235,20 @@ export class EntregasService {
     }
 
     for (const detalle of detalles) {
-      if (!detalle.ideProd || detalle.ideProd <= 0) {
+      const ideProd = IdUtil.parseId(detalle.ideProd);
+
+      if (ideProd === null) {
         throw new BadRequestException(
           'Todos los detalles deben tener un producto válido.',
         );
       }
 
-      if (!detalle.cantidadProd || detalle.cantidadProd <= 0) {
+      if (
+        detalle.cantidadProd === null ||
+        detalle.cantidadProd === undefined ||
+        Number.isNaN(Number(detalle.cantidadProd)) ||
+        Number(detalle.cantidadProd) <= 0
+      ) {
         throw new BadRequestException(
           'Todos los detalles deben tener una cantidad válida.',
         );

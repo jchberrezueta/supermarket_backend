@@ -1,165 +1,323 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { InjectDataSource } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
-import { DatabaseService } from '@database';
-import { RegisterClienteDto } from './dto';
+import { ClienteEntity, CuentaClienteEntity } from '@entities';
+import { DataSource, EntityManager } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { LoginClienteDto, RegisterClienteDto } from './dto';
 
 @Injectable()
-export class ClienteAuthService {
+export class MobileAuthService {
+  constructor(
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
+    private readonly jwtService: JwtService,
+  ) {}
 
-    constructor(
-        private readonly db: DatabaseService,
-        private readonly jwtService: JwtService
-    ) {}
+  /**
+   * Registro de cliente móvil.
+   *
+   * Contrato original:
+   * - No recibe usuarioClie.
+   * - Usa emailClie como usuario interno de cuenta_cliente.
+   */
+  async register(dto: RegisterClienteDto) {
+    const body = dto as any;
 
-    /**
-     * Valida credenciales del cliente contra cuenta_cliente
-     */
-    async validateCliente(usuario: string, clave: string) {
-        const query = `
-            SELECT 
-                cc.ide_cuen_clie,
-                cc.ide_clie,
-                cc.usuario_clie,
-                cc.email_clie,
-                cc.password_clie,
-                cc.estado_clie,
-                c.primer_nombre_clie,
-                c.segundo_nombre_clie,
-                c.apellido_paterno_clie,
-                c.apellido_materno_clie,
-                c.cedula_clie,
-                c.telefono_clie,
-                c.email_clie as email_cliente,
-                c.es_socio,
-                c.es_tercera_edad
-            FROM cuenta_cliente cc
-            INNER JOIN cliente c ON c.ide_clie = cc.ide_clie
-            WHERE cc.usuario_clie = '${usuario}' OR cc.email_clie = '${usuario}'
-        `;
-        const result = await this.db.executeQuery(query);
-        
-        if (!result || result.length === 0) {
-            return null;
-        }
+    this.validarRegistro(body);
 
-        const user = result[0];
-        
-        // Verificar contraseña
-        const isPasswordValid = await bcrypt.compare(clave, user.password_clie);
-        if (!isPasswordValid) {
-            return null;
-        }
+    const passwordPlano = String(body.password).trim();
 
-        // Verificar si la cuenta está activa
-        if (!user.estado_clie) {
-            return null;
-        }
+    const resultado = await this.dataSource.transaction(async (manager) => {
+      await this.validarDuplicadosRegistro(body, manager);
 
-        // Retornar datos del usuario sin la contraseña
-        const { password_clie, ...userData } = user;
-        return userData;
+      const clienteRepository = manager.getRepository(ClienteEntity);
+      const cuentaRepository = manager.getRepository(CuentaClienteEntity);
+
+      const fechaNacimiento = new Date(body.fechaNacimientoClie);
+
+      const cliente = clienteRepository.create({
+        cedulaClie: body.cedulaClie,
+        fechaNacimientoClie: fechaNacimiento,
+        edadClie: Number(body.edadClie),
+        telefonoClie: body.telefonoClie,
+        primerNombreClie: body.primerNombreClie,
+        segundoNombreClie: body.segundoNombreClie ?? null,
+        apellidoPaternoClie: body.apellidoPaternoClie,
+        apellidoMaternoClie: body.apellidoMaternoClie ?? null,
+        emailClie: body.emailClie,
+        esSocio: body.esSocio ?? 'no',
+        esTerceraEdad: body.esTerceraEdad ?? 'no',
+        usuaIngre: 'mobile',
+      });
+
+      const clienteGuardado = await clienteRepository.save(cliente);
+
+      const cuenta = cuentaRepository.create({
+        ideClie: clienteGuardado.ideClie,
+        usuarioClie: body.emailClie,
+        emailClie: body.emailClie,
+        passwordClie: await bcrypt.hash(passwordPlano, 10),
+        estadoClie: true,
+      });
+
+      const cuentaGuardada = await cuentaRepository.save(cuenta);
+
+      return {
+        cliente: clienteGuardado,
+        cuenta: cuentaGuardada,
+      };
+    });
+
+    return {
+      success: true,
+      message: 'Cliente registrado correctamente.',
+      data: {
+        ideClie: resultado.cliente.ideClie,
+        ideCuenClie: resultado.cuenta.ideCuenClie,
+        cedulaClie: resultado.cliente.cedulaClie,
+        primerNombreClie: resultado.cliente.primerNombreClie,
+        segundoNombreClie: resultado.cliente.segundoNombreClie,
+        apellidoPaternoClie: resultado.cliente.apellidoPaternoClie,
+        apellidoMaternoClie: resultado.cliente.apellidoMaternoClie,
+        emailClie: resultado.cliente.emailClie,
+        usuarioClie: resultado.cuenta.usuarioClie,
+      },
+    };
+  }
+
+  /**
+   * Login de cliente móvil.
+   *
+   * Contrato original:
+   * - usuario
+   * - clave
+   * - numIntentos
+   *
+   * El campo usuario puede ser:
+   * - usuario_clie
+   * - email_clie
+   */
+  async login(dto: LoginClienteDto) {
+    const body = dto as any;
+
+    const usuario = String(body.usuario ?? '').trim();
+    const clave = String(body.clave ?? '');
+
+    if (!usuario || !clave) {
+      throw new BadRequestException(
+        'Debe ingresar usuario/correo y contraseña.',
+      );
     }
 
-    /**
-     * Genera JWT y retorna respuesta de login
-     */
-    async login(user: any) {
-        const payload = {
-            sub: user.ide_cuen_clie,
-            ide_clie: user.ide_clie,
-            username: user.usuario_clie,
-            email: user.email_clie,
-            tipo: 'cliente'
-        };
+    const cuenta = await this.dataSource.transaction((manager) =>
+      this.buscarCuentaParaLogin(usuario, manager),
+    );
 
-        return {
-            access_token: this.jwtService.sign(payload),
-            user: {
-                id: user.ide_cuen_clie,
-                ide_clie: user.ide_clie,
-                username: user.usuario_clie,
-                email: user.email_clie,
-                state: user.estado_clie ? 'activo' : 'inactivo',
-                perfil: 'Cliente',
-                tipo: 'cliente',
-                cliente: {
-                    primerNombre: user.primer_nombre_clie,
-                    segundoNombre: user.segundo_nombre_clie,
-                    apellidoPaterno: user.apellido_paterno_clie,
-                    apellidoMaterno: user.apellido_materno_clie,
-                    cedula: user.cedula_clie,
-                    telefono: user.telefono_clie,
-                    email: user.email_cliente,
-                    esSocio: user.es_socio,
-                    esTerceraEdad: user.es_tercera_edad
-                }
-            }
-        };
+    if (!cuenta) {
+      throw new UnauthorizedException('Credenciales inválidas.');
     }
 
-    /**
-     * Registra nuevo cliente y su cuenta
-     */
-    async register(data: RegisterClienteDto) {
-        // 1. Verificar si ya existe el email o cédula
-        const existeCliente = await this.db.executeQuery(
-            `SELECT ide_clie FROM cliente WHERE cedula_clie = '${data.cedulaClie}' OR email_clie = '${data.emailClie}'`
-        );
-
-        if (existeCliente && existeCliente.length > 0) {
-            throw new Error('Ya existe un cliente con esa cédula o email');
-        }
-
-        // 2. Verificar si ya existe la cuenta
-        const existeCuenta = await this.db.executeQuery(
-            `SELECT ide_cuen_clie FROM cuenta_cliente WHERE usuario_clie = '${data.emailClie}' OR email_clie = '${data.emailClie}'`
-        );
-
-        if (existeCuenta && existeCuenta.length > 0) {
-            throw new Error('Ya existe una cuenta con ese email');
-        }
-
-        // 3. Insertar cliente usando la función almacenada
-        const clienteResult = await this.db.executeFunctionWrite(
-            'fn_insertar_cliente',
-            data.toArrayCliente()
-        );
-
-        if (!clienteResult || clienteResult.p_result !== 1) {
-            throw new Error('Error al registrar el cliente');
-        }
-
-        const ideCliente = clienteResult.p_id;
-
-        // 4. Encriptar contraseña
-        const hashedPassword = await bcrypt.hash(data.password, 10);
-
-        // 5. Insertar cuenta_cliente usando la función almacenada
-        const cuentaResult = await this.db.executeFunctionWrite(
-            'fn_insertar_cuenta_cliente',
-            [ideCliente, data.emailClie, data.emailClie, hashedPassword, true]
-        );
-
-        if (!cuentaResult || cuentaResult.p_result !== 1) {
-            throw new Error('Error al crear la cuenta del cliente');
-        }
-
-        // 6. Obtener datos completos del cliente recién creado
-        const nuevoCliente = await this.validateCliente(data.emailClie, data.password);
-        
-        if (!nuevoCliente) {
-            throw new Error('Error al obtener datos del cliente registrado');
-        }
-
-        // 7. Generar token y retornar
-        return this.login(nuevoCliente);
+    if (!cuenta.estadoClie) {
+      throw new UnauthorizedException('La cuenta del cliente no está activa.');
     }
 
-    /**
-     * Encripta una contraseña usando bcrypt
-     */
-    async encriptarPassword(password: string): Promise<string> {
-        return await bcrypt.hash(password, 10);
+    const passwordValida = await bcrypt.compare(clave, cuenta.passwordClie);
+
+    if (!passwordValida) {
+      throw new UnauthorizedException('Credenciales inválidas.');
     }
+
+    const cliente = cuenta.cliente;
+
+    if (!cliente) {
+      throw new UnauthorizedException(
+        'La cuenta no tiene un cliente asociado.',
+      );
+    }
+
+    const payload = {
+      sub: cuenta.ideCuenClie,
+      ide_cuen_clie: cuenta.ideCuenClie,
+      ide_clie: cliente.ideClie,
+      username: cuenta.usuarioClie,
+      email: cuenta.emailClie,
+      role: 'cliente',
+      tipo_usuario: 'cliente',
+    };
+
+    const token = this.jwtService.sign(payload);
+
+    return {
+      success: true,
+      message: 'Inicio de sesión correcto.',
+
+      /**
+       * Se devuelven ambos nombres para compatibilidad:
+       * - access_token: estándar actual
+       * - token: compatibilidad con clientes anteriores
+       */
+      access_token: token,
+      token,
+      token_type: 'Bearer',
+
+      user: {
+        ideCuenClie: cuenta.ideCuenClie,
+        ideClie: cliente.ideClie,
+        usuarioClie: cuenta.usuarioClie,
+        emailClie: cuenta.emailClie,
+        primerNombreClie: cliente.primerNombreClie,
+        segundoNombreClie: cliente.segundoNombreClie,
+        apellidoPaternoClie: cliente.apellidoPaternoClie,
+        apellidoMaternoClie: cliente.apellidoMaternoClie,
+        nombreCompleto: this.obtenerNombreCompleto(cliente),
+        role: 'cliente',
+      },
+
+      /**
+       * También se incluye snake_case por compatibilidad con payloads antiguos.
+       */
+      usuario: {
+        ide_cuen_clie: cuenta.ideCuenClie,
+        ide_clie: cliente.ideClie,
+        usuario_clie: cuenta.usuarioClie,
+        email_clie: cuenta.emailClie,
+        primer_nombre_clie: cliente.primerNombreClie,
+        segundo_nombre_clie: cliente.segundoNombreClie,
+        apellido_paterno_clie: cliente.apellidoPaternoClie,
+        apellido_materno_clie: cliente.apellidoMaternoClie,
+        nombre_completo: this.obtenerNombreCompleto(cliente),
+        role: 'cliente',
+      },
+    };
+  }
+
+  private async validarDuplicadosRegistro(
+    body: any,
+    manager: EntityManager,
+  ): Promise<void> {
+    const clienteRepository = manager.getRepository(ClienteEntity);
+    const cuentaRepository = manager.getRepository(CuentaClienteEntity);
+
+    const clienteCedula = await clienteRepository.findOne({
+      where: {
+        cedulaClie: body.cedulaClie,
+      },
+    });
+
+    if (clienteCedula) {
+      throw new BadRequestException(
+        'Ya existe un cliente registrado con esa cédula.',
+      );
+    }
+
+    const clienteEmail = await clienteRepository.findOne({
+      where: {
+        emailClie: body.emailClie,
+      },
+    });
+
+    if (clienteEmail) {
+      throw new BadRequestException(
+        'Ya existe un cliente registrado con ese correo.',
+      );
+    }
+
+    const cuentaUsuario = await cuentaRepository.findOne({
+      where: {
+        usuarioClie: body.emailClie,
+      },
+    });
+
+    if (cuentaUsuario) {
+      throw new BadRequestException(
+        'Ya existe una cuenta registrada con ese usuario.',
+      );
+    }
+
+    const cuentaEmail = await cuentaRepository.findOne({
+      where: {
+        emailClie: body.emailClie,
+      },
+    });
+
+    if (cuentaEmail) {
+      throw new BadRequestException(
+        'Ya existe una cuenta registrada con ese correo.',
+      );
+    }
+  }
+
+  private async buscarCuentaParaLogin(
+    usuario: string,
+    manager: EntityManager,
+  ): Promise<CuentaClienteEntity | null> {
+    return manager
+      .getRepository(CuentaClienteEntity)
+      .createQueryBuilder('cuenta')
+      .leftJoinAndSelect('cuenta.cliente', 'cliente')
+      .where('LOWER(cuenta.usuarioClie) = LOWER(:usuario)', { usuario })
+      .orWhere('LOWER(cuenta.emailClie) = LOWER(:usuario)', { usuario })
+      .getOne();
+  }
+
+  private validarRegistro(body: any): void {
+    const camposRequeridos = [
+      'cedulaClie',
+      'fechaNacimientoClie',
+      'edadClie',
+      'telefonoClie',
+      'primerNombreClie',
+      'apellidoPaternoClie',
+      'emailClie',
+      'password',
+      'esSocio',
+      'esTerceraEdad',
+    ];
+
+    for (const campo of camposRequeridos) {
+      if (
+        body[campo] === null ||
+        body[campo] === undefined ||
+        String(body[campo]).trim() === ''
+      ) {
+        throw new BadRequestException(`El campo ${campo} es obligatorio.`);
+      }
+    }
+
+    if (!Number.isInteger(Number(body.edadClie)) || Number(body.edadClie) < 1) {
+      throw new BadRequestException('La edad del cliente no es válida.');
+    }
+
+    const fechaNacimiento = new Date(body.fechaNacimientoClie);
+
+    if (Number.isNaN(fechaNacimiento.getTime())) {
+      throw new BadRequestException(
+        'La fecha de nacimiento del cliente no es válida.',
+      );
+    }
+
+    if (String(body.password).trim().length < 6) {
+      throw new BadRequestException(
+        'La contraseña debe tener al menos 6 caracteres.',
+      );
+    }
+  }
+
+  private obtenerNombreCompleto(cliente: ClienteEntity): string {
+    return [
+      cliente.primerNombreClie,
+      cliente.segundoNombreClie,
+      cliente.apellidoPaternoClie,
+      cliente.apellidoMaternoClie,
+    ]
+      .filter((value) => !!value)
+      .join(' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
 }

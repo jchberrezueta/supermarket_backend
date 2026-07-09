@@ -12,6 +12,16 @@ import { CreateCuentaDto } from './dto/create_cuenta.dto';
 import { FiltroCuentaDto } from './dto/filter_cuenta.dto';
 import { UpdateCuentaDto } from './dto/update_cuenta.dto';
 
+export interface SidebarOptionRaw {
+  id: number;
+  titulo: string;
+  ruta: string;
+  icono: string | null;
+  activo: 'si' | 'no';
+  nivel: number;
+  padre: number | null;
+}
+
 @Injectable()
 export class CuentasRepository {
   constructor(
@@ -71,21 +81,13 @@ export class CuentasRepository {
       .leftJoinAndSelect('cuenta.perfil', 'perfil')
       .orderBy('cuenta.usuarioCuen', 'ASC');
 
-    if (
-      filtros.ideEmpl !== undefined &&
-      filtros.ideEmpl !== null &&
-      filtros.ideEmpl > 0
-    ) {
+    if (filtros.ideEmpl !== undefined && filtros.ideEmpl !== null) {
       qb.andWhere('cuenta.ideEmpl = :ideEmpl', {
         ideEmpl: filtros.ideEmpl,
       });
     }
 
-    if (
-      filtros.idePerf !== undefined &&
-      filtros.idePerf !== null &&
-      filtros.idePerf > 0
-    ) {
+    if (filtros.idePerf !== undefined && filtros.idePerf !== null) {
       qb.andWhere('cuenta.idePerf = :idePerf', {
         idePerf: filtros.idePerf,
       });
@@ -189,6 +191,58 @@ export class CuentasRepository {
       ])
       .where('cuenta.ideCuen = :ideCuen', { ideCuen })
       .getRawMany();
+  }
+
+  async listarOpcionesSidebar(
+    ideCuen: number,
+    manager?: EntityManager,
+  ): Promise<SidebarOptionRaw[]> {
+    const rows = await this.getCuentaRepository(manager)
+      .createQueryBuilder('cuenta')
+      .distinct(true)
+      .innerJoin(PerfilEntity, 'perfil', 'perfil.idePerf = cuenta.idePerf')
+      .innerJoin(
+        PerfilOpcionesEntity,
+        'perfilOpcion',
+        'perfilOpcion.idePerf = perfil.idePerf',
+      )
+      .innerJoin(
+        OpcionesEntity,
+        'opcion',
+        'opcion.ideOpci = perfilOpcion.ideOpci',
+      )
+      .select([
+        'opcion.ideOpci AS id',
+        'opcion.nombreOpci AS titulo',
+        'opcion.rutaOpci AS ruta',
+        'opcion.iconoOpci AS icono',
+        'opcion.activoOpci AS activo',
+        'opcion.nivelOpci AS nivel',
+        'opcion.padreOpci AS padre',
+      ])
+      .where('cuenta.ideCuen = :ideCuen', { ideCuen })
+      .andWhere('cuenta.estadoCuen = :estadoCuen', {
+        estadoCuen: 'activo',
+      })
+      .andWhere('opcion.activoOpci = :activoOpci', {
+        activoOpci: 'si',
+      })
+      .orderBy('opcion.nivelOpci', 'ASC')
+      .addOrderBy('opcion.ideOpci', 'ASC')
+      .getRawMany<SidebarOptionRaw>();
+
+    return rows.map((row) => ({
+      id: Number(row.id),
+      titulo: row.titulo,
+      ruta: row.ruta,
+      icono: row.icono ?? null,
+      activo: row.activo,
+      nivel: Number(row.nivel),
+      padre:
+        row.padre === null || row.padre === undefined
+          ? null
+          : Number(row.padre),
+    }));
   }
 
   async listarEmpleados(manager?: EntityManager): Promise<EmpleadoEntity[]> {

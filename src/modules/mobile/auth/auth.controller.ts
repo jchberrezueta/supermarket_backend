@@ -1,37 +1,34 @@
-import { Controller, Post, Body, UnauthorizedException, BadRequestException } from '@nestjs/common';
-import { ClienteAuthService } from './auth.service';
+import { Body, Controller, Post } from '@nestjs/common';
 import { LoginClienteDto, RegisterClienteDto } from './dto';
+import { MobileAuthService } from './auth.service';
 
+/**
+ * Auth para cliente móvil.
+ *
+ * Se mantiene la ruta original del proyecto:
+ * /api/auth/cliente
+ */
 @Controller('auth/cliente')
-export class ClienteAuthController {
+export class MobileAuthController {
+  constructor(private readonly mobileAuthService: MobileAuthService) {}
 
-    constructor(private readonly clienteAuthService: ClienteAuthService) {}
+  /**
+   * Registrar cliente móvil.
+   *
+   * POST /api/auth/cliente/register
+   */
+  @Post('register')
+  async register(@Body() body: RegisterClienteDto) {
+    return this.mobileAuthService.register(body);
+  }
 
-    /**
-     * Login para clientes de la app móvil
-     * POST /auth/cliente/login
-     */
-    @Post('login')
-    async login(@Body() body: LoginClienteDto) {
-        const user = await this.clienteAuthService.validateCliente(body.usuario, body.clave);
-        
-        if (!user) {
-            throw new UnauthorizedException('Credenciales inválidas o cuenta inactiva');
-        }
-
-        return this.clienteAuthService.login(user);
-    }
-
-    /**
-     * Registro de nuevos clientes desde la app móvil
-     * POST /auth/cliente/register
-     */
-    @Post('register')
-    async register(@Body() body: RegisterClienteDto) {
-        try {
-            return await this.clienteAuthService.register(body);
-        } catch (error) {
-            throw new BadRequestException(error.message || 'Error al registrar el cliente');
-        }
-    }
+  /**
+   * Iniciar sesión cliente móvil.
+   *
+   * POST /api/auth/cliente/login
+   */
+  @Post('login')
+  async login(@Body() body: LoginClienteDto) {
+    return this.mobileAuthService.login(body);
+  }
 }

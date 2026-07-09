@@ -1,202 +1,446 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { DatabaseService } from '@database';
-import { CreateVentaClienteDto } from './dto';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { IdUtil, MoneyUtil } from '@common/index';
+import {
+  ClienteEntity,
+  DetalleVentaEntity,
+  ProductoEntity,
+  VentaEntity,
+} from '@entities';
+import { DataSource, EntityManager } from 'typeorm';
+import { CreateVentaClienteDto, CreateVentaDetalleDto } from './dto';
+
+export interface DetalleVentaCalculado {
+  ideProd: number;
+  nombreProd: string;
+  imagenProd: string | null;
+  cantidadProd: number;
+  precioUnitarioProd: number;
+  subtotalProd: number;
+  dctoPromoProd: number;
+  ivaProd: number;
+  totalProd: number;
+}
+
+export interface TotalesVentaCalculados {
+  cantidadVent: number;
+  subTotalVent: number;
+  dctoPromoVent: number;
+  ivaVent: number;
+  totalVent: number;
+}
 
 @Injectable()
 export class MobileVentasService {
+  constructor(
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
+  ) {}
 
-    private fnName: string = 'venta';
-    private fnNameDetalle: string = 'detalle_venta';
+  /**
+   * Crear una nueva venta desde la app móvil.
+   *
+   * Flujo:
+   * - Valida cliente autenticado.
+   * - Consolida productos repetidos.
+   * - Bloquea productos con FOR UPDATE dentro de transacción.
+   * - Valida stock.
+   * - Crea cabecera.
+   * - Crea detalles.
+   * - Descuenta inventario.
+   */
+  async crearVenta(body: CreateVentaClienteDto, idClienteToken: number) {
+    const ideClie = IdUtil.requireId(
+      idClienteToken,
+      'El ID del cliente no es válido.',
+    );
 
-    constructor(private readonly db: DatabaseService) {}
+    this.validarDetalleVenta(body.detalleVenta);
 
-    /**
-     * Crear una nueva venta desde la app móvil
-     */
-    async crearVenta(body: CreateVentaClienteDto) {
-        // Verificar stock disponible para todos los productos antes de procesar
-        for (const detalle of body.detalleVenta) {
-            const stockResult = await this.db.executeQuery(
-                `SELECT stock_prod, nombre_prod FROM producto WHERE ide_prod = ${detalle.ideProd}`
-            );
-            
-            if (!stockResult || stockResult.length === 0) {
-                throw new BadRequestException(`Producto con ID ${detalle.ideProd} no encontrado`);
-            }
-            
-            const stockActual = stockResult[0].stock_prod;
-            const nombreProducto = stockResult[0].nombre_prod;
-            
-            if (stockActual < detalle.cantidadProd) {
-                throw new BadRequestException(
-                    `Stock insuficiente para "${nombreProducto}". Disponible: ${stockActual}, Solicitado: ${detalle.cantidadProd}`
-                );
-            }
+    const venta = await this.dataSource.transaction(async (manager) => {
+      const cliente = await manager.getRepository(ClienteEntity).findOne({
+        where: {
+          ideClie,
+        },
+      });
+
+      if (!cliente) {
+        throw new BadRequestException('El cliente autenticado no existe.');
+      }
+
+      const itemsConsolidados = this.consolidarItems(body.detalleVenta);
+      const detallesCalculados: DetalleVentaCalculado[] = [];
+
+      for (const item of itemsConsolidados) {
+        const producto = await this.buscarProductoActivoForUpdate(
+          item.ideProd,
+          manager,
+        );
+
+        if (!producto) {
+          throw new BadRequestException(
+            `El producto con ID ${item.ideProd} no existe o no está activo.`,
+          );
         }
 
-        const cabecera = body.cabeceraVenta;
-        
-        const cabeceraParams = [
-            null,                               // p_ide_empl
-            cabecera.ideClie,                   // p_ide_clie
-            cabecera.numFacturaVent,            // p_num_factura_vent
-            cabecera.fechaVent,                 // p_fecha_vent
-            cabecera.cantidadVent,              // p_cantidad_vent
-            cabecera.subTotalVent,              // p_sub_total_vent
-            cabecera.dctoSocioVent || 0,        // p_dcto_socio_vent
-            cabecera.dctoEdadVent || 0,         // p_dcto_edad_vent
-            cabecera.totalVent,                 // p_total_vent
-            'completado',                       // p_estado_vent
-            cabecera.usuaIngre || 'mobile',     // p_usua_ingre
-            cabecera.tipoPagoVent || 'efectivo', // p_tipo_pago_vent
-            cabecera.ideMetoPago || null        // p_ide_meto_pago
-        ];
-
-        let result;
-        try {
-            result = await this.db.executeFunctionWrite(
-                `fn_insertar_${this.fnName}`,
-                cabeceraParams
-            );
-        } catch (dbError) {
-            throw new BadRequestException(`Error de BD: ${dbError.message}`);
+        if (producto.stockProd < item.cantidadProd) {
+          throw new BadRequestException(
+            `Stock insuficiente para "${producto.nombreProd}". Disponible: ${producto.stockProd}, solicitado: ${item.cantidadProd}.`,
+          );
         }
 
-        if (!result || result.p_result !== 1) {
-            throw new BadRequestException(result?.p_response || 'Error al crear la venta');
+        detallesCalculados.push(
+          this.calcularDetalleDesdeProducto(producto, item.cantidadProd),
+        );
+      }
+
+      const totales = this.calcularTotales(detallesCalculados);
+      const cabecera = body.cabeceraVenta;
+
+      const ventaRepository = manager.getRepository(VentaEntity);
+
+      const ventaCreada = ventaRepository.create({
+        ideEmpl: null,
+        ideClie,
+        numFacturaVent:
+          cabecera.numFacturaVent || this.generarNumeroFacturaMobile(),
+        fechaVent: cabecera.fechaVent
+          ? new Date(cabecera.fechaVent)
+          : new Date(),
+        cantidadVent: totales.cantidadVent,
+        subTotalVent: MoneyUtil.toMoneyString(totales.subTotalVent),
+        dctoSocioVent: MoneyUtil.toMoneyString(cabecera.dctoSocioVent ?? 0),
+        dctoEdadVent: MoneyUtil.toMoneyString(cabecera.dctoEdadVent ?? 0),
+        totalVent: MoneyUtil.toMoneyString(
+          MoneyUtil.subtract(
+            totales.totalVent,
+            MoneyUtil.add(
+              cabecera.dctoSocioVent ?? 0,
+              cabecera.dctoEdadVent ?? 0,
+            ),
+          ),
+        ),
+        estadoVent: 'completado',
+        tipoPagoVent: cabecera.tipoPagoVent ?? 'efectivo',
+        ideMetoPago:
+          cabecera.ideMetoPago === null || cabecera.ideMetoPago === undefined
+            ? null
+            : IdUtil.requireId(
+                cabecera.ideMetoPago,
+                'El ID del método de pago no es válido.',
+              ),
+        usuaIngre: cabecera.usuaIngre || 'mobile',
+      });
+
+      const ventaGuardada = await ventaRepository.save(ventaCreada);
+
+      for (const detalle of detallesCalculados) {
+        const detalleVenta = manager.getRepository(DetalleVentaEntity).create({
+          ideVent: ventaGuardada.ideVent,
+          ideProd: detalle.ideProd,
+          cantidadProd: detalle.cantidadProd,
+          precioUnitarioProd: MoneyUtil.toMoneyString(
+            detalle.precioUnitarioProd,
+          ),
+          subtotalProd: MoneyUtil.toMoneyString(detalle.subtotalProd),
+          dctoPromoProd: MoneyUtil.toMoneyString(detalle.dctoPromoProd),
+          ivaProd: MoneyUtil.toMoneyString(detalle.ivaProd),
+          totalProd: MoneyUtil.toMoneyString(detalle.totalProd),
+        });
+
+        await manager.getRepository(DetalleVentaEntity).save(detalleVenta);
+
+        await manager
+          .getRepository(ProductoEntity)
+          .createQueryBuilder()
+          .update(ProductoEntity)
+          .set({
+            stockProd: () => `"stock_prod" - ${detalle.cantidadProd}`,
+            usuaActua: 'mobile',
+            fechaActua: new Date(),
+          })
+          .where('ide_prod = :ideProd', { ideProd: detalle.ideProd })
+          .execute();
+
+        const productoActualizado = await manager
+          .getRepository(ProductoEntity)
+          .findOne({
+            where: {
+              ideProd: detalle.ideProd,
+            },
+          });
+
+        if (productoActualizado) {
+          productoActualizado.disponibleProd =
+            productoActualizado.stockProd > 0 ? 'si' : 'no';
+          productoActualizado.usuaActua = 'mobile';
+          productoActualizado.fechaActua = new Date();
+
+          await manager.getRepository(ProductoEntity).save(productoActualizado);
         }
+      }
 
-        const ideVenta = result.p_id;
+      return {
+        venta: ventaGuardada,
+        detalles: detallesCalculados,
+        totales,
+      };
+    });
 
-        for (const detalle of body.detalleVenta) {
-            const detalleParams = [
-                ideVenta,                           // p_ide_vent
-                detalle.ideProd,                    // p_ide_prod
-                detalle.cantidadProd,               // p_cantidad_prod
-                detalle.precioUnitarioProd,         // p_precio_unitario_prod
-                detalle.subtotalProd,               // p_subtotal_prod
-                detalle.ivaProd || 0,               // p_iva_prod
-                detalle.dctoPromoProd || 0,         // p_dcto_promo_prod
-                detalle.totalProd                   // p_total_prod
-            ];
-            
-            await this.db.executeFunctionWrite(`fn_insertar_${this.fnNameDetalle}`, detalleParams);
+    return {
+      success: true,
+      message: 'Venta registrada correctamente.',
+      ideVenta: venta.venta.ideVent,
+      data: {
+        ideVent: venta.venta.ideVent,
+        numFacturaVent: venta.venta.numFacturaVent,
+        cantidadVent: venta.totales.cantidadVent,
+        subTotalVent: venta.totales.subTotalVent,
+        ivaVent: venta.totales.ivaVent,
+        descuentoVent: venta.totales.dctoPromoVent,
+        totalVent: Number(venta.venta.totalVent),
+        detalles: venta.detalles,
+      },
+    };
+  }
 
-            // Actualizar stock del producto (descontar la cantidad vendida)
-            await this.db.executeQuery(
-                `UPDATE producto SET stock_prod = stock_prod - ${detalle.cantidadProd} WHERE ide_prod = ${detalle.ideProd}`
-            );
-        }
+  /**
+   * Obtener historial de compras del cliente autenticado.
+   */
+  async obtenerHistorialCliente(idCliente: number) {
+    const ideClie = IdUtil.parseId(idCliente);
 
-        return {
-            success: true,
-            message: 'Venta registrada correctamente',
-            ideVenta
-        };
+    if (ideClie === null) {
+      return [];
     }
 
-    /**
-     * Obtener historial de compras del cliente
-     */
-    async obtenerHistorialCliente(idCliente: number) {
-        const query = `
-            SELECT 
-                v.ide_vent,
-                v.ide_clie,
-                v.num_factura_vent,
-                v.fecha_vent,
-                v.cantidad_vent,
-                v.sub_total_vent,
-                v.dcto_socio_vent,
-                v.dcto_edad_vent,
-                v.total_vent,
-                v.estado_vent,
-                v.fecha_ingre
-            FROM venta v
-            WHERE v.ide_clie = ${idCliente}
-            ORDER BY v.fecha_vent DESC
-        `;
-        const result = await this.db.executeQuery(query);
-        
-        // Mapear a camelCase
-        return (result || []).map((v: any) => this.mapearVentaACamelCase(v));
+    const ventas = await this.dataSource.transaction((manager) =>
+      manager.getRepository(VentaEntity).find({
+        where: {
+          ideClie,
+        },
+        order: {
+          fechaVent: 'DESC',
+          ideVent: 'DESC',
+        },
+      }),
+    );
+
+    return ventas.map((venta) => this.mapearVentaACamelCase(venta));
+  }
+
+  /**
+   * Obtener detalle de una venta específica.
+   *
+   * Protegido por cliente: solo devuelve la venta si pertenece
+   * al cliente autenticado.
+   */
+  async obtenerDetalleVenta(idVenta: number, idCliente: number) {
+    const ideVent = IdUtil.requireId(
+      idVenta,
+      'El ID de la venta no es válido.',
+    );
+    const ideClie = IdUtil.requireId(
+      idCliente,
+      'El ID del cliente no es válido.',
+    );
+
+    const venta = await this.dataSource.transaction((manager) =>
+      manager.getRepository(VentaEntity).findOne({
+        where: {
+          ideVent,
+          ideClie,
+        },
+        relations: {
+          detalles: {
+            producto: true,
+          },
+        },
+      }),
+    );
+
+    if (!venta) {
+      throw new NotFoundException('Venta no encontrada.');
     }
 
-    /**
-     * Obtener detalle de una venta específica
-     */
-    async obtenerDetalleVenta(idVenta: number, idCliente: number) {
-        const ventaQuery = `
-            SELECT * FROM venta 
-            WHERE ide_vent = ${idVenta} AND ide_clie = ${idCliente}
-        `;
-        const venta = await this.db.executeQuery(ventaQuery);
+    return {
+      venta: this.mapearVentaACamelCase(venta),
+      detalles: (venta.detalles ?? []).map((detalle) =>
+        this.mapearDetalleVentaACamelCase(detalle),
+      ),
+    };
+  }
 
-        if (!venta || venta.length === 0) {
-            throw new NotFoundException('Venta no encontrada');
-        }
-
-        const detalleQuery = `
-            SELECT 
-                dv.ide_deta_vent,
-                dv.ide_vent,
-                dv.ide_prod,
-                dv.cantidad_prod,
-                dv.precio_unitario_prod,
-                dv.subtotal_prod,
-                dv.dcto_promo_prod,
-                dv.iva_prod,
-                dv.total_prod,
-                p.nombre_prod,
-                p.url_img_prod as imagen_prod
-            FROM detalle_venta dv
-            INNER JOIN producto p ON p.ide_prod = dv.ide_prod
-            WHERE dv.ide_vent = ${idVenta}
-        `;
-        const detalles = await this.db.executeQuery(detalleQuery);
-
-        return {
-            venta: this.mapearVentaACamelCase(venta[0]),
-            detalles: (detalles || []).map((d: any) => this.mapearDetalleVentaACamelCase(d))
-        };
+  private validarDetalleVenta(detalles: CreateVentaDetalleDto[]): void {
+    if (!Array.isArray(detalles) || detalles.length === 0) {
+      throw new BadRequestException(
+        'Debe agregar al menos un producto a la venta.',
+      );
     }
 
-    /**
-     * Mapear venta de snake_case a camelCase
-     */
-    private mapearVentaACamelCase(v: any) {
-        return {
-            ideVent: v.ide_vent,
-            ideClie: v.ide_clie,
-            ideEmpl: v.ide_empl,
-            numFacturaVent: v.num_factura_vent,
-            fechaVent: v.fecha_vent,
-            cantidadVent: Number(v.cantidad_vent) || 0,
-            subTotalVent: Number(v.sub_total_vent) || 0,
-            dctoSocioVent: Number(v.dcto_socio_vent) || 0,
-            dctoEdadVent: Number(v.dcto_edad_vent) || 0,
-            totalVent: Number(v.total_vent) || 0,
-            estadoVent: v.estado_vent,
-            fechaIngre: v.fecha_ingre
-        };
+    for (const detalle of detalles) {
+      const ideProd = IdUtil.parseId(detalle.ideProd);
+
+      if (ideProd === null) {
+        throw new BadRequestException(
+          'Todos los detalles deben tener un producto válido.',
+        );
+      }
+
+      if (
+        detalle.cantidadProd === null ||
+        detalle.cantidadProd === undefined ||
+        Number.isNaN(Number(detalle.cantidadProd)) ||
+        Number(detalle.cantidadProd) <= 0
+      ) {
+        throw new BadRequestException(
+          'Todos los detalles deben tener una cantidad válida.',
+        );
+      }
+    }
+  }
+
+  private consolidarItems(
+    detalles: CreateVentaDetalleDto[],
+  ): CreateVentaDetalleDto[] {
+    const mapa = new Map<number, CreateVentaDetalleDto>();
+
+    for (const detalle of detalles) {
+      const ideProd = IdUtil.requireId(
+        detalle.ideProd,
+        'El ID del producto no es válido.',
+      );
+
+      const existente = mapa.get(ideProd);
+
+      if (existente) {
+        existente.cantidadProd += detalle.cantidadProd;
+        continue;
+      }
+
+      mapa.set(ideProd, {
+        ...detalle,
+        ideProd,
+      });
     }
 
-    /**
-     * Mapear detalle venta de snake_case a camelCase
-     */
-    private mapearDetalleVentaACamelCase(d: any) {
-        return {
-            ideDetaVent: d.ide_deta_vent,
-            ideVent: d.ide_vent,
-            ideProd: d.ide_prod,
-            cantidadProd: Number(d.cantidad_prod) || 0,
-            precioUnitarioProd: Number(d.precio_unitario_prod) || 0,
-            subtotalProd: Number(d.subtotal_prod) || 0,
-            dctoPromoProd: Number(d.dcto_promo_prod) || 0,
-            ivaProd: Number(d.iva_prod) || 0,
-            totalProd: Number(d.total_prod) || 0,
-            nombreProd: d.nombre_prod,
-            imagenProd: d.imagen_prod
-        };
+    return Array.from(mapa.values());
+  }
+
+  private async buscarProductoActivoForUpdate(
+    ideProd: number,
+    manager: EntityManager,
+  ): Promise<ProductoEntity | null> {
+    return manager
+      .getRepository(ProductoEntity)
+      .createQueryBuilder('producto')
+      .setLock('pessimistic_write')
+      .where('producto.ideProd = :ideProd', { ideProd })
+      .andWhere('producto.estadoProd = :estadoProd', {
+        estadoProd: 'activo',
+      })
+      .getOne();
+  }
+
+  private calcularDetalleDesdeProducto(
+    producto: ProductoEntity,
+    cantidad: number,
+  ): DetalleVentaCalculado {
+    const precioUnitario = MoneyUtil.toNumber(producto.precioVentaProd);
+    const tasaIva = MoneyUtil.normalizeRate(producto.ivaProd);
+    const descuentoUnitario = MoneyUtil.toNumber(producto.dctoPromoProd);
+
+    const subtotalBruto = MoneyUtil.multiply(precioUnitario, cantidad);
+    const descuento = MoneyUtil.multiply(descuentoUnitario, cantidad);
+
+    if (descuento > subtotalBruto) {
+      throw new BadRequestException(
+        `El descuento del producto ${producto.nombreProd} no puede superar el subtotal.`,
+      );
     }
+
+    const baseImponible = MoneyUtil.subtract(subtotalBruto, descuento);
+    const iva = MoneyUtil.round(baseImponible * tasaIva);
+    const total = MoneyUtil.add(baseImponible, iva);
+
+    return {
+      ideProd: producto.ideProd,
+      nombreProd: producto.nombreProd,
+      imagenProd: producto.urlImgProd ?? null,
+      cantidadProd: cantidad,
+      precioUnitarioProd: precioUnitario,
+      subtotalProd: baseImponible,
+      dctoPromoProd: descuento,
+      ivaProd: iva,
+      totalProd: total,
+    };
+  }
+
+  private calcularTotales(
+    detalles: DetalleVentaCalculado[],
+  ): TotalesVentaCalculados {
+    return detalles.reduce<TotalesVentaCalculados>(
+      (totales, detalle) => ({
+        cantidadVent: totales.cantidadVent + detalle.cantidadProd,
+        subTotalVent: MoneyUtil.add(totales.subTotalVent, detalle.subtotalProd),
+        dctoPromoVent: MoneyUtil.add(
+          totales.dctoPromoVent,
+          detalle.dctoPromoProd,
+        ),
+        ivaVent: MoneyUtil.add(totales.ivaVent, detalle.ivaProd),
+        totalVent: MoneyUtil.add(totales.totalVent, detalle.totalProd),
+      }),
+      {
+        cantidadVent: 0,
+        subTotalVent: 0,
+        dctoPromoVent: 0,
+        ivaVent: 0,
+        totalVent: 0,
+      },
+    );
+  }
+
+  private generarNumeroFacturaMobile(): string {
+    const timestamp = Date.now().toString();
+    return `MOB-${timestamp}`;
+  }
+
+  private mapearVentaACamelCase(venta: VentaEntity) {
+    return {
+      ideVent: venta.ideVent,
+      ideClie: venta.ideClie,
+      ideEmpl: venta.ideEmpl ?? null,
+      numFacturaVent: venta.numFacturaVent,
+      fechaVent: venta.fechaVent,
+      cantidadVent: venta.cantidadVent,
+      subTotalVent: Number(venta.subTotalVent) || 0,
+      dctoSocioVent: Number(venta.dctoSocioVent) || 0,
+      dctoEdadVent: Number(venta.dctoEdadVent) || 0,
+      totalVent: Number(venta.totalVent) || 0,
+      estadoVent: venta.estadoVent,
+      tipoPagoVent: venta.tipoPagoVent,
+      ideMetoPago: venta.ideMetoPago ?? null,
+      fechaIngre: venta.fechaIngre,
+    };
+  }
+
+  private mapearDetalleVentaACamelCase(detalle: DetalleVentaEntity) {
+    return {
+      ideDetaVent: detalle.ideDetaVent,
+      ideVent: detalle.ideVent,
+      ideProd: detalle.ideProd,
+      cantidadProd: detalle.cantidadProd,
+      precioUnitarioProd: Number(detalle.precioUnitarioProd) || 0,
+      subtotalProd: Number(detalle.subtotalProd) || 0,
+      dctoPromoProd: Number(detalle.dctoPromoProd) || 0,
+      ivaProd: Number(detalle.ivaProd) || 0,
+      totalProd: Number(detalle.totalProd) || 0,
+      nombreProd: detalle.producto?.nombreProd ?? null,
+      imagenProd: detalle.producto?.urlImgProd ?? null,
+    };
+  }
 }

@@ -1,6 +1,6 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import { ApiResponseFactory, ComboMapper } from '@common/index';
+import { ApiResponseFactory, ComboMapper, IdUtil } from '@common/index';
 import { DataSource } from 'typeorm';
 import { CreateEmpleadoDTO } from './dto/create_empleado.dto';
 import { FilterEmpleadoDTO } from './dto/filter_empleado.dto';
@@ -28,11 +28,7 @@ export class EmpleadosService {
   }
 
   async buscar(id: number) {
-    const ideEmpl = Number(id);
-
-    if (!ideEmpl || Number.isNaN(ideEmpl)) {
-      throw new BadRequestException('El ID del empleado no es válido.');
-    }
+    const ideEmpl = IdUtil.requireId(id, 'El ID del empleado no es válido.');
 
     const empleado = await this.dataSource.transaction((manager) =>
       this.empleadosRepository.buscarPorId(ideEmpl, manager),
@@ -75,11 +71,10 @@ export class EmpleadosService {
   }
 
   async actualizar(body: UpdateEmpleadoDTO) {
-    const ideEmpl = Number(body.ideEmpl);
-
-    if (!ideEmpl || Number.isNaN(ideEmpl)) {
-      throw new BadRequestException('El ID del empleado no es válido.');
-    }
+    const ideEmpl = IdUtil.requireId(
+      body.ideEmpl,
+      'El ID del empleado no es válido.',
+    );
 
     try {
       const empleado = await this.dataSource.transaction(async (manager) => {
@@ -113,11 +108,7 @@ export class EmpleadosService {
   }
 
   async eliminar(id: number) {
-    const ideEmpl = Number(id);
-
-    if (!ideEmpl || Number.isNaN(ideEmpl)) {
-      throw new BadRequestException('El ID del empleado no es válido.');
-    }
+    const ideEmpl = IdUtil.requireId(id, 'El ID del empleado no es válido.');
 
     try {
       const affected = await this.dataSource.transaction((manager) =>

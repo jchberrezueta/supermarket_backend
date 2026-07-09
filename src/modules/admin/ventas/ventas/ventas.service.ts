@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import { ApiResponseFactory, MoneyUtil } from '@common/index';
+import { ApiResponseFactory, IdUtil, MoneyUtil } from '@common/index';
 import { DataSource } from 'typeorm';
 import { CreateVentaDTO } from './dto/create_venta.dto';
 import { CreateVentaDetalleDTO } from './dto/create_venta_detalle.dto';
@@ -40,11 +40,7 @@ export class VentasService {
   }
 
   async buscar(id: number) {
-    const ideVent = Number(id);
-
-    if (!ideVent || Number.isNaN(ideVent)) {
-      throw new BadRequestException('El ID de la venta no es válido.');
-    }
+    const ideVent = IdUtil.requireId(id, 'El ID de la venta no es válido.');
 
     const venta = await this.dataSource.transaction((manager) =>
       this.ventasRepository.buscarPorId(ideVent, manager),
@@ -105,11 +101,10 @@ export class VentasService {
   async actualizar(body: UpdateVentaDTO) {
     this.validarDetalleVenta(body.detalleVenta);
 
-    const ideVent = Number(body.cabeceraVenta.ideVent);
-
-    if (!ideVent || Number.isNaN(ideVent)) {
-      throw new BadRequestException('El ID de la venta no es válido.');
-    }
+    const ideVent = IdUtil.requireId(
+      body.cabeceraVenta.ideVent,
+      'El ID de la venta no es válido.',
+    );
 
     try {
       const venta = await this.dataSource.transaction(async (manager) => {
@@ -154,11 +149,7 @@ export class VentasService {
   }
 
   async eliminar(id: number) {
-    const ideVent = Number(id);
-
-    if (!ideVent || Number.isNaN(ideVent)) {
-      throw new BadRequestException('El ID de la venta no es válido.');
-    }
+    const ideVent = IdUtil.requireId(id, 'El ID de la venta no es válido.');
 
     try {
       const affected = await this.dataSource.transaction((manager) =>
@@ -182,11 +173,7 @@ export class VentasService {
   }
 
   async buscarDetallesVenta(ideVent: number) {
-    const id = Number(ideVent);
-
-    if (!id || Number.isNaN(id)) {
-      throw new BadRequestException('El ID de la venta no es válido.');
-    }
+    const id = IdUtil.requireId(ideVent, 'El ID de la venta no es válido.');
 
     const detalles = await this.dataSource.transaction((manager) =>
       this.ventasRepository.listarDetallesPorVenta(id, manager),
@@ -208,13 +195,20 @@ export class VentasService {
     }
 
     for (const detalle of detalles) {
-      if (!detalle.ideProd || detalle.ideProd <= 0) {
+      const ideProd = IdUtil.parseId(detalle.ideProd);
+
+      if (ideProd === null) {
         throw new BadRequestException(
           'Todos los detalles deben tener un producto válido.',
         );
       }
 
-      if (!detalle.cantidadProd || detalle.cantidadProd <= 0) {
+      if (
+        detalle.cantidadProd === null ||
+        detalle.cantidadProd === undefined ||
+        Number.isNaN(Number(detalle.cantidadProd)) ||
+        Number(detalle.cantidadProd) <= 0
+      ) {
         throw new BadRequestException(
           'Todos los detalles deben tener una cantidad válida.',
         );

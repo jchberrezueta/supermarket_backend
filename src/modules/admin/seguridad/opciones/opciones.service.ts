@@ -1,6 +1,6 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import { ApiResponseFactory, ComboMapper } from '@common/index';
+import { ApiResponseFactory, ComboMapper, IdUtil } from '@common/index';
 import { DataSource } from 'typeorm';
 import { CreateOpcionDto } from './dto/create_opcion.dto';
 import { FilterOpcionDto } from './dto/filter_opcion.dto';
@@ -28,11 +28,7 @@ export class OpcionesService {
   }
 
   async buscar(id: number) {
-    const ideOpci = Number(id);
-
-    if (!ideOpci || Number.isNaN(ideOpci)) {
-      throw new BadRequestException('El ID de la opción no es válido.');
-    }
+    const ideOpci = IdUtil.requireId(id, 'El ID de la opción no es válido.');
 
     const opcion = await this.dataSource.transaction((manager) =>
       this.opcionesRepository.buscarPorId(ideOpci, manager),
@@ -75,11 +71,10 @@ export class OpcionesService {
   }
 
   async actualizar(body: UpdateOpcionDto) {
-    const ideOpci = Number(body.ideOpci);
-
-    if (!ideOpci || Number.isNaN(ideOpci)) {
-      throw new BadRequestException('El ID de la opción no es válido.');
-    }
+    const ideOpci = IdUtil.requireId(
+      body.ideOpci,
+      'El ID de la opción no es válido.',
+    );
 
     try {
       const opcion = await this.dataSource.transaction(async (manager) => {
@@ -109,11 +104,7 @@ export class OpcionesService {
   }
 
   async eliminar(id: number) {
-    const ideOpci = Number(id);
-
-    if (!ideOpci || Number.isNaN(ideOpci)) {
-      throw new BadRequestException('El ID de la opción no es válido.');
-    }
+    const ideOpci = IdUtil.requireId(id, 'El ID de la opción no es válido.');
 
     try {
       const affected = await this.dataSource.transaction((manager) =>

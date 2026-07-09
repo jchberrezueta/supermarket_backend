@@ -1,6 +1,6 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import { ApiResponseFactory, ComboMapper } from '@common/index';
+import { ApiResponseFactory, ComboMapper, IdUtil } from '@common/index';
 import { DataSource } from 'typeorm';
 import { CreateMarcaDTO } from './dto/create_marca.dto';
 import { FilterMarcaDTO } from './dto/filter_marca.dto';
@@ -28,11 +28,7 @@ export class MarcasService {
   }
 
   async buscar(id: number) {
-    const ideMarc = Number(id);
-
-    if (!ideMarc || Number.isNaN(ideMarc)) {
-      throw new BadRequestException('El ID de la marca no es válido.');
-    }
+    const ideMarc = IdUtil.requireId(id, 'El ID de la marca no es válido.');
 
     const marca = await this.dataSource.transaction((manager) =>
       this.marcasRepository.buscarPorId(ideMarc, manager),
@@ -75,11 +71,10 @@ export class MarcasService {
   }
 
   async actualizar(body: UpdateMarcaDTO) {
-    const ideMarc = Number(body.ideMarc);
-
-    if (!ideMarc || Number.isNaN(ideMarc)) {
-      throw new BadRequestException('El ID de la marca no es válido.');
-    }
+    const ideMarc = IdUtil.requireId(
+      body.ideMarc,
+      'El ID de la marca no es válido.',
+    );
 
     try {
       const marca = await this.dataSource.transaction(async (manager) => {
@@ -109,11 +104,7 @@ export class MarcasService {
   }
 
   async eliminar(id: number) {
-    const ideMarc = Number(id);
-
-    if (!ideMarc || Number.isNaN(ideMarc)) {
-      throw new BadRequestException('El ID de la marca no es válido.');
-    }
+    const ideMarc = IdUtil.requireId(id, 'El ID de la marca no es válido.');
 
     try {
       const affected = await this.dataSource.transaction((manager) =>

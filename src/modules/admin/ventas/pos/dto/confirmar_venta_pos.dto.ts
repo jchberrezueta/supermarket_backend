@@ -11,12 +11,12 @@ import { ItemVentaPosDto } from './item_venta_pos.dto';
 
 export class ConfirmarVentaPosDto {
   @IsInt()
-  @Min(1)
+  @Min(0)
   ideClie!: number;
 
   @IsOptional()
   @IsInt()
-  @Min(1)
+  @Min(0)
   ideEmpl?: number;
 
   @IsOptional()
@@ -25,7 +25,7 @@ export class ConfirmarVentaPosDto {
 
   @IsOptional()
   @IsInt()
-  @Min(1)
+  @Min(0)
   ideMetoPago?: number;
 
   @IsArray()

@@ -1,6 +1,6 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import { ApiResponseFactory, ComboMapper } from '@common/index';
+import { ApiResponseFactory, ComboMapper, IdUtil } from '@common/index';
 import { DataSource } from 'typeorm';
 import { CreateAccesoUsuarioDto } from './dto/create_acceso.dto';
 import { FilterAccesoUsuarioDto } from './dto/filter_acceso.dto';
@@ -27,11 +27,7 @@ export class AccesosUsuariosService {
   }
 
   async buscar(id: number) {
-    const ideAcce = Number(id);
-
-    if (!ideAcce || Number.isNaN(ideAcce)) {
-      throw new BadRequestException('El ID del acceso no es válido.');
-    }
+    const ideAcce = IdUtil.requireId(id, 'El ID del acceso no es válido.');
 
     const acceso = await this.dataSource.transaction((manager) =>
       this.accesosRepository.buscarPorId(ideAcce, manager),
