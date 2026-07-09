@@ -10,7 +10,8 @@ import {
   IdUtil,
   MoneyUtil,
 } from '@common/index';
-import { DataSource } from 'typeorm';
+import { DetalleEntregaEntity, PedidoEntity, ProductoEntity } from '@entities';
+import { DataSource, EntityManager } from 'typeorm';
 import { CreateEntregaDTO } from './dto/create_entrega.dto';
 import { CreateEntregaDetalleDTO } from './dto/create_entrega_detalle.dto';
 import { FilterEntregaDTO } from './dto/filter_entrega.dto';
@@ -18,6 +19,8 @@ import { UpdateEntregaDTO } from './dto/update_entrega.dto';
 import { UpdateEntregaDetalleDTO } from './dto/update_entrega_detalle.dto';
 import { EntregasMapper } from './entregas.mapper';
 import { EntregasRepository } from './entregas.repository';
+
+type MovimientoEntrega = -1 | 0 | 1;
 
 interface TotalesEntregaCalculados {
   cantidadTotalEntr: number;
@@ -69,10 +72,29 @@ export class EntregasService {
 
   async insertar(body: CreateEntregaDTO) {
     const detalles = body.detalleEntrega ?? [];
-    this.validarDetalleEntrega(detalles, false);
+    this.validarDetalleEntrega(detalles, true);
 
     try {
       const entrega = await this.dataSource.transaction(async (manager) => {
+        const pedido = await this.validarPedidoYProveedor(
+          body.cabeceraEntrega.idePedi,
+          body.cabeceraEntrega.ideProv,
+          manager,
+        );
+
+        const movimientoNuevo = this.obtenerMovimientoEntrega(
+          pedido,
+          body.cabeceraEntrega.estadoEntr,
+        );
+
+        await this.ajustarStockPorCambioDeEntrega(
+          new Map<number, number>(),
+          0,
+          this.consolidarCantidadesPorProducto(detalles),
+          movimientoNuevo,
+          manager,
+        );
+
         const totales = this.calcularTotalesDesdeDetalle(
           detalles,
           body.cabeceraEntrega,
@@ -108,7 +130,7 @@ export class EntregasService {
 
   async actualizar(body: UpdateEntregaDTO) {
     const detalles = body.detalleEntrega ?? [];
-    this.validarDetalleEntrega(detalles, false);
+    this.validarDetalleEntrega(detalles, true);
 
     const ideEntr = IdUtil.requireId(
       body.cabeceraEntrega.ideEntr,
@@ -123,6 +145,47 @@ export class EntregasService {
         if (!entregaActual) {
           throw new NotFoundException('No se encontró la entrega indicada.');
         }
+
+        const detallesActuales =
+          await this.entregasRepository.listarDetallesPorEntrega(
+            ideEntr,
+            manager,
+          );
+
+        const pedidoAnterior = await this.entregasRepository.buscarPedidoPorId(
+          entregaActual.idePedi,
+          manager,
+        );
+
+        if (!pedidoAnterior) {
+          throw new BadRequestException(
+            'El pedido original de la entrega ya no existe.',
+          );
+        }
+
+        const pedidoNuevo = await this.validarPedidoYProveedor(
+          body.cabeceraEntrega.idePedi,
+          body.cabeceraEntrega.ideProv,
+          manager,
+        );
+
+        const movimientoAnterior = this.obtenerMovimientoEntrega(
+          pedidoAnterior,
+          entregaActual.estadoEntr,
+        );
+
+        const movimientoNuevo = this.obtenerMovimientoEntrega(
+          pedidoNuevo,
+          body.cabeceraEntrega.estadoEntr,
+        );
+
+        await this.ajustarStockPorCambioDeEntrega(
+          this.consolidarCantidadesPorProducto(detallesActuales),
+          movimientoAnterior,
+          this.consolidarCantidadesPorProducto(detalles),
+          movimientoNuevo,
+          manager,
+        );
 
         const totales = this.calcularTotalesDesdeDetalle(
           detalles,
@@ -163,9 +226,49 @@ export class EntregasService {
     const ideEntr = IdUtil.requireId(id, 'El ID de la entrega no es válido.');
 
     try {
-      const affected = await this.dataSource.transaction((manager) =>
-        this.entregasRepository.eliminarEntregaConDetalles(ideEntr, manager),
-      );
+      const affected = await this.dataSource.transaction(async (manager) => {
+        const entregaActual =
+          await this.entregasRepository.buscarPorIdForUpdate(ideEntr, manager);
+
+        if (!entregaActual) {
+          return 0;
+        }
+
+        const detallesActuales =
+          await this.entregasRepository.listarDetallesPorEntrega(
+            ideEntr,
+            manager,
+          );
+
+        const pedidoAnterior = await this.entregasRepository.buscarPedidoPorId(
+          entregaActual.idePedi,
+          manager,
+        );
+
+        if (!pedidoAnterior) {
+          throw new BadRequestException(
+            'El pedido original de la entrega ya no existe.',
+          );
+        }
+
+        const movimientoAnterior = this.obtenerMovimientoEntrega(
+          pedidoAnterior,
+          entregaActual.estadoEntr,
+        );
+
+        await this.ajustarStockPorCambioDeEntrega(
+          this.consolidarCantidadesPorProducto(detallesActuales),
+          movimientoAnterior,
+          new Map<number, number>(),
+          0,
+          manager,
+        );
+
+        return this.entregasRepository.eliminarEntregaConDetalles(
+          ideEntr,
+          manager,
+        );
+      });
 
       if (affected === 0) {
         return ApiResponseFactory.legacyWrite(
@@ -220,6 +323,53 @@ export class EntregasService {
     return ComboMapper.fromValues(['completo', 'incompleto']);
   }
 
+  private async validarPedidoYProveedor(
+    idePediRaw: number,
+    ideProvRaw: number,
+    manager: EntityManager,
+  ): Promise<PedidoEntity> {
+    const idePedi = IdUtil.requireId(
+      idePediRaw,
+      'El ID del pedido no es válido.',
+    );
+
+    const ideProv = IdUtil.requireId(
+      ideProvRaw,
+      'El ID del proveedor no es válido.',
+    );
+
+    const pedido = await this.entregasRepository.buscarPedidoPorId(
+      idePedi,
+      manager,
+    );
+
+    if (!pedido) {
+      throw new BadRequestException('El pedido seleccionado no existe.');
+    }
+
+    const proveedor = await this.entregasRepository.buscarProveedorPorId(
+      ideProv,
+      manager,
+    );
+
+    if (!proveedor) {
+      throw new BadRequestException('El proveedor seleccionado no existe.');
+    }
+
+    return pedido;
+  }
+
+  private obtenerMovimientoEntrega(
+    pedido: PedidoEntity,
+    estadoEntr: 'completo' | 'incompleto',
+  ): MovimientoEntrega {
+    if (estadoEntr !== 'completo') {
+      return 0;
+    }
+
+    return pedido.motivoPedi === 'peticion' ? 1 : -1;
+  }
+
   private validarDetalleEntrega(
     detalles: Array<CreateEntregaDetalleDTO | UpdateEntregaDetalleDTO>,
     obligatorio: boolean,
@@ -253,6 +403,100 @@ export class EntregasService {
           'Todos los detalles deben tener una cantidad válida.',
         );
       }
+    }
+  }
+
+  private consolidarCantidadesPorProducto(
+    detalles: Array<
+      CreateEntregaDetalleDTO | UpdateEntregaDetalleDTO | DetalleEntregaEntity
+    >,
+  ): Map<number, number> {
+    const cantidades = new Map<number, number>();
+
+    for (const detalle of detalles) {
+      const ideProd = IdUtil.requireId(
+        detalle.ideProd,
+        'El ID del producto no es válido.',
+      );
+
+      const cantidadAnterior = cantidades.get(ideProd) ?? 0;
+      cantidades.set(ideProd, cantidadAnterior + detalle.cantidadProd);
+    }
+
+    return cantidades;
+  }
+
+  private async ajustarStockPorCambioDeEntrega(
+    cantidadesAnteriores: Map<number, number>,
+    movimientoAnterior: MovimientoEntrega,
+    cantidadesNuevas: Map<number, number>,
+    movimientoNuevo: MovimientoEntrega,
+    manager: EntityManager,
+  ): Promise<void> {
+    const productosIds = new Set<number>([
+      ...cantidadesAnteriores.keys(),
+      ...cantidadesNuevas.keys(),
+    ]);
+
+    for (const ideProd of productosIds) {
+      const cantidadAnterior = cantidadesAnteriores.get(ideProd) ?? 0;
+      const cantidadNueva = cantidadesNuevas.get(ideProd) ?? 0;
+
+      const delta =
+        movimientoNuevo * cantidadNueva - movimientoAnterior * cantidadAnterior;
+
+      if (delta === 0) {
+        continue;
+      }
+
+      const producto =
+        await this.entregasRepository.buscarProductoPorIdForUpdate(
+          ideProd,
+          manager,
+        );
+
+      if (!producto) {
+        throw new BadRequestException(
+          `El producto con ID ${ideProd} no existe.`,
+        );
+      }
+
+      this.validarProductoParaMovimientoNuevo(
+        producto,
+        cantidadNueva,
+        movimientoNuevo,
+      );
+
+      const nuevoStock = producto.stockProd + delta;
+
+      if (nuevoStock < 0) {
+        throw new BadRequestException(
+          `Stock insuficiente para "${producto.nombreProd}". Disponible: ${producto.stockProd}, movimiento solicitado: ${delta}.`,
+        );
+      }
+
+      producto.stockProd = nuevoStock;
+      producto.disponibleProd = producto.stockProd > 0 ? 'si' : 'no';
+      producto.usuaActua = 'admin';
+      producto.fechaActua = new Date();
+
+      await this.entregasRepository.guardarProducto(producto, manager);
+    }
+  }
+
+  private validarProductoParaMovimientoNuevo(
+    producto: ProductoEntity,
+    cantidadNueva: number,
+    movimientoNuevo: MovimientoEntrega,
+  ): void {
+    if (cantidadNueva <= 0 || movimientoNuevo === 0) {
+      return;
+    }
+
+    if (producto.estadoProd !== 'activo') {
+      throw new BadRequestException(
+        `El producto "${producto.nombreProd}" no está activo.`,
+      );
     }
   }
 

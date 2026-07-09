@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DetalleEntregaEntity, EntregaEntity } from '@entities';
+import {
+  DetalleEntregaEntity,
+  EntregaEntity,
+  PedidoEntity,
+  ProductoEntity,
+  ProveedorEntity,
+} from '@entities';
 import { EntityManager, Repository } from 'typeorm';
 import { MoneyUtil } from '@common/utils/money.util';
 import { CreateEntregaCabeceraDTO } from './dto/create_entrega_cabecera.dto';
@@ -129,6 +135,47 @@ export class EntregasRepository {
     });
   }
 
+  async buscarPedidoPorId(
+    idePedi: number,
+    manager: EntityManager,
+  ): Promise<PedidoEntity | null> {
+    return manager.getRepository(PedidoEntity).findOne({
+      where: {
+        idePedi,
+      },
+    });
+  }
+
+  async buscarProveedorPorId(
+    ideProv: number,
+    manager: EntityManager,
+  ): Promise<ProveedorEntity | null> {
+    return manager.getRepository(ProveedorEntity).findOne({
+      where: {
+        ideProv,
+      },
+    });
+  }
+
+  async buscarProductoPorIdForUpdate(
+    ideProd: number,
+    manager: EntityManager,
+  ): Promise<ProductoEntity | null> {
+    return manager
+      .getRepository(ProductoEntity)
+      .createQueryBuilder('producto')
+      .setLock('pessimistic_write')
+      .where('producto.ideProd = :ideProd', { ideProd })
+      .getOne();
+  }
+
+  async guardarProducto(
+    producto: ProductoEntity,
+    manager: EntityManager,
+  ): Promise<ProductoEntity> {
+    return manager.getRepository(ProductoEntity).save(producto);
+  }
+
   async crearEntrega(
     cabecera: CreateEntregaCabeceraDTO,
     totales: {
@@ -185,10 +232,6 @@ export class EntregasRepository {
     await repository.delete({
       ideEntr,
     });
-
-    if (!detalles.length) {
-      return [];
-    }
 
     const nuevosDetalles = detalles.map((detalle) =>
       repository.create({
