@@ -1,7 +1,9 @@
+import { EnumEstadoProveedor } from '@models';
 import { Transform } from 'class-transformer';
 import {
   IsDateString,
   IsEmail,
+  IsEnum,
   IsInt,
   IsNumberString,
   IsOptional,
@@ -22,6 +24,44 @@ function toRequiredInt(value: unknown): number | unknown {
   }
 
   return value;
+}
+
+function requiredLowerText(value: unknown): string | null | unknown {
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const text = value.trim();
+
+  return text !== '' ? text.toLowerCase() : null;
+}
+
+function optionalLowerText(value: unknown): string | null | unknown {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const text = value.trim();
+
+  return text !== '' ? text.toLowerCase() : null;
+}
+
+function optionalText(value: unknown): string | null | unknown {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const text = value.trim();
+
+  return text !== '' ? text.toLowerCase() : null;
 }
 
 export class UpdateProveedorDTO {
@@ -59,48 +99,37 @@ export class UpdateProveedorDTO {
 
   @IsEmail()
   @Length(1, 100)
-  @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== ''
-      ? value.trim().toLowerCase()
-      : null,
-  )
+  @Transform(({ value }) => requiredLowerText(value))
   emailProv!: string;
 
   @IsString()
   @Length(1, 50)
-  @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== ''
-      ? value.trim().toLowerCase()
-      : null,
-  )
+  @Transform(({ value }) => requiredLowerText(value))
   primerNombreProv!: string;
 
   @IsString()
   @Length(1, 50)
-  @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== ''
-      ? value.trim().toLowerCase()
-      : null,
-  )
+  @Transform(({ value }) => requiredLowerText(value))
   apellidoPaternoProv!: string;
 
   @IsOptional()
   @IsString()
   @Length(1, 50)
-  @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== ''
-      ? value.trim().toLowerCase()
-      : null,
-  )
+  @Transform(({ value }) => optionalLowerText(value))
   segundoNombreProv?: string | null;
 
   @IsOptional()
   @IsString()
   @Length(1, 50)
-  @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== ''
-      ? value.trim().toLowerCase()
-      : null,
-  )
+  @Transform(({ value }) => optionalLowerText(value))
   apellidoMaternoProv?: string | null;
+
+  @IsEnum(EnumEstadoProveedor)
+  estadoProv!: EnumEstadoProveedor;
+
+  @IsOptional()
+  @IsString()
+  @Length(1, 50)
+  @Transform(({ value }) => optionalText(value))
+  cargoProv?: string | null;
 }

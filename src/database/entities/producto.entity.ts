@@ -13,6 +13,10 @@ import { DetalleVentaEntity } from './detalle_venta.entity';
 import { EmpresaPreciosEntity } from './empresa_precios.entity';
 import { LoteEntity } from './lote.entity';
 import { MarcaEntity } from './marca.entity';
+import { MovimientoInventarioEntity } from './movimiento_inventario.entity';
+
+export type DisponibleProducto = 'si' | 'no';
+export type EstadoProducto = 'activo' | 'inactivo';
 
 @Entity({ name: 'producto' })
 export class ProductoEntity {
@@ -58,11 +62,14 @@ export class ProductoEntity {
   @Column({ name: 'stock_prod', type: 'int' })
   stockProd!: number;
 
+  @Column({ name: 'stock_minimo_prod', type: 'int', default: 0 })
+  stockMinimoProd!: number;
+
   @Column({ name: 'disponible_prod', type: 'varchar', length: 25 })
-  disponibleProd!: 'si' | 'no';
+  disponibleProd!: DisponibleProducto;
 
   @Column({ name: 'estado_prod', type: 'varchar', length: 25 })
-  estadoProd!: 'activo' | 'inactivo';
+  estadoProd!: EstadoProducto;
 
   @Column({
     name: 'descripcion_prod',
@@ -122,6 +129,12 @@ export class ProductoEntity {
 
   @OneToMany(() => EmpresaPreciosEntity, (precio) => precio.producto)
   preciosEmpresa?: EmpresaPreciosEntity[];
+
+  @OneToMany(
+    () => MovimientoInventarioEntity,
+    (movimiento) => movimiento.producto,
+  )
+  movimientosInventario?: MovimientoInventarioEntity[];
 }
 
 export { ProductoEntity as Producto };

@@ -10,6 +10,16 @@ import { DetallePedidoEntity } from './detalle_pedido.entity';
 import { EmpresaEntity } from './empresas.entity';
 import { EntregaEntity } from './entrega.entity';
 
+export type EstadoPedido =
+  | 'borrador'
+  | 'emitido'
+  | 'parcial'
+  | 'completado'
+  | 'cerrado_incompleto'
+  | 'cancelado';
+
+export type MotivoPedido = 'peticion' | 'devolucion';
+
 @Entity({ name: 'pedido' })
 export class PedidoEntity {
   @PrimaryGeneratedColumn({ name: 'ide_pedi' })
@@ -36,10 +46,10 @@ export class PedidoEntity {
   totalPedi!: string;
 
   @Column({ name: 'estado_pedi', type: 'varchar', length: 25 })
-  estadoPedi!: 'progreso' | 'completado' | 'incompleto' | 'emitido';
+  estadoPedi!: EstadoPedido;
 
   @Column({ name: 'motivo_pedi', type: 'varchar', length: 25 })
-  motivoPedi!: 'peticion' | 'devolucion';
+  motivoPedi!: MotivoPedido;
 
   @Column({
     name: 'observacion_pedi',

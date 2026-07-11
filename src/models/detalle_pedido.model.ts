@@ -1,6 +1,9 @@
 export enum EnumEstadoDetallePedido {
-  COMPLETADO = 'completado',
-  INCOMPLETO = 'incompleto',
+  PENDIENTE = 'pendiente',
+  PARCIAL = 'parcial',
+  COMPLETO = 'completo',
+  CERRADO_INCOMPLETO = 'cerrado_incompleto',
+  CANCELADO = 'cancelado',
 }
 
 export interface IDetallePedido {
@@ -31,8 +34,6 @@ export class CDetallePedido implements IDetallePedido {
     private _dctoCaducProd: number,
     private _estadoDetaPedi: EnumEstadoDetallePedido,
   ) {}
-
-  // --- Getters / Setters ---
 
   get ideDetaPedi() {
     return this._ideDetaPedi;

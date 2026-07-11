@@ -10,6 +10,8 @@ import {
 import { EmpresaEntity } from './empresas.entity';
 import { EntregaEntity } from './entrega.entity';
 
+export type EstadoProveedor = 'activo' | 'inactivo';
+
 @Entity({ name: 'proveedor' })
 @Index('proveedor_cedula_prov_key', ['cedulaProv'], { unique: true })
 export class ProveedorEntity {
@@ -55,6 +57,22 @@ export class ProveedorEntity {
     nullable: true,
   })
   apellidoMaternoProv?: string | null;
+
+  @Column({
+    name: 'estado_prov',
+    type: 'varchar',
+    length: 25,
+    default: 'activo',
+  })
+  estadoProv!: EstadoProveedor;
+
+  @Column({
+    name: 'cargo_prov',
+    type: 'varchar',
+    length: 50,
+    nullable: true,
+  })
+  cargoProv?: string | null;
 
   @Column({ name: 'usua_ingre', type: 'varchar', length: 25 })
   usuaIngre!: string;

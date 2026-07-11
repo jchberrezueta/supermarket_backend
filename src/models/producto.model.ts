@@ -3,6 +3,8 @@ export enum EnumEstadosProducto {
   INACTIVO = 'inactivo',
 }
 
+export type DisponibleProducto = 'si' | 'no';
+
 export interface IProducto {
   ideProd: number;
   ideCate: number;
@@ -13,10 +15,11 @@ export interface IProducto {
   ivaProd: number;
   dctoPromoProd: number;
   stockProd: number;
-  disponibleProd: 'si' | 'no';
+  stockMinimoProd: number;
+  disponibleProd: DisponibleProducto;
   estadoProd: EnumEstadosProducto;
-  descripcionProd: string;
-  urlImgProd: string;
+  descripcionProd: string | null;
+  urlImgProd: string | null;
 }
 
 export class CProducto implements IProducto {
@@ -26,20 +29,16 @@ export class CProducto implements IProducto {
     private _ideMarc: number,
     private _codigoBarraProd: string,
     private _nombreProd: string,
-    private _precioCompraProd: number,
     private _precioVentaProd: number,
     private _ivaProd: number,
     private _dctoPromoProd: number,
-    private _dctoCaducProd: number,
-    private _precioFinalProd: number,
     private _stockProd: number,
-    private _disponibleProd: 'si' | 'no',
+    private _stockMinimoProd: number,
+    private _disponibleProd: DisponibleProducto,
     private _estadoProd: EnumEstadosProducto,
-    private _descripcionProd: string,
-    private _urlImgProd: string,
+    private _descripcionProd: string | null,
+    private _urlImgProd: string | null,
   ) {}
-
-  // --- Getters / Setters ---
 
   get ideProd() {
     return this._ideProd;
@@ -76,13 +75,6 @@ export class CProducto implements IProducto {
     this._nombreProd = value;
   }
 
-  get precioCompraProd() {
-    return this._precioCompraProd;
-  }
-  set precioCompraProd(value: number) {
-    this._precioCompraProd = value;
-  }
-
   get precioVentaProd() {
     return this._precioVentaProd;
   }
@@ -104,20 +96,6 @@ export class CProducto implements IProducto {
     this._dctoPromoProd = value;
   }
 
-  get dctoCaducProd() {
-    return this._dctoCaducProd;
-  }
-  set dctoCaducProd(value: number) {
-    this._dctoCaducProd = value;
-  }
-
-  get precioFinalProd() {
-    return this._precioFinalProd;
-  }
-  set precioFinalProd(value: number) {
-    this._precioFinalProd = value;
-  }
-
   get stockProd() {
     return this._stockProd;
   }
@@ -125,10 +103,17 @@ export class CProducto implements IProducto {
     this._stockProd = value;
   }
 
+  get stockMinimoProd() {
+    return this._stockMinimoProd;
+  }
+  set stockMinimoProd(value: number) {
+    this._stockMinimoProd = value;
+  }
+
   get disponibleProd() {
     return this._disponibleProd;
   }
-  set disponibleProd(value: 'si' | 'no') {
+  set disponibleProd(value: DisponibleProducto) {
     this._disponibleProd = value;
   }
 
@@ -142,14 +127,14 @@ export class CProducto implements IProducto {
   get descripcionProd() {
     return this._descripcionProd;
   }
-  set descripcionProd(value: string) {
+  set descripcionProd(value: string | null) {
     this._descripcionProd = value;
   }
 
   get urlImgProd() {
     return this._urlImgProd;
   }
-  set urlImgProd(value: string) {
+  set urlImgProd(value: string | null) {
     this._urlImgProd = value;
   }
 }
@@ -160,17 +145,15 @@ export interface IProductoResult {
   ide_marc: number;
   codigo_barra_prod: string;
   nombre_prod: string;
-  precio_compra_prod: number;
   precio_venta_prod: number;
   iva_prod: number;
   dcto_promo_prod: number;
-  dcto_caduc_prod: number;
-  precio_final_prod: number;
   stock_prod: number;
-  disponible_prod: 'si' | 'no';
+  stock_minimo_prod: number;
+  disponible_prod: DisponibleProducto;
   estado_prod: EnumEstadosProducto;
-  descripcion_prod: string;
-  url_img_prod: string;
+  descripcion_prod: string | null;
+  url_img_prod: string | null;
 }
 
 export interface IFiltroProducto {
@@ -179,6 +162,6 @@ export interface IFiltroProducto {
   ideMarc?: number;
   codigoBarraProd?: string;
   nombreProd?: string;
-  disponibleProd?: string;
+  disponibleProd?: DisponibleProducto;
   estadoProd?: EnumEstadosProducto;
 }

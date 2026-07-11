@@ -1,6 +1,14 @@
 import { EnumEstadosCuenta } from '@models';
 import { Transform } from 'class-transformer';
-import { IsEnum, IsInt, IsString, Length, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Length,
+  Min,
+} from 'class-validator';
 
 function toRequiredInt(value: unknown): number | unknown {
   if (value === null || value === undefined || value === '') {
@@ -11,6 +19,30 @@ function toRequiredInt(value: unknown): number | unknown {
 
   if (Number.isInteger(numberValue)) {
     return numberValue;
+  }
+
+  return value;
+}
+
+function optionalBoolean(value: unknown): boolean | undefined | unknown {
+  if (value === null || value === undefined || value === '') {
+    return undefined;
+  }
+
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const text = value.trim().toLowerCase();
+
+    if (['true', '1', 'si', 'sí'].includes(text)) {
+      return true;
+    }
+
+    if (['false', '0', 'no'].includes(text)) {
+      return false;
+    }
   }
 
   return value;
@@ -45,4 +77,9 @@ export class CreateCuentaDto {
 
   @IsEnum(EnumEstadosCuenta)
   estadoCuen!: EnumEstadosCuenta;
+
+  @IsOptional()
+  @Transform(({ value }) => optionalBoolean(value))
+  @IsBoolean()
+  debeCambiarClave?: boolean;
 }

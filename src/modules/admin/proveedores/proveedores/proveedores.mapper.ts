@@ -13,6 +13,8 @@ export interface ProveedorRow {
   apellido_paterno_prov: string;
   segundo_nombre_prov?: string | null;
   apellido_materno_prov?: string | null;
+  estado_prov: string;
+  cargo_prov?: string | null;
   usua_ingre?: string;
   fecha_ingre?: Date;
   usua_actua?: string;
@@ -29,6 +31,8 @@ export interface ProveedorEmpresaRow {
   edad_prov: number;
   telefono_prov: string;
   email_prov: string;
+  estado_prov: string;
+  cargo_prov?: string | null;
 }
 
 export class ProveedoresMapper {
@@ -46,6 +50,8 @@ export class ProveedoresMapper {
       apellido_paterno_prov: proveedor.apellidoPaternoProv,
       segundo_nombre_prov: proveedor.segundoNombreProv ?? null,
       apellido_materno_prov: proveedor.apellidoMaternoProv ?? null,
+      estado_prov: proveedor.estadoProv ?? 'activo',
+      cargo_prov: proveedor.cargoProv ?? null,
       usua_ingre: proveedor.usuaIngre,
       fecha_ingre: proveedor.fechaIngre,
       usua_actua: proveedor.usuaActua,
@@ -70,6 +76,8 @@ export class ProveedoresMapper {
       edad_prov: proveedor.edadProv,
       telefono_prov: proveedor.telefonoProv,
       email_prov: proveedor.emailProv,
+      estado_prov: proveedor.estadoProv ?? 'activo',
+      cargo_prov: proveedor.cargoProv ?? null,
     };
   }
 

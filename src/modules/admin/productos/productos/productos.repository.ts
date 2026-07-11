@@ -100,14 +100,15 @@ export class ProductosRepository {
       ideMarc: dto.ideMarc,
       codigoBarraProd: dto.codigoBarraProd,
       nombreProd: dto.nombreProd,
-      urlImgProd: dto.urlImgProd ?? '',
+      urlImgProd: dto.urlImgProd ?? null,
       precioVentaProd: dto.precioVentaProd.toFixed(2),
       ivaProd: dto.ivaProd.toFixed(2),
       dctoPromoProd: dto.dctoPromoProd.toFixed(2),
       stockProd: dto.stockProd,
+      stockMinimoProd: dto.stockMinimoProd ?? 0,
       disponibleProd: dto.disponibleProd,
       estadoProd: dto.estadoProd,
-      descripcionProd: dto.descripcionProd,
+      descripcionProd: dto.descripcionProd ?? null,
       usuaIngre: 'admin',
     });
 
@@ -123,14 +124,16 @@ export class ProductosRepository {
     producto.ideMarc = dto.ideMarc;
     producto.codigoBarraProd = dto.codigoBarraProd;
     producto.nombreProd = dto.nombreProd;
-    producto.urlImgProd = dto.urlImgProd ?? '';
+    producto.urlImgProd = dto.urlImgProd ?? null;
     producto.precioVentaProd = dto.precioVentaProd.toFixed(2);
     producto.ivaProd = dto.ivaProd.toFixed(2);
     producto.dctoPromoProd = dto.dctoPromoProd.toFixed(2);
     producto.stockProd = dto.stockProd;
+    producto.stockMinimoProd =
+      dto.stockMinimoProd ?? producto.stockMinimoProd ?? 0;
     producto.disponibleProd = dto.disponibleProd;
     producto.estadoProd = dto.estadoProd;
-    producto.descripcionProd = dto.descripcionProd;
+    producto.descripcionProd = dto.descripcionProd ?? null;
     producto.usuaActua = 'admin';
     producto.fechaActua = new Date();
 
@@ -174,11 +177,19 @@ export class ProductosRepository {
     return this.getRepository(manager)
       .createQueryBuilder('producto')
       .where('producto.estadoProd = :estado', { estado: 'activo' })
-      .andWhere('producto.stockProd <= :stockMinimo', { stockMinimo })
+      .andWhere(
+        '(producto.stockProd <= producto.stockMinimoProd OR producto.stockProd <= :stockMinimo)',
+        { stockMinimo },
+      )
       .orderBy('producto.stockProd', 'ASC')
       .getMany();
   }
 
+  /**
+   * Temporal:
+   * Este método todavía descuenta stock general del producto.
+   * En la siguiente fase se reemplazará por descuento FEFO contra lote.
+   */
   async descontarStock(
     manager: EntityManager,
     ideProd: number,

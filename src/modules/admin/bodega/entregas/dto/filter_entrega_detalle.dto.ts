@@ -1,5 +1,6 @@
+import { EnumEstadoDetalleEntrega } from '@models';
 import { Transform } from 'class-transformer';
-import { IsInt, IsOptional, Min } from 'class-validator';
+import { IsEnum, IsInt, IsOptional, Min } from 'class-validator';
 
 function optionalInt(value: unknown): number | undefined | unknown {
   if (value === null || value === undefined || value === '') {
@@ -26,5 +27,15 @@ export class FilterEntregaDetalleDTO {
   @Transform(({ value }) => optionalInt(value))
   @IsInt()
   @Min(0)
+  ideDetaPedi?: number;
+
+  @IsOptional()
+  @Transform(({ value }) => optionalInt(value))
+  @IsInt()
+  @Min(0)
   ideProd?: number;
+
+  @IsOptional()
+  @IsEnum(EnumEstadoDetalleEntrega)
+  estadoDetaEntr?: EnumEstadoDetalleEntrega;
 }

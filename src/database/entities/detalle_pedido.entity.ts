@@ -3,10 +3,19 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { DetalleEntregaEntity } from './detalle_entrega.entity';
 import { PedidoEntity } from './pedido.entity';
 import { ProductoEntity } from './producto.entity';
+
+export type EstadoDetallePedido =
+  | 'pendiente'
+  | 'parcial'
+  | 'completo'
+  | 'cerrado_incompleto'
+  | 'cancelado';
 
 @Entity({ name: 'detalle_pedido' })
 export class DetallePedidoEntity {
@@ -71,7 +80,7 @@ export class DetallePedidoEntity {
   dctoCaducProd!: string;
 
   @Column({ name: 'estado_deta_pedi', type: 'varchar', length: 25 })
-  estadoDetaPedi!: 'progreso' | 'completado' | 'incompleto' | 'emitido';
+  estadoDetaPedi!: EstadoDetallePedido;
 
   @ManyToOne(() => PedidoEntity, (pedido) => pedido.detalles, {
     onDelete: 'CASCADE',
@@ -84,6 +93,9 @@ export class DetallePedidoEntity {
   })
   @JoinColumn({ name: 'ide_prod' })
   producto?: ProductoEntity;
+
+  @OneToMany(() => DetalleEntregaEntity, (detalle) => detalle.detallePedido)
+  detallesEntrega?: DetalleEntregaEntity[];
 }
 
 export { DetallePedidoEntity as DetallePedido };

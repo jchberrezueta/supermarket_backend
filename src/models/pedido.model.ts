@@ -1,7 +1,10 @@
 export enum EnumEstadosPedido {
-  PROGRESO = 'progreso',
+  BORRADOR = 'borrador',
+  EMITIDO = 'emitido',
+  PARCIAL = 'parcial',
   COMPLETADO = 'completado',
-  INCOMPLETO = 'incompleto',
+  CERRADO_INCOMPLETO = 'cerrado_incompleto',
+  CANCELADO = 'cancelado',
 }
 
 export enum EnumMotivosPedido {
@@ -18,7 +21,7 @@ export interface IPedido {
   totalPedi: number;
   estadoPedi: EnumEstadosPedido;
   motivoPedi: EnumMotivosPedido;
-  observacionPedi: string;
+  observacionPedi: string | null;
 }
 
 export class CPedido implements IPedido {
@@ -31,10 +34,8 @@ export class CPedido implements IPedido {
     private _totalPedi: number,
     private _estadoPedi: EnumEstadosPedido,
     private _motivoPedi: EnumMotivosPedido,
-    private _observacionPedi: string,
+    private _observacionPedi: string | null,
   ) {}
-
-  // --- Getters / Setters ---
 
   get idePedi() {
     return this._idePedi;
@@ -95,7 +96,7 @@ export class CPedido implements IPedido {
   get observacionPedi() {
     return this._observacionPedi;
   }
-  set observacionPedi(value: string) {
+  set observacionPedi(value: string | null) {
     this._observacionPedi = value;
   }
 }
@@ -109,7 +110,7 @@ export interface IPedidoResult {
   total_pedi: number;
   estado_pedi: EnumEstadosPedido;
   motivo_pedi: EnumMotivosPedido;
-  observacion_pedi: string;
+  observacion_pedi: string | null;
 }
 
 export interface IFiltroPedido {

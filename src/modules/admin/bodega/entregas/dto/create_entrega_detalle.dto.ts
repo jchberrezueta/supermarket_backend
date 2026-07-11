@@ -1,6 +1,17 @@
 import { EnumEstadoDetalleEntrega } from '@models';
+import { Type } from 'class-transformer';
 import { Transform } from 'class-transformer';
-import { IsEnum, IsInt, IsNumber, IsOptional, Min } from 'class-validator';
+import {
+  ArrayMinSize,
+  IsArray,
+  IsEnum,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  Min,
+  ValidateNested,
+} from 'class-validator';
+import { CreateEntregaLoteDTO } from './create_entrega_lote.dto';
 
 function toRequiredInt(value: unknown): number | unknown {
   if (value === null || value === undefined || value === '') {
@@ -60,11 +71,16 @@ export class CreateEntregaDetalleDTO {
   @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
   @Min(0)
+  ideDetaPedi!: number;
+
+  @Transform(({ value }) => toRequiredInt(value))
+  @IsInt()
+  @Min(0)
   ideProd!: number;
 
   @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
-  @Min(1)
+  @Min(0)
   cantidadProd!: number;
 
   @Transform(({ value }) => toRequiredNumber(value))
@@ -99,4 +115,11 @@ export class CreateEntregaDetalleDTO {
 
   @IsEnum(EnumEstadoDetalleEntrega)
   estadoDetaEntr!: EnumEstadoDetalleEntrega;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => CreateEntregaLoteDTO)
+  lotesRecibidos?: CreateEntregaLoteDTO[];
 }

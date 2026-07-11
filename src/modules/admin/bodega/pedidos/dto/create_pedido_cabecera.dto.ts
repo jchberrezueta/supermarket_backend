@@ -1,9 +1,8 @@
-import { EnumMotivosPedido } from '@models';
+import { EnumEstadosPedido, EnumMotivosPedido } from '@models';
 import { Transform } from 'class-transformer';
 import {
   IsDateString,
   IsEnum,
-  IsIn,
   IsInt,
   IsNumber,
   IsOptional,
@@ -40,6 +39,19 @@ function toRequiredNumber(value: unknown): number | unknown {
   return value;
 }
 
+function optionalText(value: unknown): string | null | unknown {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value === 'string') {
+    const text = value.trim();
+    return text !== '' ? text.toLowerCase() : null;
+  }
+
+  return value;
+}
+
 export class CreatePedidoCabeceraDTO {
   @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
@@ -62,8 +74,8 @@ export class CreatePedidoCabeceraDTO {
   @Min(0)
   totalPedi!: number;
 
-  @IsIn(['progreso', 'completado', 'incompleto', 'emitido'])
-  estadoPedi!: 'progreso' | 'completado' | 'incompleto' | 'emitido';
+  @IsEnum(EnumEstadosPedido)
+  estadoPedi!: EnumEstadosPedido;
 
   @IsEnum(EnumMotivosPedido)
   motivoPedi!: EnumMotivosPedido;
@@ -71,10 +83,6 @@ export class CreatePedidoCabeceraDTO {
   @IsOptional()
   @IsString()
   @Length(1, 250)
-  @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== ''
-      ? value.trim().toLowerCase()
-      : null,
-  )
+  @Transform(({ value }) => optionalText(value))
   observacionPedi?: string | null;
 }

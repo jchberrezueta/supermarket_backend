@@ -1,9 +1,8 @@
-import { EnumMotivosPedido } from '@models';
+import { EnumEstadosPedido, EnumMotivosPedido } from '@models';
 import { Transform } from 'class-transformer';
 import {
   IsDateString,
   IsEnum,
-  IsIn,
   IsOptional,
   IsString,
   Length,
@@ -30,8 +29,8 @@ export class FilterPedidoDTO {
   nombreEmpr?: string;
 
   @IsOptional()
-  @IsIn(['progreso', 'completado', 'incompleto', 'emitido'])
-  estadoPedi?: 'progreso' | 'completado' | 'incompleto' | 'emitido';
+  @IsEnum(EnumEstadosPedido)
+  estadoPedi?: EnumEstadosPedido;
 
   @IsOptional()
   @IsEnum(EnumMotivosPedido)

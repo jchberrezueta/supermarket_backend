@@ -1,3 +1,8 @@
+export enum EnumEstadoProveedor {
+  ACTIVO = 'activo',
+  INACTIVO = 'inactivo',
+}
+
 export interface IProveedor {
   ideProv: number;
   ideEmpr: number;
@@ -10,6 +15,8 @@ export interface IProveedor {
   apellidoPaternoProv: string;
   segundoNombreProv?: string | null;
   apellidoMaternoProv?: string | null;
+  estadoProv: EnumEstadoProveedor;
+  cargoProv?: string | null;
 }
 
 export class CProveedor implements IProveedor {
@@ -23,11 +30,11 @@ export class CProveedor implements IProveedor {
     private _emailProv: string,
     private _primerNombreProv: string,
     private _apellidoPaternoProv: string,
-    private _segundoNombreProv?: string | null,
-    private _apellidoMaternoProv?: string | null,
+    private _segundoNombreProv: string | null,
+    private _apellidoMaternoProv: string | null,
+    private _estadoProv: EnumEstadoProveedor,
+    private _cargoProv: string | null,
   ) {}
-
-  // --- Getters / Setters ---
 
   get ideProv() {
     return this._ideProv;
@@ -95,15 +102,29 @@ export class CProveedor implements IProveedor {
   get segundoNombreProv() {
     return this._segundoNombreProv;
   }
-  set segundoNombreProv(value: string | null | undefined) {
+  set segundoNombreProv(value: string | null) {
     this._segundoNombreProv = value;
   }
 
   get apellidoMaternoProv() {
     return this._apellidoMaternoProv;
   }
-  set apellidoMaternoProv(value: string | null | undefined) {
+  set apellidoMaternoProv(value: string | null) {
     this._apellidoMaternoProv = value;
+  }
+
+  get estadoProv() {
+    return this._estadoProv;
+  }
+  set estadoProv(value: EnumEstadoProveedor) {
+    this._estadoProv = value;
+  }
+
+  get cargoProv() {
+    return this._cargoProv;
+  }
+  set cargoProv(value: string | null) {
+    this._cargoProv = value;
   }
 }
 
@@ -119,6 +140,8 @@ export interface IProveedorResult {
   apellido_paterno_prov: string;
   segundo_nombre_prov: string | null;
   apellido_materno_prov: string | null;
+  estado_prov: EnumEstadoProveedor;
+  cargo_prov: string | null;
 }
 
 export interface IFiltroProveedor {
@@ -127,4 +150,6 @@ export interface IFiltroProveedor {
   primerNombreProv?: string;
   apellidoPaternoProv?: string;
   emailProv?: string;
+  estadoProv?: EnumEstadoProveedor;
+  cargoProv?: string;
 }

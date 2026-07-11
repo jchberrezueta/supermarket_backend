@@ -10,6 +10,8 @@ import { DetalleEntregaEntity } from './detalle_entrega.entity';
 import { PedidoEntity } from './pedido.entity';
 import { ProveedorEntity } from './proveedor.entity';
 
+export type EstadoEntrega = 'borrador' | 'parcial' | 'completa' | 'anulada';
+
 @Entity({ name: 'entrega' })
 export class EntregaEntity {
   @PrimaryGeneratedColumn({ name: 'ide_entr' })
@@ -36,7 +38,7 @@ export class EntregaEntity {
   totalEntr!: string;
 
   @Column({ name: 'estado_entr', type: 'varchar', length: 25 })
-  estadoEntr!: 'completo' | 'incompleto';
+  estadoEntr!: EstadoEntrega;
 
   @Column({
     name: 'observacion_entr',

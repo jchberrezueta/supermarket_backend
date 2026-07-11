@@ -39,6 +39,19 @@ function toRequiredNumber(value: unknown): number | unknown {
   return value;
 }
 
+function optionalText(value: unknown): string | null | unknown {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value === 'string') {
+    const text = value.trim();
+    return text !== '' ? text.toLowerCase() : null;
+  }
+
+  return value;
+}
+
 export class UpdateEntregaCabeceraDTO {
   @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
@@ -60,7 +73,7 @@ export class UpdateEntregaCabeceraDTO {
 
   @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
-  @Min(1)
+  @Min(0)
   cantidadTotalEntr!: number;
 
   @Transform(({ value }) => toRequiredNumber(value))
@@ -74,10 +87,6 @@ export class UpdateEntregaCabeceraDTO {
   @IsOptional()
   @IsString()
   @Length(1, 250)
-  @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== ''
-      ? value.trim().toLowerCase()
-      : null,
-  )
+  @Transform(({ value }) => optionalText(value))
   observacionEntr?: string | null;
 }

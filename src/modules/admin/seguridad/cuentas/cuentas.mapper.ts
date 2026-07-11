@@ -9,6 +9,7 @@ export interface CuentaRow {
   usuario_cuen: string;
   password_cuen: string;
   estado_cuen: string;
+  debe_cambiar_clave: boolean;
   usua_ingre?: string;
   fecha_ingre?: Date;
   usua_actua?: string;
@@ -22,6 +23,7 @@ export interface CuentaAuthRaw {
   usuario_cuen: string;
   password_cuen: string;
   estado_cuen: string;
+  debe_cambiar_clave: boolean;
 }
 
 export class CuentasMapper {
@@ -37,6 +39,7 @@ export class CuentasMapper {
       usuario_cuen: cuenta.usuarioCuen,
       password_cuen: '',
       estado_cuen: cuenta.estadoCuen,
+      debe_cambiar_clave: cuenta.debeCambiarClave ?? false,
       usua_ingre: cuenta.usuaIngre,
       fecha_ingre: cuenta.fechaIngre,
       usua_actua: cuenta.usuaActua,
@@ -56,6 +59,7 @@ export class CuentasMapper {
       usuario_cuen: cuenta.usuarioCuen,
       password_cuen: cuenta.passwordCuen,
       estado_cuen: cuenta.estadoCuen,
+      debe_cambiar_clave: cuenta.debeCambiarClave ?? false,
     };
   }
 

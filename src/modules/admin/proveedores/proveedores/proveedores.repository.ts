@@ -85,6 +85,18 @@ export class ProveedoresRepository {
       });
     }
 
+    if (filtros.estadoProv) {
+      qb.andWhere('proveedor.estadoProv = :estadoProv', {
+        estadoProv: filtros.estadoProv,
+      });
+    }
+
+    if (filtros.cargoProv) {
+      qb.andWhere('LOWER(proveedor.cargoProv) LIKE LOWER(:cargoProv)', {
+        cargoProv: `%${filtros.cargoProv}%`,
+      });
+    }
+
     return qb.getMany();
   }
 
@@ -105,6 +117,8 @@ export class ProveedoresRepository {
       apellidoPaternoProv: dto.apellidoPaternoProv,
       segundoNombreProv: dto.segundoNombreProv ?? null,
       apellidoMaternoProv: dto.apellidoMaternoProv ?? null,
+      estadoProv: dto.estadoProv ?? 'activo',
+      cargoProv: dto.cargoProv ?? null,
       usuaIngre: 'admin',
     });
 
@@ -126,6 +140,8 @@ export class ProveedoresRepository {
     proveedor.apellidoPaternoProv = dto.apellidoPaternoProv;
     proveedor.segundoNombreProv = dto.segundoNombreProv ?? null;
     proveedor.apellidoMaternoProv = dto.apellidoMaternoProv ?? null;
+    proveedor.estadoProv = dto.estadoProv;
+    proveedor.cargoProv = dto.cargoProv ?? null;
     proveedor.usuaActua = 'admin';
     proveedor.fechaActua = new Date();
 

@@ -1,11 +1,13 @@
 export enum EnumEstadoDetalleEntrega {
   COMPLETO = 'completo',
   INCOMPLETO = 'incompleto',
+  NO_ENTREGADO = 'no_entregado',
 }
 
 export interface IDetalleEntrega {
   ideDetaEntr: number;
   ideEntr: number;
+  ideDetaPedi?: number | null;
   ideProd: number;
   cantidadProd: number;
   precioUnitarioProd: number;
@@ -21,6 +23,7 @@ export class CDetalleEntrega implements IDetalleEntrega {
   constructor(
     private _ideDetaEntr: number,
     private _ideEntr: number,
+    private _ideDetaPedi: number | null,
     private _ideProd: number,
     private _cantidadProd: number,
     private _precioUnitarioProd: number,
@@ -31,8 +34,6 @@ export class CDetalleEntrega implements IDetalleEntrega {
     private _dctoCaducProd: number,
     private _estadoDetaEntr: EnumEstadoDetalleEntrega,
   ) {}
-
-  // --- Getters / Setters ---
 
   get ideDetaEntr() {
     return this._ideDetaEntr;
@@ -46,6 +47,13 @@ export class CDetalleEntrega implements IDetalleEntrega {
   }
   set ideEntr(value: number) {
     this._ideEntr = value;
+  }
+
+  get ideDetaPedi() {
+    return this._ideDetaPedi;
+  }
+  set ideDetaPedi(value: number | null) {
+    this._ideDetaPedi = value;
   }
 
   get ideProd() {
@@ -115,6 +123,7 @@ export class CDetalleEntrega implements IDetalleEntrega {
 export interface IDetalleEntregaResult {
   ide_deta_entr: number;
   ide_entr: number;
+  ide_deta_pedi: number | null;
   ide_prod: number;
   cantidad_prod: number;
   precio_unitario_prod: number;
@@ -129,6 +138,7 @@ export interface IDetalleEntregaResult {
 export interface IFiltroDetalleEntrega {
   ideDetaEntr?: number;
   ideEntr?: number;
+  ideDetaPedi?: number;
   ideProd?: number;
   cantidadProdMin?: number;
   cantidadProdMax?: number;

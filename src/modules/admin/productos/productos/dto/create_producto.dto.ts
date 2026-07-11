@@ -1,5 +1,7 @@
+import { EnumEstadosProducto } from '@models';
 import { Transform } from 'class-transformer';
 import {
+  IsEnum,
   IsIn,
   IsInt,
   IsNumber,
@@ -37,6 +39,58 @@ function toRequiredInt(value: unknown): number | unknown {
   return value;
 }
 
+function optionalInt(value: unknown): number | undefined | unknown {
+  if (value === null || value === undefined || value === '') {
+    return undefined;
+  }
+
+  const numberValue = Number(value);
+
+  if (Number.isInteger(numberValue)) {
+    return numberValue;
+  }
+
+  return value;
+}
+
+function requiredLowerText(value: unknown): string | null | unknown {
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const text = value.trim();
+
+  return text !== '' ? text.toLowerCase() : null;
+}
+
+function optionalLowerText(value: unknown): string | null | unknown {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const text = value.trim();
+
+  return text !== '' ? text.toLowerCase() : null;
+}
+
+function optionalText(value: unknown): string | null | unknown {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const text = value.trim();
+
+  return text !== '' ? text : null;
+}
+
 export class CreateProductoDTO {
   @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
@@ -50,28 +104,18 @@ export class CreateProductoDTO {
 
   @IsString()
   @Length(1, 30)
-  @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== ''
-      ? value.trim().toLowerCase()
-      : null,
-  )
+  @Transform(({ value }) => requiredLowerText(value))
   codigoBarraProd!: string;
 
   @IsString()
   @Length(1, 100)
-  @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== ''
-      ? value.trim().toLowerCase()
-      : null,
-  )
+  @Transform(({ value }) => requiredLowerText(value))
   nombreProd!: string;
 
   @IsOptional()
   @IsString()
   @Length(1, 500)
-  @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
-  )
+  @Transform(({ value }) => optionalText(value))
   urlImgProd?: string | null;
 
   @Transform(({ value }) => toRequiredNumber(value))
@@ -89,24 +133,31 @@ export class CreateProductoDTO {
   @Min(0)
   dctoPromoProd!: number;
 
+  /**
+   * Por ahora se conserva porque el frontend actual lo usa.
+   * Más adelante restringiremos cambios directos de stock para que
+   * stock_prod se mueva solo por entregas, ventas, anulaciones y ajustes.
+   */
   @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
   @Min(0)
   stockProd!: number;
 
+  @IsOptional()
+  @Transform(({ value }) => optionalInt(value))
+  @IsInt()
+  @Min(0)
+  stockMinimoProd?: number;
+
   @IsIn(['si', 'no'])
   disponibleProd!: 'si' | 'no';
 
-  @IsIn(['activo', 'inactivo'])
-  estadoProd!: 'activo' | 'inactivo';
+  @IsEnum(EnumEstadosProducto)
+  estadoProd!: EnumEstadosProducto;
 
   @IsOptional()
   @IsString()
   @Length(1, 250)
-  @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== ''
-      ? value.trim().toLowerCase()
-      : null,
-  )
+  @Transform(({ value }) => optionalLowerText(value))
   descripcionProd?: string | null;
 }

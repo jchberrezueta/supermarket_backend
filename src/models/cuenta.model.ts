@@ -11,6 +11,7 @@ export interface ICuenta {
   usuarioCuen: string;
   passwordCuen: string;
   estadoCuen: EnumEstadosCuenta;
+  debeCambiarClave: boolean;
 }
 
 export class CCuenta implements ICuenta {
@@ -21,9 +22,8 @@ export class CCuenta implements ICuenta {
     private _usuarioCuen: string,
     private _passwordCuen: string,
     private _estadoCuen: EnumEstadosCuenta,
+    private _debeCambiarClave: boolean,
   ) {}
-
-  // --- Getters / Setters ---
 
   get ideCuen() {
     return this._ideCuen;
@@ -66,6 +66,13 @@ export class CCuenta implements ICuenta {
   set estadoCuen(value: EnumEstadosCuenta) {
     this._estadoCuen = value;
   }
+
+  get debeCambiarClave() {
+    return this._debeCambiarClave;
+  }
+  set debeCambiarClave(value: boolean) {
+    this._debeCambiarClave = value;
+  }
 }
 
 export interface ICuentaResult {
@@ -75,6 +82,7 @@ export interface ICuentaResult {
   usuario_cuen: string;
   password_cuen: string;
   estado_cuen: EnumEstadosCuenta;
+  debe_cambiar_clave: boolean;
 }
 
 export interface IFiltroCuenta {
@@ -83,4 +91,5 @@ export interface IFiltroCuenta {
   idePerf?: number;
   usuarioCuen?: string;
   estadoCuen?: EnumEstadosCuenta;
+  debeCambiarClave?: boolean;
 }

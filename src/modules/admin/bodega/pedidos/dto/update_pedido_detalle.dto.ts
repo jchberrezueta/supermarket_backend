@@ -1,5 +1,6 @@
+import { EnumEstadoDetallePedido } from '@models';
 import { Transform } from 'class-transformer';
-import { IsIn, IsInt, IsNumber, Min } from 'class-validator';
+import { IsEnum, IsInt, IsNumber, Min } from 'class-validator';
 
 function toRequiredInt(value: unknown): number | unknown {
   if (value === null || value === undefined || value === '') {
@@ -80,6 +81,6 @@ export class UpdatePedidoDetalleDTO {
   @Min(0)
   dctoCaducProd!: number;
 
-  @IsIn(['progreso', 'completado', 'incompleto', 'emitido'])
-  estadoDetaPedi!: 'progreso' | 'completado' | 'incompleto' | 'emitido';
+  @IsEnum(EnumEstadoDetallePedido)
+  estadoDetaPedi!: EnumEstadoDetallePedido;
 }

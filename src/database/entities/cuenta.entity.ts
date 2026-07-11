@@ -11,6 +11,8 @@ import { AccesoUsuarioEntity } from './acceso_usuario.entity';
 import { EmpleadoEntity } from './empleado.entity';
 import { PerfilEntity } from './perfil.entity';
 
+export type EstadoCuenta = 'activo' | 'inactivo' | 'bloqueado';
+
 @Entity({ name: 'cuenta' })
 @Index('cuenta_usuario_cuen_key', ['usuarioCuen'], { unique: true })
 export class CuentaEntity {
@@ -30,7 +32,14 @@ export class CuentaEntity {
   passwordCuen!: string;
 
   @Column({ name: 'estado_cuen', type: 'varchar', length: 25 })
-  estadoCuen!: 'activo' | 'inactivo' | 'bloqueado';
+  estadoCuen!: EstadoCuenta;
+
+  @Column({
+    name: 'debe_cambiar_clave',
+    type: 'boolean',
+    default: false,
+  })
+  debeCambiarClave!: boolean;
 
   @Column({ name: 'usua_ingre', type: 'varchar', length: 25 })
   usuaIngre!: string;

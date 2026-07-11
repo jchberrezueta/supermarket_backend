@@ -13,10 +13,11 @@ export interface ProductoRow {
   iva_prod: number;
   dcto_promo_prod: number;
   stock_prod: number;
+  stock_minimo_prod: number;
   disponible_prod: string;
   estado_prod: string;
-  descripcion_prod: string;
-  url_img_prod: string;
+  descripcion_prod: string | null;
+  url_img_prod: string | null;
 }
 
 export class ProductosMapper {
@@ -33,10 +34,11 @@ export class ProductosMapper {
       iva_prod: MoneyUtil.toNumber(producto.ivaProd),
       dcto_promo_prod: MoneyUtil.toNumber(producto.dctoPromoProd),
       stock_prod: producto.stockProd,
+      stock_minimo_prod: producto.stockMinimoProd ?? 0,
       disponible_prod: producto.disponibleProd,
       estado_prod: producto.estadoProd,
-      descripcion_prod: producto.descripcionProd,
-      url_img_prod: producto.urlImgProd,
+      descripcion_prod: producto.descripcionProd ?? null,
+      url_img_prod: producto.urlImgProd ?? null,
     };
   }
 

@@ -105,6 +105,12 @@ export class CuentasRepository {
       });
     }
 
+    if (filtros.debeCambiarClave !== undefined) {
+      qb.andWhere('cuenta.debeCambiarClave = :debeCambiarClave', {
+        debeCambiarClave: filtros.debeCambiarClave,
+      });
+    }
+
     return qb.getMany();
   }
 
@@ -121,6 +127,7 @@ export class CuentasRepository {
       usuarioCuen: dto.usuarioCuen,
       passwordCuen: passwordHash,
       estadoCuen: dto.estadoCuen as CuentaEntity['estadoCuen'],
+      debeCambiarClave: dto.debeCambiarClave ?? false,
       usuaIngre: 'admin',
     });
 
@@ -137,6 +144,8 @@ export class CuentasRepository {
     cuenta.idePerf = dto.idePerf;
     cuenta.usuarioCuen = dto.usuarioCuen;
     cuenta.estadoCuen = dto.estadoCuen as CuentaEntity['estadoCuen'];
+    cuenta.debeCambiarClave =
+      dto.debeCambiarClave ?? cuenta.debeCambiarClave ?? false;
 
     if (passwordHash) {
       cuenta.passwordCuen = passwordHash;
@@ -178,6 +187,7 @@ export class CuentasRepository {
         'cuenta.ideEmpl AS ide_empl',
         'cuenta.usuarioCuen AS usuario_cuen',
         'cuenta.estadoCuen AS estado_cuen',
+        'cuenta.debeCambiarClave AS debe_cambiar_clave',
         'perfil.nombrePerf AS nombre_perf',
         'opcion.nombreOpci AS nombre_opci',
         'opcion.activoOpci AS activo_opci',
