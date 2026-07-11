@@ -12,11 +12,13 @@ import {
 } from '@common/index';
 import {
   DetalleEntregaEntity,
+  DetalleEntregaLoteEntity,
+  DetallePedidoEntity,
   EstadoEntrega,
   PedidoEntity,
   ProductoEntity,
 } from '@entities';
-import { EnumEstadoEntrega } from '@models';
+import { EnumEstadoEntrega, EnumTipoMovimientoInventario } from '@models';
 import { DataSource, EntityManager } from 'typeorm';
 import { CreateEntregaDTO } from './dto/create_entrega.dto';
 import { CreateEntregaDetalleDTO } from './dto/create_entrega_detalle.dto';
@@ -78,13 +80,22 @@ export class EntregasService {
 
   async insertar(body: CreateEntregaDTO) {
     const detalles = body.detalleEntrega ?? [];
-    this.validarDetalleEntrega(detalles, true);
+
+    this.validarDetalleEntrega(detalles, true, body.cabeceraEntrega.estadoEntr);
 
     try {
       const entrega = await this.dataSource.transaction(async (manager) => {
         const pedido = await this.validarPedidoYProveedor(
           body.cabeceraEntrega.idePedi,
           body.cabeceraEntrega.ideProv,
+          manager,
+        );
+
+        await this.validarDetallesContraPedidoYPendiente(
+          detalles,
+          pedido,
+          body.cabeceraEntrega.estadoEntr,
+          null,
           manager,
         );
 
@@ -118,6 +129,22 @@ export class EntregasService {
           manager,
         );
 
+        const detallesGuardados =
+          await this.entregasRepository.listarDetallesPorEntrega(
+            entregaCreada.ideEntr,
+            manager,
+          );
+
+        await this.aplicarMovimientoLotesEntrega(
+          detallesGuardados,
+          pedido,
+          movimientoNuevo,
+          this.obtenerTipoMovimientoNuevo(pedido, movimientoNuevo),
+          manager,
+        );
+
+        await this.actualizarEstadosPedidoPorEntregas(pedido.idePedi, manager);
+
         return entregaCreada;
       });
 
@@ -136,7 +163,8 @@ export class EntregasService {
 
   async actualizar(body: UpdateEntregaDTO) {
     const detalles = body.detalleEntrega ?? [];
-    this.validarDetalleEntrega(detalles, true);
+
+    this.validarDetalleEntrega(detalles, true, body.cabeceraEntrega.estadoEntr);
 
     const ideEntr = IdUtil.requireId(
       body.cabeceraEntrega.ideEntr,
@@ -175,6 +203,14 @@ export class EntregasService {
           manager,
         );
 
+        await this.validarDetallesContraPedidoYPendiente(
+          detalles,
+          pedidoNuevo,
+          body.cabeceraEntrega.estadoEntr,
+          ideEntr,
+          manager,
+        );
+
         const movimientoAnterior = this.obtenerMovimientoEntrega(
           pedidoAnterior,
           entregaActual.estadoEntr,
@@ -183,6 +219,15 @@ export class EntregasService {
         const movimientoNuevo = this.obtenerMovimientoEntrega(
           pedidoNuevo,
           body.cabeceraEntrega.estadoEntr,
+        );
+
+        await this.aplicarMovimientoLotesEntrega(
+          detallesActuales,
+          pedidoAnterior,
+          this.invertirMovimiento(movimientoAnterior),
+          EnumTipoMovimientoInventario.ANULACION_ENTREGA,
+          manager,
+          true,
         );
 
         await this.ajustarStockPorCambioDeEntrega(
@@ -212,6 +257,32 @@ export class EntregasService {
           manager,
         );
 
+        const detallesGuardados =
+          await this.entregasRepository.listarDetallesPorEntrega(
+            entregaActualizada.ideEntr,
+            manager,
+          );
+
+        await this.aplicarMovimientoLotesEntrega(
+          detallesGuardados,
+          pedidoNuevo,
+          movimientoNuevo,
+          this.obtenerTipoMovimientoNuevo(pedidoNuevo, movimientoNuevo),
+          manager,
+        );
+
+        await this.actualizarEstadosPedidoPorEntregas(
+          pedidoNuevo.idePedi,
+          manager,
+        );
+
+        if (pedidoAnterior.idePedi !== pedidoNuevo.idePedi) {
+          await this.actualizarEstadosPedidoPorEntregas(
+            pedidoAnterior.idePedi,
+            manager,
+          );
+        }
+
         return entregaActualizada;
       });
 
@@ -240,6 +311,8 @@ export class EntregasService {
           return 0;
         }
 
+        const idePediAnterior = entregaActual.idePedi;
+
         const detallesActuales =
           await this.entregasRepository.listarDetallesPorEntrega(
             ideEntr,
@@ -262,6 +335,15 @@ export class EntregasService {
           entregaActual.estadoEntr,
         );
 
+        await this.aplicarMovimientoLotesEntrega(
+          detallesActuales,
+          pedidoAnterior,
+          this.invertirMovimiento(movimientoAnterior),
+          EnumTipoMovimientoInventario.ANULACION_ENTREGA,
+          manager,
+          true,
+        );
+
         await this.ajustarStockPorCambioDeEntrega(
           this.consolidarCantidadesPorProducto(detallesActuales),
           movimientoAnterior,
@@ -270,10 +352,15 @@ export class EntregasService {
           manager,
         );
 
-        return this.entregasRepository.eliminarEntregaConDetalles(
-          ideEntr,
-          manager,
-        );
+        const eliminados =
+          await this.entregasRepository.eliminarEntregaConDetalles(
+            ideEntr,
+            manager,
+          );
+
+        await this.actualizarEstadosPedidoPorEntregas(idePediAnterior, manager);
+
+        return eliminados;
       });
 
       if (affected === 0) {
@@ -379,6 +466,18 @@ export class EntregasService {
       );
     }
 
+    if (pedido.estadoPedi === 'cancelado') {
+      throw new BadRequestException(
+        'No se puede registrar una entrega sobre un pedido cancelado.',
+      );
+    }
+
+    if (pedido.estadoPedi === 'cerrado_incompleto') {
+      throw new BadRequestException(
+        'No se puede registrar una entrega sobre un pedido cerrado incompleto.',
+      );
+    }
+
     return pedido;
   }
 
@@ -386,20 +485,6 @@ export class EntregasService {
     pedido: PedidoEntity,
     estadoEntr: EstadoEntrega | EnumEstadoEntrega,
   ): MovimientoEntrega {
-    /**
-     * Reglas temporales de Fase 2A:
-     *
-     * borrador:
-     *   No afecta stock.
-     *
-     * parcial / completa:
-     *   Entrega confirmada, sí afecta stock.
-     *
-     * anulada:
-     *   No aplica stock como nueva entrada.
-     *   En una fase posterior, una anulación formal registrará
-     *   movimiento inverso en movimiento_inventario.
-     */
     if (estadoEntr === 'borrador' || estadoEntr === 'anulada') {
       return 0;
     }
@@ -407,9 +492,37 @@ export class EntregasService {
     return pedido.motivoPedi === 'peticion' ? 1 : -1;
   }
 
+  private invertirMovimiento(movimiento: MovimientoEntrega): MovimientoEntrega {
+    if (movimiento === 1) {
+      return -1;
+    }
+
+    if (movimiento === -1) {
+      return 1;
+    }
+
+    return 0;
+  }
+
+  private obtenerTipoMovimientoNuevo(
+    pedido: PedidoEntity,
+    movimiento: MovimientoEntrega,
+  ): EnumTipoMovimientoInventario {
+    if (movimiento === 1 && pedido.motivoPedi === 'peticion') {
+      return EnumTipoMovimientoInventario.ENTRADA_ENTREGA;
+    }
+
+    if (movimiento === -1 && pedido.motivoPedi === 'devolucion') {
+      return EnumTipoMovimientoInventario.SALIDA_DEVOLUCION_PROVEEDOR;
+    }
+
+    return EnumTipoMovimientoInventario.CORRECCION_LOTE;
+  }
+
   private validarDetalleEntrega(
     detalles: Array<CreateEntregaDetalleDTO | UpdateEntregaDetalleDTO>,
     obligatorio: boolean,
+    estadoEntr: EstadoEntrega | EnumEstadoEntrega,
   ): void {
     if (!Array.isArray(detalles)) {
       throw new BadRequestException('El detalle de entrega no es válido.');
@@ -420,6 +533,9 @@ export class EntregasService {
         'Debe agregar al menos un producto a la entrega.',
       );
     }
+
+    const mueveInventario =
+      estadoEntr === 'parcial' || estadoEntr === 'completa';
 
     const detallesPedidoUsados = new Set<number>();
 
@@ -467,6 +583,17 @@ export class EntregasService {
         );
       }
 
+      if (
+        mueveInventario &&
+        detalle.estadoDetaEntr !== 'no_entregado' &&
+        Number(detalle.cantidadProd) > 0 &&
+        !detalle.lotesRecibidos?.length
+      ) {
+        throw new BadRequestException(
+          'Toda entrega parcial o completa debe registrar lotes recibidos por cada producto entregado.',
+        );
+      }
+
       if (detalle.lotesRecibidos?.length) {
         const totalLotes = detalle.lotesRecibidos.reduce(
           (total, lote) => total + Number(lote.cantidadLote ?? 0),
@@ -480,6 +607,186 @@ export class EntregasService {
         }
       }
     }
+  }
+
+  private async validarDetallesContraPedidoYPendiente(
+    detalles: Array<CreateEntregaDetalleDTO | UpdateEntregaDetalleDTO>,
+    pedido: PedidoEntity,
+    estadoEntr: EstadoEntrega | EnumEstadoEntrega,
+    excluirIdeEntr: number | null,
+    manager: EntityManager,
+  ): Promise<void> {
+    if (!pedido.detalles?.length) {
+      throw new BadRequestException(
+        'El pedido seleccionado no tiene detalles registrados.',
+      );
+    }
+
+    const detallesPedido = new Map<number, DetallePedidoEntity>();
+
+    for (const detallePedido of pedido.detalles) {
+      detallesPedido.set(detallePedido.ideDetaPedi, detallePedido);
+    }
+
+    const cantidadesConfirmadasRows =
+      await this.entregasRepository.obtenerCantidadesConfirmadasPorPedido(
+        pedido.idePedi,
+        excluirIdeEntr,
+        manager,
+      );
+
+    const cantidadesConfirmadas = new Map<number, number>();
+
+    for (const row of cantidadesConfirmadasRows) {
+      cantidadesConfirmadas.set(
+        Number(row.ide_deta_pedi),
+        Number(row.cantidad_confirmada),
+      );
+    }
+
+    const cantidadesNuevas = new Map<number, number>();
+    const mueveInventario =
+      estadoEntr === 'parcial' || estadoEntr === 'completa';
+
+    for (const detalle of detalles) {
+      const ideDetaPedi = IdUtil.requireId(
+        detalle.ideDetaPedi,
+        'El detalle de pedido de la entrega no es válido.',
+      );
+
+      const detallePedido = detallesPedido.get(ideDetaPedi);
+
+      if (!detallePedido) {
+        throw new BadRequestException(
+          `El detalle de pedido ${ideDetaPedi} no pertenece al pedido seleccionado.`,
+        );
+      }
+
+      if (detallePedido.ideProd !== detalle.ideProd) {
+        throw new BadRequestException(
+          `El producto del detalle de entrega no coincide con el producto del detalle de pedido ${ideDetaPedi}.`,
+        );
+      }
+
+      if (
+        detallePedido.estadoDetaPedi === 'cancelado' ||
+        detallePedido.estadoDetaPedi === 'cerrado_incompleto'
+      ) {
+        throw new BadRequestException(
+          `El detalle de pedido ${ideDetaPedi} no puede recibir entregas porque está ${detallePedido.estadoDetaPedi}.`,
+        );
+      }
+
+      const cantidadAnterior = cantidadesNuevas.get(ideDetaPedi) ?? 0;
+      cantidadesNuevas.set(
+        ideDetaPedi,
+        cantidadAnterior + (mueveInventario ? Number(detalle.cantidadProd) : 0),
+      );
+    }
+
+    for (const [ideDetaPedi, cantidadNueva] of cantidadesNuevas.entries()) {
+      const detallePedido = detallesPedido.get(ideDetaPedi);
+
+      if (!detallePedido) {
+        continue;
+      }
+
+      const cantidadYaConfirmada = cantidadesConfirmadas.get(ideDetaPedi) ?? 0;
+      const cantidadTotalConfirmada = cantidadYaConfirmada + cantidadNueva;
+
+      if (cantidadTotalConfirmada > detallePedido.cantidadProd) {
+        const pendiente = Math.max(
+          detallePedido.cantidadProd - cantidadYaConfirmada,
+          0,
+        );
+
+        throw new BadRequestException(
+          `No se puede recibir más de lo pedido para "${detallePedido.producto?.nombreProd ?? `producto ${detallePedido.ideProd}`}". Pedido: ${detallePedido.cantidadProd}, ya confirmado: ${cantidadYaConfirmada}, pendiente: ${pendiente}, recibido ahora: ${cantidadNueva}.`,
+        );
+      }
+    }
+  }
+
+  private async actualizarEstadosPedidoPorEntregas(
+    idePedi: number,
+    manager: EntityManager,
+  ): Promise<void> {
+    const pedido = await this.entregasRepository.buscarPedidoPorId(
+      idePedi,
+      manager,
+    );
+
+    if (!pedido) {
+      return;
+    }
+
+    if (
+      pedido.estadoPedi === 'cancelado' ||
+      pedido.estadoPedi === 'cerrado_incompleto'
+    ) {
+      return;
+    }
+
+    const cantidadesConfirmadasRows =
+      await this.entregasRepository.obtenerCantidadesConfirmadasPorPedido(
+        idePedi,
+        null,
+        manager,
+      );
+
+    const cantidadesConfirmadas = new Map<number, number>();
+
+    for (const row of cantidadesConfirmadasRows) {
+      cantidadesConfirmadas.set(
+        Number(row.ide_deta_pedi),
+        Number(row.cantidad_confirmada),
+      );
+    }
+
+    let tieneParcial = false;
+    let todosCompletos = true;
+
+    for (const detallePedido of pedido.detalles ?? []) {
+      if (
+        detallePedido.estadoDetaPedi === 'cancelado' ||
+        detallePedido.estadoDetaPedi === 'cerrado_incompleto'
+      ) {
+        continue;
+      }
+
+      const recibido =
+        cantidadesConfirmadas.get(detallePedido.ideDetaPedi) ?? 0;
+
+      if (recibido <= 0) {
+        detallePedido.estadoDetaPedi = 'pendiente';
+        todosCompletos = false;
+      } else if (recibido < detallePedido.cantidadProd) {
+        detallePedido.estadoDetaPedi = 'parcial';
+        tieneParcial = true;
+        todosCompletos = false;
+      } else {
+        detallePedido.estadoDetaPedi = 'completo';
+        tieneParcial = true;
+      }
+
+      await this.entregasRepository.guardarDetallePedido(
+        detallePedido,
+        manager,
+      );
+    }
+
+    if (todosCompletos && pedido.detalles?.length) {
+      pedido.estadoPedi = 'completado';
+    } else if (tieneParcial) {
+      pedido.estadoPedi = 'parcial';
+    } else {
+      pedido.estadoPedi = 'emitido';
+    }
+
+    pedido.usuaActua = 'admin';
+    pedido.fechaActua = new Date();
+
+    await this.entregasRepository.guardarPedido(pedido, manager);
   }
 
   private consolidarCantidadesPorProducto(
@@ -576,6 +883,131 @@ export class EntregasService {
     }
   }
 
+  private async aplicarMovimientoLotesEntrega(
+    detalles: DetalleEntregaEntity[],
+    pedido: PedidoEntity,
+    movimiento: MovimientoEntrega,
+    tipoMovi: EnumTipoMovimientoInventario,
+    manager: EntityManager,
+    esReversion = false,
+  ): Promise<void> {
+    if (movimiento === 0) {
+      return;
+    }
+
+    for (const detalle of detalles) {
+      if (!detalle.lotesRecibidos?.length) {
+        continue;
+      }
+
+      for (const detalleLote of detalle.lotesRecibidos) {
+        await this.aplicarMovimientoLoteIndividual(
+          detalle,
+          detalleLote,
+          pedido,
+          movimiento,
+          tipoMovi,
+          manager,
+          esReversion,
+        );
+      }
+    }
+  }
+
+  private async aplicarMovimientoLoteIndividual(
+    detalle: DetalleEntregaEntity,
+    detalleLote: DetalleEntregaLoteEntity,
+    pedido: PedidoEntity,
+    movimiento: MovimientoEntrega,
+    tipoMovi: EnumTipoMovimientoInventario,
+    manager: EntityManager,
+    esReversion: boolean,
+  ): Promise<void> {
+    const fechaCaducidad = this.toDateOnly(detalleLote.fechaCaducidadLote);
+    const cantidadMovimiento = detalleLote.cantidadLote * movimiento;
+
+    let lote =
+      await this.entregasRepository.buscarLotePorProductoYFechaForUpdate(
+        detalle.ideProd,
+        fechaCaducidad,
+        manager,
+      );
+
+    if (!lote) {
+      if (cantidadMovimiento < 0) {
+        throw new BadRequestException(
+          `No existe un lote para el producto ${detalle.ideProd} con caducidad ${fechaCaducidad}.`,
+        );
+      }
+
+      lote = await this.entregasRepository.crearLote(
+        detalle.ideProd,
+        fechaCaducidad,
+        0,
+        manager,
+      );
+    }
+
+    const stockLoteAnterior = lote.stockLote;
+    const stockLotePosterior = stockLoteAnterior + cantidadMovimiento;
+
+    if (stockLotePosterior < 0) {
+      throw new BadRequestException(
+        `Stock insuficiente en lote ${lote.ideLote}. Disponible: ${stockLoteAnterior}, movimiento solicitado: ${cantidadMovimiento}.`,
+      );
+    }
+
+    lote.stockLote = stockLotePosterior;
+
+    const loteGuardado = await this.entregasRepository.guardarLote(
+      lote,
+      manager,
+    );
+
+    detalleLote.ideLote = loteGuardado.ideLote;
+    detalleLote.estadoDetaEntrLote = esReversion ? 'anulado' : 'confirmado';
+    detalleLote.fechaActua = new Date();
+    detalleLote.usuaActua = 'admin';
+
+    await manager.getRepository(DetalleEntregaLoteEntity).save(detalleLote);
+
+    await this.entregasRepository.registrarMovimientoInventario(
+      {
+        ideProd: detalle.ideProd,
+        ideLote: loteGuardado.ideLote,
+        ideDetaEntr: detalle.ideDetaEntr,
+        ideDetaVent: null,
+        tipoMovi,
+        cantidadMovi: cantidadMovimiento,
+        stockProdAnterior: null,
+        stockProdPosterior: null,
+        stockLoteAnterior,
+        stockLotePosterior,
+        observacionMovi: this.obtenerObservacionMovimiento(
+          pedido,
+          detalle,
+          fechaCaducidad,
+          esReversion,
+        ),
+        usuaIngre: 'admin',
+      },
+      manager,
+    );
+  }
+
+  private obtenerObservacionMovimiento(
+    pedido: PedidoEntity,
+    detalle: DetalleEntregaEntity,
+    fechaCaducidad: string,
+    esReversion: boolean,
+  ): string {
+    const accion = esReversion
+      ? 'Reverso de entrega'
+      : 'Confirmación de entrega';
+
+    return `${accion}. Pedido ${pedido.idePedi}, detalle entrega ${detalle.ideDetaEntr}, producto ${detalle.ideProd}, caducidad ${fechaCaducidad}.`;
+  }
+
   private calcularTotalesDesdeDetalle(
     detalles: Array<CreateEntregaDetalleDTO | UpdateEntregaDetalleDTO>,
     cabecera: {
@@ -600,5 +1032,19 @@ export class EntregasService {
         totalEntr: 0,
       },
     );
+  }
+
+  private toDateOnly(value: Date | string): string {
+    const date = value instanceof Date ? value : new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return String(value).slice(0, 10);
+    }
+
+    const localDate = new Date(
+      date.getTime() - date.getTimezoneOffset() * 60000,
+    );
+
+    return localDate.toISOString().slice(0, 10);
   }
 }

@@ -2,26 +2,75 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   DetalleEntregaEntity,
+  DetalleEntregaLoteEntity,
+  DetallePedidoEntity,
   EntregaEntity,
+  LoteEntity,
+  MovimientoInventarioEntity,
   PedidoEntity,
   ProductoEntity,
   ProveedorEntity,
 } from '@entities';
 import { EntityManager, Repository } from 'typeorm';
-import { MoneyUtil } from '@common/utils/money.util';
 import { CreateEntregaCabeceraDTO } from './dto/create_entrega_cabecera.dto';
 import { CreateEntregaDetalleDTO } from './dto/create_entrega_detalle.dto';
 import { FilterEntregaDTO } from './dto/filter_entrega.dto';
 import { UpdateEntregaCabeceraDTO } from './dto/update_entrega_cabecera.dto';
-import { UpdateEntregaDetalleDTO } from './dto/update_entrega_detalle.dto';
+
+interface TotalesEntregaCalculados {
+  cantidadTotalEntr: number;
+  totalEntr: number;
+}
+
+interface RegistrarMovimientoInventarioParams {
+  ideProd: number;
+  ideLote?: number | null;
+  ideDetaEntr?: number | null;
+  ideDetaVent?: number | null;
+  tipoMovi: MovimientoInventarioEntity['tipoMovi'];
+  cantidadMovi: number;
+  stockProdAnterior?: number | null;
+  stockProdPosterior?: number | null;
+  stockLoteAnterior?: number | null;
+  stockLotePosterior?: number | null;
+  observacionMovi?: string | null;
+  usuaIngre?: string;
+}
+
+export interface CantidadConfirmadaPedidoRow {
+  ide_deta_pedi: number;
+  cantidad_confirmada: string;
+}
 
 @Injectable()
 export class EntregasRepository {
   constructor(
     @InjectRepository(EntregaEntity)
     private readonly entregaRepository: Repository<EntregaEntity>,
+
     @InjectRepository(DetalleEntregaEntity)
     private readonly detalleEntregaRepository: Repository<DetalleEntregaEntity>,
+
+    @InjectRepository(DetalleEntregaLoteEntity)
+    private readonly detalleEntregaLoteRepository: Repository<DetalleEntregaLoteEntity>,
+
+    @InjectRepository(PedidoEntity)
+    private readonly pedidoRepository: Repository<PedidoEntity>,
+
+    @InjectRepository(DetallePedidoEntity)
+    private readonly detallePedidoRepository: Repository<DetallePedidoEntity>,
+
+    @InjectRepository(ProveedorEntity)
+    private readonly proveedorRepository: Repository<ProveedorEntity>,
+
+    @InjectRepository(ProductoEntity)
+    private readonly productoRepository: Repository<ProductoEntity>,
+
+    @InjectRepository(LoteEntity)
+    private readonly loteRepository: Repository<LoteEntity>,
+
+    @InjectRepository(MovimientoInventarioEntity)
+    private readonly movimientoInventarioRepository: Repository<MovimientoInventarioEntity>,
   ) {}
 
   async listar(manager?: EntityManager): Promise<EntregaEntity[]> {
@@ -30,10 +79,18 @@ export class EntregasRepository {
         pedido: {
           empresa: true,
         },
-        proveedor: true,
+        proveedor: {
+          empresa: true,
+        },
+        detalles: {
+          producto: true,
+          detallePedido: true,
+          lotesRecibidos: {
+            lote: true,
+          },
+        },
       },
       order: {
-        fechaEntr: 'DESC',
         ideEntr: 'DESC',
       },
     });
@@ -51,7 +108,16 @@ export class EntregasRepository {
         pedido: {
           empresa: true,
         },
-        proveedor: true,
+        proveedor: {
+          empresa: true,
+        },
+        detalles: {
+          producto: true,
+          detallePedido: true,
+          lotesRecibidos: {
+            lote: true,
+          },
+        },
       },
     });
   }
@@ -72,18 +138,18 @@ export class EntregasRepository {
     filtros: FilterEntregaDTO,
     manager?: EntityManager,
   ): Promise<EntregaEntity[]> {
-    const fechaDesde =
-      filtros.fechaDesde ?? (filtros as any).fechaEntrDesde ?? null;
-    const fechaHasta =
-      filtros.fechaHasta ?? (filtros as any).fechaEntrHasta ?? null;
-
     const qb = this.getEntregaRepository(manager)
       .createQueryBuilder('entrega')
       .leftJoinAndSelect('entrega.pedido', 'pedido')
-      .leftJoinAndSelect('pedido.empresa', 'empresa')
+      .leftJoinAndSelect('pedido.empresa', 'empresaPedido')
       .leftJoinAndSelect('entrega.proveedor', 'proveedor')
-      .orderBy('entrega.fechaEntr', 'DESC')
-      .addOrderBy('entrega.ideEntr', 'DESC');
+      .leftJoinAndSelect('proveedor.empresa', 'empresaProveedor')
+      .leftJoinAndSelect('entrega.detalles', 'detalle')
+      .leftJoinAndSelect('detalle.producto', 'producto')
+      .leftJoinAndSelect('detalle.detallePedido', 'detallePedido')
+      .leftJoinAndSelect('detalle.lotesRecibidos', 'detalleLote')
+      .leftJoinAndSelect('detalleLote.lote', 'lote')
+      .orderBy('entrega.ideEntr', 'DESC');
 
     if (filtros.idePedi !== undefined && filtros.idePedi !== null) {
       qb.andWhere('entrega.idePedi = :idePedi', {
@@ -103,19 +169,59 @@ export class EntregasRepository {
       });
     }
 
-    if (fechaDesde) {
-      qb.andWhere('entrega.fechaEntr >= :fechaDesde', {
-        fechaDesde,
+    if (filtros.fechaDesde) {
+      qb.andWhere('DATE(entrega.fechaEntr) >= :fechaDesde', {
+        fechaDesde: filtros.fechaDesde,
       });
     }
 
-    if (fechaHasta) {
-      qb.andWhere('entrega.fechaEntr <= :fechaHasta', {
-        fechaHasta,
+    if (filtros.fechaHasta) {
+      qb.andWhere('DATE(entrega.fechaEntr) <= :fechaHasta', {
+        fechaHasta: filtros.fechaHasta,
       });
     }
 
     return qb.getMany();
+  }
+
+  async crearEntrega(
+    dto: CreateEntregaCabeceraDTO,
+    totales: TotalesEntregaCalculados,
+    manager?: EntityManager,
+  ): Promise<EntregaEntity> {
+    const repository = this.getEntregaRepository(manager);
+
+    const entrega = repository.create({
+      idePedi: dto.idePedi,
+      ideProv: dto.ideProv,
+      fechaEntr: new Date(dto.fechaEntr),
+      cantidadTotalEntr: totales.cantidadTotalEntr,
+      totalEntr: totales.totalEntr.toFixed(2),
+      estadoEntr: dto.estadoEntr,
+      observacionEntr: dto.observacionEntr ?? null,
+      usuaIngre: 'admin',
+    });
+
+    return repository.save(entrega);
+  }
+
+  async actualizarEntrega(
+    entrega: EntregaEntity,
+    dto: UpdateEntregaCabeceraDTO,
+    totales: TotalesEntregaCalculados,
+    manager?: EntityManager,
+  ): Promise<EntregaEntity> {
+    entrega.idePedi = dto.idePedi;
+    entrega.ideProv = dto.ideProv;
+    entrega.fechaEntr = new Date(dto.fechaEntr);
+    entrega.cantidadTotalEntr = totales.cantidadTotalEntr;
+    entrega.totalEntr = totales.totalEntr.toFixed(2);
+    entrega.estadoEntr = dto.estadoEntr;
+    entrega.observacionEntr = dto.observacionEntr ?? null;
+    entrega.usuaActua = 'admin';
+    entrega.fechaActua = new Date();
+
+    return this.getEntregaRepository(manager).save(entrega);
   }
 
   async listarDetallesPorEntrega(
@@ -128,6 +234,10 @@ export class EntregasRepository {
       },
       relations: {
         producto: true,
+        detallePedido: true,
+        lotesRecibidos: {
+          lote: true,
+        },
       },
       order: {
         ideDetaEntr: 'ASC',
@@ -135,24 +245,127 @@ export class EntregasRepository {
     });
   }
 
+  async reemplazarDetalles(
+    ideEntr: number,
+    detalles: CreateEntregaDetalleDTO[],
+    manager?: EntityManager,
+  ): Promise<void> {
+    const detalleRepository = this.getDetalleEntregaRepository(manager);
+    const detalleLoteRepository = this.getDetalleEntregaLoteRepository(manager);
+
+    const detallesActuales = await detalleRepository.find({
+      where: {
+        ideEntr,
+      },
+      relations: {
+        lotesRecibidos: true,
+      },
+    });
+
+    for (const detalleActual of detallesActuales) {
+      if (detalleActual.lotesRecibidos?.length) {
+        await detalleLoteRepository.remove(detalleActual.lotesRecibidos);
+      }
+    }
+
+    if (detallesActuales.length) {
+      await detalleRepository.remove(detallesActuales);
+    }
+
+    for (const detalleDto of detalles) {
+      const detalle = detalleRepository.create({
+        ideEntr,
+        ideDetaPedi: detalleDto.ideDetaPedi ?? null,
+        ideProd: detalleDto.ideProd,
+        cantidadProd: detalleDto.cantidadProd,
+        precioUnitarioProd: detalleDto.precioUnitarioProd.toFixed(2),
+        subtotalProd: detalleDto.subtotalProd.toFixed(2),
+        dctoCompraProd: detalleDto.dctoCompraProd.toFixed(2),
+        ivaProd: detalleDto.ivaProd.toFixed(2),
+        totalProd: detalleDto.totalProd.toFixed(2),
+        dctoCaducProd: detalleDto.dctoCaducProd.toFixed(2),
+        estadoDetaEntr: detalleDto.estadoDetaEntr,
+      });
+
+      const detalleGuardado = await detalleRepository.save(detalle);
+
+      if (detalleDto.lotesRecibidos?.length) {
+        const lotes = detalleDto.lotesRecibidos.map((loteDto) =>
+          detalleLoteRepository.create({
+            ideDetaEntr: detalleGuardado.ideDetaEntr,
+            ideLote: loteDto.ideLote ?? null,
+            fechaCaducidadLote: new Date(loteDto.fechaCaducidadLote),
+            cantidadLote: loteDto.cantidadLote,
+            estadoDetaEntrLote: loteDto.estadoDetaEntrLote ?? 'registrado',
+            usuaIngre: 'admin',
+          }),
+        );
+
+        await detalleLoteRepository.save(lotes);
+      }
+    }
+  }
+
+  async eliminarEntregaConDetalles(
+    ideEntr: number,
+    manager?: EntityManager,
+  ): Promise<number> {
+    const detalleRepository = this.getDetalleEntregaRepository(manager);
+    const detalleLoteRepository = this.getDetalleEntregaLoteRepository(manager);
+
+    const detalles = await detalleRepository.find({
+      where: {
+        ideEntr,
+      },
+      relations: {
+        lotesRecibidos: true,
+      },
+    });
+
+    for (const detalle of detalles) {
+      if (detalle.lotesRecibidos?.length) {
+        await detalleLoteRepository.remove(detalle.lotesRecibidos);
+      }
+    }
+
+    if (detalles.length) {
+      await detalleRepository.remove(detalles);
+    }
+
+    const result = await this.getEntregaRepository(manager).delete({
+      ideEntr,
+    });
+
+    return result.affected ?? 0;
+  }
+
   async buscarPedidoPorId(
     idePedi: number,
-    manager: EntityManager,
+    manager?: EntityManager,
   ): Promise<PedidoEntity | null> {
-    return manager.getRepository(PedidoEntity).findOne({
+    return this.getPedidoRepository(manager).findOne({
       where: {
         idePedi,
+      },
+      relations: {
+        empresa: true,
+        detalles: {
+          producto: true,
+        },
       },
     });
   }
 
   async buscarProveedorPorId(
     ideProv: number,
-    manager: EntityManager,
+    manager?: EntityManager,
   ): Promise<ProveedorEntity | null> {
-    return manager.getRepository(ProveedorEntity).findOne({
+    return this.getProveedorRepository(manager).findOne({
       where: {
         ideProv,
+      },
+      relations: {
+        empresa: true,
       },
     });
   }
@@ -171,102 +384,148 @@ export class EntregasRepository {
 
   async guardarProducto(
     producto: ProductoEntity,
-    manager: EntityManager,
+    manager?: EntityManager,
   ): Promise<ProductoEntity> {
-    return manager.getRepository(ProductoEntity).save(producto);
+    return this.getProductoRepository(manager).save(producto);
   }
 
-  async crearEntrega(
-    cabecera: CreateEntregaCabeceraDTO,
-    totales: {
-      cantidadTotalEntr: number;
-      totalEntr: number;
-    },
+  async buscarLotePorProductoYFechaForUpdate(
+    ideProd: number,
+    fechaCaducidadLote: string,
     manager: EntityManager,
-  ): Promise<EntregaEntity> {
-    const repository = manager.getRepository(EntregaEntity);
-
-    const entrega = repository.create({
-      idePedi: cabecera.idePedi,
-      ideProv: cabecera.ideProv,
-      fechaEntr: new Date(cabecera.fechaEntr),
-      cantidadTotalEntr: totales.cantidadTotalEntr,
-      totalEntr: MoneyUtil.toMoneyString(totales.totalEntr),
-      estadoEntr: cabecera.estadoEntr as EntregaEntity['estadoEntr'],
-      observacionEntr: cabecera.observacionEntr,
-      usuaIngre: 'admin',
-    });
-
-    return repository.save(entrega);
+  ): Promise<LoteEntity | null> {
+    return manager
+      .getRepository(LoteEntity)
+      .createQueryBuilder('lote')
+      .setLock('pessimistic_write')
+      .where('lote.ideProd = :ideProd', { ideProd })
+      .andWhere('DATE(lote.fechaCaducidadLote) = :fechaCaducidadLote', {
+        fechaCaducidadLote,
+      })
+      .getOne();
   }
 
-  async actualizarEntrega(
-    entrega: EntregaEntity,
-    cabecera: UpdateEntregaCabeceraDTO,
-    totales: {
-      cantidadTotalEntr: number;
-      totalEntr: number;
-    },
-    manager: EntityManager,
-  ): Promise<EntregaEntity> {
-    entrega.idePedi = cabecera.idePedi;
-    entrega.ideProv = cabecera.ideProv;
-    entrega.fechaEntr = new Date(cabecera.fechaEntr);
-    entrega.cantidadTotalEntr = totales.cantidadTotalEntr;
-    entrega.totalEntr = MoneyUtil.toMoneyString(totales.totalEntr);
-    entrega.estadoEntr = cabecera.estadoEntr as EntregaEntity['estadoEntr'];
-    entrega.observacionEntr = cabecera.observacionEntr;
-    entrega.usuaActua = 'admin';
-    entrega.fechaActua = new Date();
+  async crearLote(
+    ideProd: number,
+    fechaCaducidadLote: string,
+    stockInicial: number,
+    manager?: EntityManager,
+  ): Promise<LoteEntity> {
+    const repository = this.getLoteRepository(manager);
 
-    return manager.getRepository(EntregaEntity).save(entrega);
+    const lote = repository.create({
+      ideProd,
+      fechaCaducidadLote: new Date(fechaCaducidadLote),
+      stockLote: stockInicial,
+      estadoLote: this.obtenerEstadoLotePorFecha(fechaCaducidadLote),
+    });
+
+    return repository.save(lote);
   }
 
-  async reemplazarDetalles(
-    ideEntr: number,
-    detalles: Array<CreateEntregaDetalleDTO | UpdateEntregaDetalleDTO>,
-    manager: EntityManager,
-  ): Promise<DetalleEntregaEntity[]> {
-    const repository = manager.getRepository(DetalleEntregaEntity);
+  async guardarLote(
+    lote: LoteEntity,
+    manager?: EntityManager,
+  ): Promise<LoteEntity> {
+    lote.estadoLote = this.obtenerEstadoLotePorFecha(lote.fechaCaducidadLote);
 
-    await repository.delete({
-      ideEntr,
-    });
-
-    const nuevosDetalles = detalles.map((detalle) =>
-      repository.create({
-        ideEntr,
-        ideProd: detalle.ideProd,
-        cantidadProd: detalle.cantidadProd,
-        precioUnitarioProd: MoneyUtil.toMoneyString(detalle.precioUnitarioProd),
-        subtotalProd: MoneyUtil.toMoneyString(detalle.subtotalProd),
-        dctoCompraProd: MoneyUtil.toMoneyString(detalle.dctoCompraProd),
-        ivaProd: MoneyUtil.toMoneyString(detalle.ivaProd),
-        totalProd: MoneyUtil.toMoneyString(detalle.totalProd),
-        dctoCaducProd: MoneyUtil.toMoneyString(detalle.dctoCaducProd),
-        estadoDetaEntr:
-          (detalle as any).estadoDetaEntr ??
-          (detalle as any).estadoDetaPedi ??
-          'incompleto',
-      }),
-    );
-
-    return repository.save(nuevosDetalles);
+    return this.getLoteRepository(manager).save(lote);
   }
 
-  async eliminarEntregaConDetalles(
-    ideEntr: number,
-    manager: EntityManager,
-  ): Promise<number> {
-    await manager.getRepository(DetalleEntregaEntity).delete({
-      ideEntr,
+  async registrarMovimientoInventario(
+    params: RegistrarMovimientoInventarioParams,
+    manager?: EntityManager,
+  ): Promise<MovimientoInventarioEntity> {
+    const repository = this.getMovimientoInventarioRepository(manager);
+
+    const movimiento = repository.create({
+      ideProd: params.ideProd,
+      ideLote: params.ideLote ?? null,
+      ideDetaEntr: params.ideDetaEntr ?? null,
+      ideDetaVent: params.ideDetaVent ?? null,
+      tipoMovi: params.tipoMovi,
+      cantidadMovi: params.cantidadMovi,
+      stockProdAnterior: params.stockProdAnterior ?? null,
+      stockProdPosterior: params.stockProdPosterior ?? null,
+      stockLoteAnterior: params.stockLoteAnterior ?? null,
+      stockLotePosterior: params.stockLotePosterior ?? null,
+      observacionMovi: params.observacionMovi ?? null,
+      usuaIngre: params.usuaIngre ?? 'admin',
     });
 
-    const result = await manager.getRepository(EntregaEntity).delete({
-      ideEntr,
-    });
+    return repository.save(movimiento);
+  }
 
-    return result.affected ?? 0;
+  async obtenerCantidadesConfirmadasPorPedido(
+    idePedi: number,
+    excluirIdeEntr: number | null,
+    manager?: EntityManager,
+  ): Promise<CantidadConfirmadaPedidoRow[]> {
+    const qb = this.getDetalleEntregaRepository(manager)
+      .createQueryBuilder('detalleEntrega')
+      .innerJoin('detalleEntrega.entrega', 'entrega')
+      .select('detalleEntrega.ideDetaPedi', 'ide_deta_pedi')
+      .addSelect(
+        'COALESCE(SUM(detalleEntrega.cantidadProd), 0)',
+        'cantidad_confirmada',
+      )
+      .where('entrega.idePedi = :idePedi', { idePedi })
+      .andWhere('entrega.estadoEntr IN (:...estados)', {
+        estados: ['parcial', 'completa'],
+      })
+      .andWhere('detalleEntrega.ideDetaPedi IS NOT NULL')
+      .groupBy('detalleEntrega.ideDetaPedi');
+
+    if (excluirIdeEntr !== null) {
+      qb.andWhere('entrega.ideEntr <> :excluirIdeEntr', {
+        excluirIdeEntr,
+      });
+    }
+
+    return qb.getRawMany<CantidadConfirmadaPedidoRow>();
+  }
+
+  async guardarDetallePedido(
+    detallePedido: DetallePedidoEntity,
+    manager?: EntityManager,
+  ): Promise<DetallePedidoEntity> {
+    return this.getDetallePedidoRepository(manager).save(detallePedido);
+  }
+
+  async guardarPedido(
+    pedido: PedidoEntity,
+    manager?: EntityManager,
+  ): Promise<PedidoEntity> {
+    return this.getPedidoRepository(manager).save(pedido);
+  }
+
+  private obtenerEstadoLotePorFecha(
+    fecha: Date | string,
+  ): LoteEntity['estadoLote'] {
+    const fechaBase = fecha instanceof Date ? fecha : new Date(fecha);
+
+    if (Number.isNaN(fechaBase.getTime())) {
+      return 'correcto';
+    }
+
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    const caducidad = new Date(fechaBase);
+    caducidad.setHours(0, 0, 0, 0);
+
+    const diferenciaMs = caducidad.getTime() - hoy.getTime();
+    const diferenciaDias = Math.ceil(diferenciaMs / (1000 * 60 * 60 * 24));
+
+    if (diferenciaDias < 0) {
+      return 'caducado';
+    }
+
+    if (diferenciaDias <= 30) {
+      return 'proximo';
+    }
+
+    return 'correcto';
   }
 
   private getEntregaRepository(
@@ -287,5 +546,73 @@ export class EntregasRepository {
     }
 
     return this.detalleEntregaRepository;
+  }
+
+  private getDetalleEntregaLoteRepository(
+    manager?: EntityManager,
+  ): Repository<DetalleEntregaLoteEntity> {
+    if (manager) {
+      return manager.getRepository(DetalleEntregaLoteEntity);
+    }
+
+    return this.detalleEntregaLoteRepository;
+  }
+
+  private getPedidoRepository(
+    manager?: EntityManager,
+  ): Repository<PedidoEntity> {
+    if (manager) {
+      return manager.getRepository(PedidoEntity);
+    }
+
+    return this.pedidoRepository;
+  }
+
+  private getDetallePedidoRepository(
+    manager?: EntityManager,
+  ): Repository<DetallePedidoEntity> {
+    if (manager) {
+      return manager.getRepository(DetallePedidoEntity);
+    }
+
+    return this.detallePedidoRepository;
+  }
+
+  private getProveedorRepository(
+    manager?: EntityManager,
+  ): Repository<ProveedorEntity> {
+    if (manager) {
+      return manager.getRepository(ProveedorEntity);
+    }
+
+    return this.proveedorRepository;
+  }
+
+  private getProductoRepository(
+    manager?: EntityManager,
+  ): Repository<ProductoEntity> {
+    if (manager) {
+      return manager.getRepository(ProductoEntity);
+    }
+
+    return this.productoRepository;
+  }
+
+  private getLoteRepository(manager?: EntityManager): Repository<LoteEntity> {
+    if (manager) {
+      return manager.getRepository(LoteEntity);
+    }
+
+    return this.loteRepository;
+  }
+
+  private getMovimientoInventarioRepository(
+    manager?: EntityManager,
+  ): Repository<MovimientoInventarioEntity> {
+    if (manager) {
+      return manager.getRepository(MovimientoInventarioEntity);
+    }
+
+    return this.movimientoInventarioRepository;
   }
 }

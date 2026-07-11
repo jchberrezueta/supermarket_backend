@@ -1,5 +1,9 @@
 import { MoneyUtil } from '@common/utils/money.util';
-import { DetalleEntregaEntity, EntregaEntity } from '@entities';
+import {
+  DetalleEntregaEntity,
+  DetalleEntregaLoteEntity,
+  EntregaEntity,
+} from '@entities';
 
 export interface EntregaRow {
   ide_entr: number;
@@ -16,12 +20,25 @@ export interface EntregaRow {
   cantidad_total_entr: number;
   total_entr: number;
   estado_entr: string;
-  observacion_entr: string;
+  observacion_entr: string | null;
+  detalles?: DetalleEntregaRow[];
+}
+
+export interface DetalleEntregaLoteRow {
+  ide_deta_entr_lote: number;
+  ide_deta_entr: number;
+  ide_lote: number | null;
+  fecha_caducidad_lote: string;
+  cantidad_lote: number;
+  estado_deta_entr_lote: string;
+  stock_lote?: number | null;
+  estado_lote?: string | null;
 }
 
 export interface DetalleEntregaRow {
   ide_deta_entr: number;
   ide_entr: number;
+  ide_deta_pedi: number | null;
   ide_prod: number;
   nombre_prod?: string | null;
   cantidad_prod: number;
@@ -32,6 +49,9 @@ export interface DetalleEntregaRow {
   total_prod: number;
   dcto_caduc_prod: number;
   estado_deta_entr: string;
+  cantidad_pedida?: number | null;
+  estado_deta_pedi?: string | null;
+  lotes_recibidos?: DetalleEntregaLoteRow[];
 }
 
 export class EntregasMapper {
@@ -57,7 +77,10 @@ export class EntregasMapper {
       cantidad_total_entr: entrega.cantidadTotalEntr,
       total_entr: MoneyUtil.toNumber(entrega.totalEntr),
       estado_entr: entrega.estadoEntr,
-      observacion_entr: entrega.observacionEntr,
+      observacion_entr: entrega.observacionEntr ?? null,
+      detalles: entrega.detalles
+        ? this.toDetalleRows(entrega.detalles)
+        : undefined,
     };
   }
 
@@ -69,6 +92,7 @@ export class EntregasMapper {
     return {
       ide_deta_entr: detalle.ideDetaEntr,
       ide_entr: detalle.ideEntr,
+      ide_deta_pedi: detalle.ideDetaPedi ?? null,
       ide_prod: detalle.ideProd,
       nombre_prod: detalle.producto?.nombreProd ?? null,
       cantidad_prod: detalle.cantidadProd,
@@ -79,11 +103,39 @@ export class EntregasMapper {
       total_prod: MoneyUtil.toNumber(detalle.totalProd),
       dcto_caduc_prod: MoneyUtil.toNumber(detalle.dctoCaducProd),
       estado_deta_entr: detalle.estadoDetaEntr,
+      cantidad_pedida: detalle.detallePedido?.cantidadProd ?? null,
+      estado_deta_pedi: detalle.detallePedido?.estadoDetaPedi ?? null,
+      lotes_recibidos: detalle.lotesRecibidos
+        ? this.toDetalleLoteRows(detalle.lotesRecibidos)
+        : [],
     };
   }
 
   static toDetalleRows(detalles: DetalleEntregaEntity[]): DetalleEntregaRow[] {
     return detalles.map((detalle) => this.toDetalleRow(detalle));
+  }
+
+  static toDetalleLoteRow(
+    detalleLote: DetalleEntregaLoteEntity,
+  ): DetalleEntregaLoteRow {
+    return {
+      ide_deta_entr_lote: detalleLote.ideDetaEntrLote,
+      ide_deta_entr: detalleLote.ideDetaEntr,
+      ide_lote: detalleLote.ideLote ?? null,
+      fecha_caducidad_lote: this.formatDateOnly(detalleLote.fechaCaducidadLote),
+      cantidad_lote: detalleLote.cantidadLote,
+      estado_deta_entr_lote: detalleLote.estadoDetaEntrLote,
+      stock_lote: detalleLote.lote?.stockLote ?? null,
+      estado_lote: detalleLote.lote?.estadoLote ?? null,
+    };
+  }
+
+  static toDetalleLoteRows(
+    detallesLote: DetalleEntregaLoteEntity[],
+  ): DetalleEntregaLoteRow[] {
+    return detallesLote.map((detalleLote) =>
+      this.toDetalleLoteRow(detalleLote),
+    );
   }
 
   private static getNombreProveedor(proveedor: {
@@ -140,5 +192,23 @@ export class EntregasMapper {
     const minute = String(date.getMinutes()).padStart(2, '0');
 
     return `${day}/${month}/${year} ${hour}:${minute}`;
+  }
+
+  private static formatDateOnly(value: Date | string): string {
+    if (!value) {
+      return '';
+    }
+
+    const date = value instanceof Date ? value : new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return String(value);
+    }
+
+    const localDate = new Date(
+      date.getTime() - date.getTimezoneOffset() * 60000,
+    );
+
+    return localDate.toISOString().slice(0, 10);
   }
 }
