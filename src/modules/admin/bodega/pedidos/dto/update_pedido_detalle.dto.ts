@@ -1,6 +1,6 @@
 import { EnumEstadoDetallePedido } from '@models';
 import { Transform } from 'class-transformer';
-import { IsEnum, IsInt, IsNumber, Min } from 'class-validator';
+import { IsEnum, IsInt, IsNumber, IsOptional, Min } from 'class-validator';
 
 function toRequiredInt(value: unknown): number | unknown {
   if (value === null || value === undefined || value === '') {
@@ -9,11 +9,7 @@ function toRequiredInt(value: unknown): number | unknown {
 
   const numberValue = Number(value);
 
-  if (Number.isInteger(numberValue)) {
-    return numberValue;
-  }
-
-  return value;
+  return Number.isInteger(numberValue) ? numberValue : value;
 }
 
 function toRequiredNumber(value: unknown): number | unknown {
@@ -23,27 +19,23 @@ function toRequiredNumber(value: unknown): number | unknown {
 
   const numberValue = Number(value);
 
-  if (Number.isFinite(numberValue)) {
-    return numberValue;
-  }
-
-  return value;
+  return Number.isFinite(numberValue) ? numberValue : value;
 }
 
 export class UpdatePedidoDetalleDTO {
   @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
-  @Min(0)
+  @Min(1)
   ideDetaPedi!: number;
 
   @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
-  @Min(0)
+  @Min(1)
   idePedi!: number;
 
   @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
-  @Min(0)
+  @Min(1)
   ideProd!: number;
 
   @Transform(({ value }) => toRequiredInt(value))
@@ -81,6 +73,11 @@ export class UpdatePedidoDetalleDTO {
   @Min(0)
   dctoCaducProd!: number;
 
+  /**
+   * Mientras el pedido sea borrador,
+   * sus detalles permanecen pendientes.
+   */
+  @IsOptional()
   @IsEnum(EnumEstadoDetallePedido)
-  estadoDetaPedi!: EnumEstadoDetallePedido;
+  estadoDetaPedi: EnumEstadoDetallePedido = EnumEstadoDetallePedido.PENDIENTE;
 }

@@ -18,11 +18,7 @@ function toRequiredNumber(value: unknown): number | unknown {
 
   const numberValue = Number(value);
 
-  if (Number.isFinite(numberValue)) {
-    return numberValue;
-  }
-
-  return value;
+  return Number.isFinite(numberValue) ? numberValue : value;
 }
 
 function toRequiredInt(value: unknown): number | unknown {
@@ -32,11 +28,7 @@ function toRequiredInt(value: unknown): number | unknown {
 
   const numberValue = Number(value);
 
-  if (Number.isInteger(numberValue)) {
-    return numberValue;
-  }
-
-  return value;
+  return Number.isInteger(numberValue) ? numberValue : value;
 }
 
 function optionalInt(value: unknown): number | undefined | unknown {
@@ -46,11 +38,7 @@ function optionalInt(value: unknown): number | undefined | unknown {
 
   const numberValue = Number(value);
 
-  if (Number.isInteger(numberValue)) {
-    return numberValue;
-  }
-
-  return value;
+  return Number.isInteger(numberValue) ? numberValue : value;
 }
 
 function requiredLowerText(value: unknown): string | null | unknown {
@@ -134,14 +122,16 @@ export class CreateProductoDTO {
   dctoPromoProd!: number;
 
   /**
-   * Por ahora se conserva porque el frontend actual lo usa.
-   * Más adelante restringiremos cambios directos de stock para que
-   * stock_prod se mueva solo por entregas, ventas, anulaciones y ajustes.
+   * Compatibilidad temporal con el frontend.
+   *
+   * Aunque se reciba, el backend ignora este valor.
+   * Todo producto nuevo comienza con stock cero.
    */
-  @Transform(({ value }) => toRequiredInt(value))
+  @IsOptional()
+  @Transform(({ value }) => optionalInt(value))
   @IsInt()
   @Min(0)
-  stockProd!: number;
+  stockProd?: number;
 
   @IsOptional()
   @Transform(({ value }) => optionalInt(value))
@@ -149,8 +139,14 @@ export class CreateProductoDTO {
   @Min(0)
   stockMinimoProd?: number;
 
+  /**
+   * Compatibilidad temporal con el frontend.
+   *
+   * El backend calcula la disponibilidad desde stock_prod.
+   */
+  @IsOptional()
   @IsIn(['si', 'no'])
-  disponibleProd!: 'si' | 'no';
+  disponibleProd?: 'si' | 'no';
 
   @IsEnum(EnumEstadosProducto)
   estadoProd!: EnumEstadosProducto;

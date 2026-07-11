@@ -13,6 +13,8 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { Roles } from 'src/modules/auth/roles.decorator';
 import { RolesGuard } from 'src/modules/auth/roles.guard';
+import { CancelarPedidoDTO } from './dto/cancelar_pedido.dto';
+import { CerrarPedidoIncompletoDTO } from './dto/cerrar_pedido_incompleto.dto';
 import { CreatePedidoDTO } from './dto/create_pedido.dto';
 import { FilterPedidoDTO } from './dto/filter_pedido.dto';
 import { UpdatePedidoDTO } from './dto/update_pedido.dto';
@@ -23,6 +25,10 @@ import { PedidosService } from './pedidos.service';
 @Controller('pedidos')
 export class PedidosController {
   constructor(private readonly pedidosService: PedidosService) {}
+
+  // ==========================================================
+  // CONSULTAS
+  // ==========================================================
 
   @Get()
   async listar() {
@@ -38,6 +44,10 @@ export class PedidosController {
   async filtrar(@Query() queryParams: FilterPedidoDTO) {
     return this.pedidosService.filtrar(queryParams);
   }
+
+  // ==========================================================
+  // BORRADOR
+  // ==========================================================
 
   @Post('insertar')
   async insertar(@Body() body: CreatePedidoDTO) {
@@ -59,9 +69,52 @@ export class PedidosController {
     return this.pedidosService.eliminar(id);
   }
 
+  // ==========================================================
+  // CICLO FORMAL DEL PEDIDO
+  // ==========================================================
+
   /**
-   * JOINS
+   * Convierte un pedido borrador en emitido.
+   *
+   * PUT /pedidos/emitir/:id
    */
+  @Put('emitir/:id')
+  async emitir(@Param('id', ParseIntPipe) id: number) {
+    return this.pedidosService.emitir(id);
+  }
+
+  /**
+   * Cancela un pedido borrador o emitido,
+   * siempre que no tenga entregas activas.
+   *
+   * PUT /pedidos/cancelar/:id
+   */
+  @Put('cancelar/:id')
+  async cancelar(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: CancelarPedidoDTO,
+  ) {
+    return this.pedidosService.cancelar(id, body);
+  }
+
+  /**
+   * Cierra formalmente un pedido parcial cuando
+   * el proveedor no entregará las unidades restantes.
+   *
+   * PUT /pedidos/cerrar-incompleto/:id
+   */
+  @Put('cerrar-incompleto/:id')
+  async cerrarIncompleto(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: CerrarPedidoIncompletoDTO,
+  ) {
+    return this.pedidosService.cerrarIncompleto(id, body);
+  }
+
+  // ==========================================================
+  // JOINS Y LISTADOS PARA FORMULARIOS
+  // ==========================================================
+
   @Get('listar/pedidos')
   async listarPedidos() {
     return this.pedidosService.listarPedidos();
@@ -77,9 +130,10 @@ export class PedidosController {
     return this.pedidosService.listarDetallesPedido(id);
   }
 
-  /**
-   * COMBOS
-   */
+  // ==========================================================
+  // COMBOS
+  // ==========================================================
+
   @Get('listar/combo/estados')
   async listarComboEstados() {
     return this.pedidosService.listarComboEstados();
@@ -90,6 +144,10 @@ export class PedidosController {
     return this.pedidosService.listarComboMotivos();
   }
 
+  /**
+   * Devuelve únicamente pedidos abiertos:
+   * emitido o parcial.
+   */
   @Get('listar/combo/pedidos')
   async listarComboPedidos() {
     return this.pedidosService.listarComboPedidos();

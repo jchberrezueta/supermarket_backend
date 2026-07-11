@@ -1,20 +1,36 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DetallePedidoEntity, PedidoEntity } from '@entities';
-import { EntityManager, Repository } from 'typeorm';
 import { MoneyUtil } from '@common/utils/money.util';
+import {
+  DetallePedidoEntity,
+  EmpresaEntity,
+  EmpresaPreciosEntity,
+  EntregaEntity,
+  PedidoEntity,
+  ProductoEntity,
+} from '@entities';
+import { EntityManager, Repository } from 'typeorm';
 import { CreatePedidoCabeceraDTO } from './dto/create_pedido_cabecera.dto';
 import { CreatePedidoDetalleDTO } from './dto/create_pedido_detalle.dto';
 import { FilterPedidoDTO } from './dto/filter_pedido.dto';
 import { UpdatePedidoCabeceraDTO } from './dto/update_pedido_cabecera.dto';
+
+interface TotalesPedido {
+  cantidadTotalPedi: number;
+  totalPedi: number;
+}
 
 @Injectable()
 export class PedidosRepository {
   constructor(
     @InjectRepository(PedidoEntity)
     private readonly pedidoRepository: Repository<PedidoEntity>,
+
     @InjectRepository(DetallePedidoEntity)
     private readonly detallePedidoRepository: Repository<DetallePedidoEntity>,
+
+    @InjectRepository(EmpresaEntity)
+    private readonly empresaRepository: Repository<EmpresaEntity>,
   ) {}
 
   async listar(manager?: EntityManager): Promise<PedidoEntity[]> {
@@ -39,6 +55,10 @@ export class PedidosRepository {
       },
       relations: {
         empresa: true,
+        detalles: {
+          producto: true,
+        },
+        entregas: true,
       },
     });
   }
@@ -51,8 +71,21 @@ export class PedidosRepository {
       .getRepository(PedidoEntity)
       .createQueryBuilder('pedido')
       .setLock('pessimistic_write')
-      .where('pedido.idePedi = :idePedi', { idePedi })
+      .where('pedido.idePedi = :idePedi', {
+        idePedi,
+      })
       .getOne();
+  }
+
+  async buscarEmpresaPorId(
+    ideEmpr: number,
+    manager?: EntityManager,
+  ): Promise<EmpresaEntity | null> {
+    return this.getEmpresaRepository(manager).findOne({
+      where: {
+        ideEmpr,
+      },
+    });
   }
 
   async filtrar(
@@ -84,13 +117,13 @@ export class PedidosRepository {
     }
 
     if (filtros.fechaPedi) {
-      qb.andWhere('pedido.fechaPedi >= :fechaPedi', {
+      qb.andWhere('DATE(pedido.fechaPedi) >= :fechaPedi', {
         fechaPedi: filtros.fechaPedi,
       });
     }
 
     if (filtros.fechaEntrPedi) {
-      qb.andWhere('pedido.fechaEntrPedi <= :fechaEntrPedi', {
+      qb.andWhere('DATE(pedido.fechaEntrPedi) <= :fechaEntrPedi', {
         fechaEntrPedi: filtros.fechaEntrPedi,
       });
     }
@@ -106,6 +139,9 @@ export class PedidosRepository {
       where: {
         idePedi,
       },
+      relations: {
+        producto: true,
+      },
       order: {
         ideDetaPedi: 'ASC',
       },
@@ -114,10 +150,7 @@ export class PedidosRepository {
 
   async crearPedido(
     cabecera: CreatePedidoCabeceraDTO,
-    totales: {
-      cantidadTotalPedi: number;
-      totalPedi: number;
-    },
+    totales: TotalesPedido,
     manager: EntityManager,
   ): Promise<PedidoEntity> {
     const repository = manager.getRepository(PedidoEntity);
@@ -128,9 +161,14 @@ export class PedidosRepository {
       fechaEntrPedi: new Date(cabecera.fechaEntrPedi),
       cantidadTotalPedi: totales.cantidadTotalPedi,
       totalPedi: MoneyUtil.toMoneyString(totales.totalPedi),
-      estadoPedi: cabecera.estadoPedi as PedidoEntity['estadoPedi'],
-      motivoPedi: cabecera.motivoPedi as PedidoEntity['motivoPedi'],
-      observacionPedi: cabecera.observacionPedi,
+
+      /**
+       * Crear un pedido nunca lo emite.
+       */
+      estadoPedi: 'borrador',
+
+      motivoPedi: cabecera.motivoPedi,
+      observacionPedi: cabecera.observacionPedi ?? null,
       usuaIngre: 'admin',
     });
 
@@ -140,10 +178,7 @@ export class PedidosRepository {
   async actualizarPedido(
     pedido: PedidoEntity,
     cabecera: UpdatePedidoCabeceraDTO,
-    totales: {
-      cantidadTotalPedi: number;
-      totalPedi: number;
-    },
+    totales: TotalesPedido,
     manager: EntityManager,
   ): Promise<PedidoEntity> {
     pedido.ideEmpr = cabecera.ideEmpr;
@@ -151,9 +186,15 @@ export class PedidosRepository {
     pedido.fechaEntrPedi = new Date(cabecera.fechaEntrPedi);
     pedido.cantidadTotalPedi = totales.cantidadTotalPedi;
     pedido.totalPedi = MoneyUtil.toMoneyString(totales.totalPedi);
-    pedido.estadoPedi = cabecera.estadoPedi as PedidoEntity['estadoPedi'];
-    pedido.motivoPedi = cabecera.motivoPedi as PedidoEntity['motivoPedi'];
-    pedido.observacionPedi = cabecera.observacionPedi;
+
+    /**
+     * Este método únicamente debe modificar borradores.
+     * No confía en el estado recibido desde el frontend.
+     */
+    pedido.estadoPedi = 'borrador';
+
+    pedido.motivoPedi = cabecera.motivoPedi;
+    pedido.observacionPedi = cabecera.observacionPedi ?? null;
     pedido.usuaActua = 'admin';
     pedido.fechaActua = new Date();
 
@@ -182,12 +223,139 @@ export class PedidosRepository {
         ivaProd: MoneyUtil.toMoneyString(detalle.ivaProd),
         totalProd: MoneyUtil.toMoneyString(detalle.totalProd),
         dctoCaducProd: MoneyUtil.toMoneyString(detalle.dctoCaducProd),
-        estadoDetaPedi:
-          detalle.estadoDetaPedi as DetallePedidoEntity['estadoDetaPedi'],
+
+        /**
+         * Todo detalle nuevo comienza pendiente.
+         */
+        estadoDetaPedi: 'pendiente',
       }),
     );
 
     return repository.save(nuevosDetalles);
+  }
+
+  async guardarPedido(
+    pedido: PedidoEntity,
+    manager?: EntityManager,
+  ): Promise<PedidoEntity> {
+    return this.getPedidoRepository(manager).save(pedido);
+  }
+
+  async guardarDetallePedido(
+    detalle: DetallePedidoEntity,
+    manager?: EntityManager,
+  ): Promise<DetallePedidoEntity> {
+    return this.getDetallePedidoRepository(manager).save(detalle);
+  }
+
+  async guardarDetallesPedido(
+    detalles: DetallePedidoEntity[],
+    manager?: EntityManager,
+  ): Promise<DetallePedidoEntity[]> {
+    if (!detalles.length) {
+      return [];
+    }
+
+    return this.getDetallePedidoRepository(manager).save(detalles);
+  }
+
+  async listarPreciosPorEmpresaYProductos(
+    ideEmpr: number,
+    idsProductos: number[],
+    manager?: EntityManager,
+  ): Promise<EmpresaPreciosEntity[]> {
+    if (!idsProductos.length) {
+      return [];
+    }
+
+    return this.getEmpresaPreciosRepository(manager)
+      .createQueryBuilder('precioEmpresa')
+      .leftJoinAndSelect('precioEmpresa.producto', 'producto')
+      .where('precioEmpresa.ideEmpr = :ideEmpr', {
+        ideEmpr,
+      })
+      .andWhere('precioEmpresa.ideProd IN (:...idsProductos)', {
+        idsProductos,
+      })
+      .orderBy('precioEmpresa.ideProd', 'ASC')
+      .addOrderBy('precioEmpresa.ideEmprProd', 'ASC')
+      .getMany();
+  }
+
+  /**
+   * Devuelve los productos del pedido que no están
+   * asociados a la empresa en empresa_precios.
+   */
+  async listarProductosSinPrecioEmpresa(
+    ideEmpr: number,
+    idsProductos: number[],
+    manager?: EntityManager,
+  ): Promise<ProductoEntity[]> {
+    if (!idsProductos.length) {
+      return [];
+    }
+
+    return this.getProductoRepository(manager)
+      .createQueryBuilder('producto')
+      .leftJoin(
+        EmpresaPreciosEntity,
+        'precioEmpresa',
+        `
+          precioEmpresa.ideProd = producto.ideProd
+          AND precioEmpresa.ideEmpr = :ideEmpr
+        `,
+        {
+          ideEmpr,
+        },
+      )
+      .where('producto.ideProd IN (:...idsProductos)', {
+        idsProductos,
+      })
+      .andWhere('precioEmpresa.ideEmprProd IS NULL')
+      .orderBy('producto.nombreProd', 'ASC')
+      .getMany();
+  }
+
+  async contarEntregasNoAnuladas(
+    idePedi: number,
+    manager?: EntityManager,
+  ): Promise<number> {
+    return this.getEntregaRepository(manager)
+      .createQueryBuilder('entrega')
+      .where('entrega.idePedi = :idePedi', {
+        idePedi,
+      })
+      .andWhere('entrega.estadoEntr <> :estadoAnulada', {
+        estadoAnulada: 'anulada',
+      })
+      .getCount();
+  }
+
+  async contarEntregasBorrador(
+    idePedi: number,
+    manager?: EntityManager,
+  ): Promise<number> {
+    return this.getEntregaRepository(manager).count({
+      where: {
+        idePedi,
+        estadoEntr: 'borrador',
+      },
+    });
+  }
+
+  async contarEntregasConfirmadas(
+    idePedi: number,
+    manager?: EntityManager,
+  ): Promise<number> {
+    return this.getEntregaRepository(manager)
+      .createQueryBuilder('entrega')
+      .where('entrega.idePedi = :idePedi', {
+        idePedi,
+      })
+      .andWhere('entrega.estadoEntr IN (:...estados)', {
+        estados: ['parcial', 'completa'],
+      })
+      .getCount();
   }
 
   async eliminarPedidoConDetalles(
@@ -223,5 +391,45 @@ export class PedidosRepository {
     }
 
     return this.detallePedidoRepository;
+  }
+
+  private getEmpresaRepository(
+    manager?: EntityManager,
+  ): Repository<EmpresaEntity> {
+    if (manager) {
+      return manager.getRepository(EmpresaEntity);
+    }
+
+    return this.empresaRepository;
+  }
+
+  private getEmpresaPreciosRepository(
+    manager?: EntityManager,
+  ): Repository<EmpresaPreciosEntity> {
+    if (manager) {
+      return manager.getRepository(EmpresaPreciosEntity);
+    }
+
+    return this.pedidoRepository.manager.getRepository(EmpresaPreciosEntity);
+  }
+
+  private getProductoRepository(
+    manager?: EntityManager,
+  ): Repository<ProductoEntity> {
+    if (manager) {
+      return manager.getRepository(ProductoEntity);
+    }
+
+    return this.pedidoRepository.manager.getRepository(ProductoEntity);
+  }
+
+  private getEntregaRepository(
+    manager?: EntityManager,
+  ): Repository<EntregaEntity> {
+    if (manager) {
+      return manager.getRepository(EntregaEntity);
+    }
+
+    return this.pedidoRepository.manager.getRepository(EntregaEntity);
   }
 }

@@ -115,25 +115,26 @@ export class ProductosService {
     const ideProd = IdUtil.requireId(id, 'El ID del producto no es válido.');
 
     try {
-      const affected = await this.dataSource.transaction((manager) =>
-        this.productosRepository.eliminar(ideProd, manager),
-      );
+      const producto = await this.dataSource.transaction(async (manager) => {
+        const productoActual =
+          await this.productosRepository.buscarPorIdForUpdate(ideProd, manager);
 
-      if (affected === 0) {
-        return ApiResponseFactory.legacyWrite(
-          0,
-          'No se encontró el producto indicado.',
-        );
-      }
+        if (!productoActual) {
+          throw new NotFoundException('No se encontró el producto indicado.');
+        }
+
+        return this.productosRepository.desactivar(productoActual, manager);
+      });
 
       return ApiResponseFactory.legacyWrite(
         1,
-        'Producto eliminado correctamente',
+        'Producto desactivado correctamente. El historial y el inventario se conservaron.',
+        producto.ideProd,
       );
     } catch (error) {
       return ApiResponseFactory.legacyWrite(
         0,
-        error?.message || 'No se pudo eliminar el producto.',
+        error?.message || 'No se pudo desactivar el producto.',
       );
     }
   }

@@ -18,11 +18,7 @@ function toRequiredInt(value: unknown): number | unknown {
 
   const numberValue = Number(value);
 
-  if (Number.isInteger(numberValue)) {
-    return numberValue;
-  }
-
-  return value;
+  return Number.isInteger(numberValue) ? numberValue : value;
 }
 
 function toRequiredNumber(value: unknown): number | unknown {
@@ -32,11 +28,7 @@ function toRequiredNumber(value: unknown): number | unknown {
 
   const numberValue = Number(value);
 
-  if (Number.isFinite(numberValue)) {
-    return numberValue;
-  }
-
-  return value;
+  return Number.isFinite(numberValue) ? numberValue : value;
 }
 
 function optionalText(value: unknown): string | null | unknown {
@@ -44,23 +36,24 @@ function optionalText(value: unknown): string | null | unknown {
     return null;
   }
 
-  if (typeof value === 'string') {
-    const text = value.trim();
-    return text !== '' ? text.toLowerCase() : null;
+  if (typeof value !== 'string') {
+    return value;
   }
 
-  return value;
+  const text = value.trim();
+
+  return text !== '' ? text : null;
 }
 
 export class UpdatePedidoCabeceraDTO {
   @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
-  @Min(0)
+  @Min(1)
   idePedi!: number;
 
   @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
-  @Min(0)
+  @Min(1)
   ideEmpr!: number;
 
   @IsDateString()
@@ -71,7 +64,7 @@ export class UpdatePedidoCabeceraDTO {
 
   @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
-  @Min(0)
+  @Min(1)
   cantidadTotalPedi!: number;
 
   @Transform(({ value }) => toRequiredNumber(value))
@@ -79,8 +72,13 @@ export class UpdatePedidoCabeceraDTO {
   @Min(0)
   totalPedi!: number;
 
+  /**
+   * Actualizar no cambia formalmente el estado.
+   * El service conservará siempre el borrador.
+   */
+  @IsOptional()
   @IsEnum(EnumEstadosPedido)
-  estadoPedi!: EnumEstadosPedido;
+  estadoPedi: EnumEstadosPedido = EnumEstadosPedido.BORRADOR;
 
   @IsEnum(EnumMotivosPedido)
   motivoPedi!: EnumMotivosPedido;

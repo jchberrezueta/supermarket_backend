@@ -489,6 +489,10 @@ export class EntregasRepository {
         estados: ['parcial', 'completa'],
       })
       .andWhere('detalleEntrega.ideDetaPedi IS NOT NULL')
+      .andWhere('detalleEntrega.estadoDetaEntr <> :estadoNoEntregado', {
+        estadoNoEntregado: 'no_entregado',
+      })
+      .andWhere('detalleEntrega.cantidadProd > 0')
       .groupBy('detalleEntrega.ideDetaPedi');
 
     if (excluirIdeEntr !== null) {
@@ -498,6 +502,17 @@ export class EntregasRepository {
     }
 
     return qb.getRawMany<CantidadConfirmadaPedidoRow>();
+  }
+
+  async guardarDetallesEntrega(
+    detalles: DetalleEntregaEntity[],
+    manager?: EntityManager,
+  ): Promise<DetalleEntregaEntity[]> {
+    if (!detalles.length) {
+      return [];
+    }
+
+    return this.getDetalleEntregaRepository(manager).save(detalles);
   }
 
   async guardarDetallePedido(

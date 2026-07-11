@@ -40,6 +40,20 @@ export class ProductosRepository {
     });
   }
 
+  async buscarPorIdForUpdate(
+    ideProd: number,
+    manager: EntityManager,
+  ): Promise<ProductoEntity | null> {
+    return manager
+      .getRepository(ProductoEntity)
+      .createQueryBuilder('producto')
+      .setLock('pessimistic_write')
+      .where('producto.ideProd = :ideProd', {
+        ideProd,
+      })
+      .getOne();
+  }
+
   async filtrar(
     filtros: FilterProductoDTO,
     manager?: EntityManager,
@@ -104,9 +118,17 @@ export class ProductosRepository {
       precioVentaProd: dto.precioVentaProd.toFixed(2),
       ivaProd: dto.ivaProd.toFixed(2),
       dctoPromoProd: dto.dctoPromoProd.toFixed(2),
-      stockProd: dto.stockProd,
+
+      /**
+       * El catálogo no introduce inventario.
+       *
+       * El stock nace únicamente de movimientos formales.
+       */
+      stockProd: 0,
+      disponibleProd: 'no',
+
       stockMinimoProd: dto.stockMinimoProd ?? 0,
-      disponibleProd: dto.disponibleProd,
+
       estadoProd: dto.estadoProd,
       descripcionProd: dto.descripcionProd ?? null,
       usuaIngre: 'admin',
@@ -125,27 +147,52 @@ export class ProductosRepository {
     producto.codigoBarraProd = dto.codigoBarraProd;
     producto.nombreProd = dto.nombreProd;
     producto.urlImgProd = dto.urlImgProd ?? null;
+
     producto.precioVentaProd = dto.precioVentaProd.toFixed(2);
+
     producto.ivaProd = dto.ivaProd.toFixed(2);
+
     producto.dctoPromoProd = dto.dctoPromoProd.toFixed(2);
-    producto.stockProd = dto.stockProd;
+
     producto.stockMinimoProd =
       dto.stockMinimoProd ?? producto.stockMinimoProd ?? 0;
-    producto.disponibleProd = dto.disponibleProd;
+
     producto.estadoProd = dto.estadoProd;
+
     producto.descripcionProd = dto.descripcionProd ?? null;
+
+    /**
+     * stockProd no se reemplaza con el DTO.
+     *
+     * disponibleProd tampoco se acepta desde el formulario:
+     * siempre se deriva del stock real persistido.
+     */
+    producto.disponibleProd = Number(producto.stockProd) > 0 ? 'si' : 'no';
+
     producto.usuaActua = 'admin';
     producto.fechaActua = new Date();
 
     return this.getRepository(manager).save(producto);
   }
 
-  async eliminar(ideProd: number, manager?: EntityManager): Promise<number> {
-    const result = await this.getRepository(manager).delete({
-      ideProd,
-    });
+  async desactivar(
+    producto: ProductoEntity,
+    manager?: EntityManager,
+  ): Promise<ProductoEntity> {
+    producto.estadoProd = 'inactivo';
 
-    return result.affected ?? 0;
+    /**
+     * No alteramos stock ni disponibilidad.
+     *
+     * La existencia física sigue registrada, pero el producto
+     * deja de estar habilitado para nuevas operaciones normales.
+     */
+    producto.disponibleProd = Number(producto.stockProd) > 0 ? 'si' : 'no';
+
+    producto.usuaActua = 'admin';
+    producto.fechaActua = new Date();
+
+    return this.getRepository(manager).save(producto);
   }
 
   async findActivoByCodigo(

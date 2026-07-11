@@ -9,25 +9,17 @@ function toRequiredInt(value: unknown): number | unknown {
 
   const numberValue = Number(value);
 
-  if (Number.isInteger(numberValue)) {
-    return numberValue;
-  }
-
-  return value;
+  return Number.isInteger(numberValue) ? numberValue : value;
 }
 
-function toRequiredNumber(value: unknown): number | unknown {
+function toOptionalNumber(value: unknown): number | undefined | unknown {
   if (value === null || value === undefined || value === '') {
-    return value;
+    return undefined;
   }
 
   const numberValue = Number(value);
 
-  if (Number.isFinite(numberValue)) {
-    return numberValue;
-  }
-
-  return value;
+  return Number.isFinite(numberValue) ? numberValue : value;
 }
 
 function optionalInt(value: unknown): number | undefined | unknown {
@@ -37,29 +29,25 @@ function optionalInt(value: unknown): number | undefined | unknown {
 
   const numberValue = Number(value);
 
-  if (Number.isInteger(numberValue)) {
-    return numberValue;
-  }
-
-  return value;
+  return Number.isInteger(numberValue) ? numberValue : value;
 }
 
 export class CreatePedidoDetalleDTO {
   @IsOptional()
   @Transform(({ value }) => optionalInt(value))
   @IsInt()
-  @Min(0)
+  @Min(1)
   ideDetaPedi?: number;
 
   @IsOptional()
   @Transform(({ value }) => optionalInt(value))
   @IsInt()
-  @Min(0)
+  @Min(1)
   idePedi?: number;
 
   @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
-  @Min(0)
+  @Min(1)
   ideProd!: number;
 
   @Transform(({ value }) => toRequiredInt(value))
@@ -67,36 +55,53 @@ export class CreatePedidoDetalleDTO {
   @Min(1)
   cantidadProd!: number;
 
-  @Transform(({ value }) => toRequiredNumber(value))
+  /**
+   * Los valores económicos son opcionales para conservar
+   * compatibilidad con el frontend actual.
+   *
+   * El backend ignora estos valores y los recalcula
+   * utilizando empresa_precios.
+   */
+  @IsOptional()
+  @Transform(({ value }) => toOptionalNumber(value))
   @IsNumber()
   @Min(0)
-  precioUnitarioProd!: number;
+  precioUnitarioProd: number = 0;
 
-  @Transform(({ value }) => toRequiredNumber(value))
+  @IsOptional()
+  @Transform(({ value }) => toOptionalNumber(value))
   @IsNumber()
   @Min(0)
-  subtotalProd!: number;
+  subtotalProd: number = 0;
 
-  @Transform(({ value }) => toRequiredNumber(value))
+  @IsOptional()
+  @Transform(({ value }) => toOptionalNumber(value))
   @IsNumber()
   @Min(0)
-  dctoCompraProd!: number;
+  dctoCompraProd: number = 0;
 
-  @Transform(({ value }) => toRequiredNumber(value))
+  @IsOptional()
+  @Transform(({ value }) => toOptionalNumber(value))
   @IsNumber()
   @Min(0)
-  ivaProd!: number;
+  ivaProd: number = 0;
 
-  @Transform(({ value }) => toRequiredNumber(value))
+  @IsOptional()
+  @Transform(({ value }) => toOptionalNumber(value))
   @IsNumber()
   @Min(0)
-  totalProd!: number;
+  totalProd: number = 0;
 
-  @Transform(({ value }) => toRequiredNumber(value))
+  @IsOptional()
+  @Transform(({ value }) => toOptionalNumber(value))
   @IsNumber()
   @Min(0)
-  dctoCaducProd!: number;
+  dctoCaducProd: number = 0;
 
+  /**
+   * El backend siempre fuerza pendiente.
+   */
+  @IsOptional()
   @IsEnum(EnumEstadoDetallePedido)
-  estadoDetaPedi!: EnumEstadoDetallePedido;
+  estadoDetaPedi: EnumEstadoDetallePedido = EnumEstadoDetallePedido.PENDIENTE;
 }

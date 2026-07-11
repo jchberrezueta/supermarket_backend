@@ -2,9 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { ApiResponseFactory, ComboMapper, IdUtil } from '@common/index';
 import { DataSource } from 'typeorm';
-import { CreateLoteDTO } from './dto/create_lote.dto';
 import { FilterLoteDTO } from './dto/filter_lote.dto';
-import { UpdateLoteDTO } from './dto/update_lote.dto';
 import { LotesMapper } from './lotes.mapper';
 import { LotesRepository } from './lotes.repository';
 
@@ -57,82 +55,6 @@ export class LotesService {
 
   async filtrarLotes(queryParams: FilterLoteDTO) {
     return this.filtrar(queryParams);
-  }
-
-  async insertar(body: CreateLoteDTO) {
-    try {
-      const lote = await this.dataSource.transaction((manager) =>
-        this.lotesRepository.crear(body, manager),
-      );
-
-      return ApiResponseFactory.legacyWrite(
-        1,
-        'Lote registrado correctamente',
-        lote.ideLote,
-      );
-    } catch (error) {
-      return ApiResponseFactory.legacyWrite(
-        0,
-        error?.message || 'No se pudo registrar el lote.',
-      );
-    }
-  }
-
-  async actualizar(body: UpdateLoteDTO) {
-    const ideLote = IdUtil.requireId(
-      body.ideLote,
-      'El ID del lote no es válido.',
-    );
-
-    try {
-      const lote = await this.dataSource.transaction(async (manager) => {
-        const loteActual = await this.lotesRepository.buscarPorId(
-          ideLote,
-          manager,
-        );
-
-        if (!loteActual) {
-          throw new Error('No se encontró el lote indicado.');
-        }
-
-        return this.lotesRepository.actualizar(loteActual, body, manager);
-      });
-
-      return ApiResponseFactory.legacyWrite(
-        1,
-        'Lote actualizado correctamente',
-        lote.ideLote,
-      );
-    } catch (error) {
-      return ApiResponseFactory.legacyWrite(
-        0,
-        error?.message || 'No se pudo actualizar el lote.',
-      );
-    }
-  }
-
-  async eliminar(id: number) {
-    const ideLote = IdUtil.requireId(id, 'El ID del lote no es válido.');
-
-    try {
-      const affected = await this.dataSource.transaction((manager) =>
-        this.lotesRepository.eliminar(ideLote, manager),
-      );
-
-      if (affected === 0) {
-        return ApiResponseFactory.legacyWrite(
-          0,
-          'No se encontró el lote indicado.',
-        );
-      }
-
-      return ApiResponseFactory.legacyWrite(1, 'Lote eliminado correctamente');
-    } catch (error) {
-      return ApiResponseFactory.legacyWrite(
-        0,
-        error?.message || 'No se pudo eliminar el lote.',
-      );
-    }
   }
 
   /**

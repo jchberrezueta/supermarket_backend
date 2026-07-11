@@ -1,8 +1,6 @@
 import { EnumEstadoDetalleEntrega } from '@models';
-import { Type } from 'class-transformer';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
-  ArrayMinSize,
   IsArray,
   IsEnum,
   IsInt,
@@ -20,46 +18,38 @@ function toRequiredInt(value: unknown): number | unknown {
 
   const numberValue = Number(value);
 
-  if (Number.isInteger(numberValue)) {
-    return numberValue;
-  }
-
-  return value;
+  return Number.isInteger(numberValue) ? numberValue : value;
 }
 
-function toRequiredNumber(value: unknown): number | unknown {
+function toOptionalNumber(value: unknown): number | undefined | unknown {
   if (value === null || value === undefined || value === '') {
-    return value;
+    return undefined;
   }
 
   const numberValue = Number(value);
 
-  if (Number.isFinite(numberValue)) {
-    return numberValue;
-  }
-
-  return value;
+  return Number.isFinite(numberValue) ? numberValue : value;
 }
 
 export class UpdateEntregaDetalleDTO {
   @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
-  @Min(0)
+  @Min(1)
   ideDetaEntr!: number;
 
   @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
-  @Min(0)
+  @Min(1)
   ideEntr!: number;
 
   @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
-  @Min(0)
+  @Min(1)
   ideDetaPedi!: number;
 
   @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
-  @Min(0)
+  @Min(1)
   ideProd!: number;
 
   @Transform(({ value }) => toRequiredInt(value))
@@ -67,42 +57,53 @@ export class UpdateEntregaDetalleDTO {
   @Min(0)
   cantidadProd!: number;
 
-  @Transform(({ value }) => toRequiredNumber(value))
+  /**
+   * El backend reemplaza estos valores utilizando
+   * el detalle del pedido relacionado.
+   */
+  @IsOptional()
+  @Transform(({ value }) => toOptionalNumber(value))
   @IsNumber()
   @Min(0)
-  precioUnitarioProd!: number;
+  precioUnitarioProd: number = 0;
 
-  @Transform(({ value }) => toRequiredNumber(value))
+  @IsOptional()
+  @Transform(({ value }) => toOptionalNumber(value))
   @IsNumber()
   @Min(0)
-  subtotalProd!: number;
+  subtotalProd: number = 0;
 
-  @Transform(({ value }) => toRequiredNumber(value))
+  @IsOptional()
+  @Transform(({ value }) => toOptionalNumber(value))
   @IsNumber()
   @Min(0)
-  dctoCompraProd!: number;
+  dctoCompraProd: number = 0;
 
-  @Transform(({ value }) => toRequiredNumber(value))
+  @IsOptional()
+  @Transform(({ value }) => toOptionalNumber(value))
   @IsNumber()
   @Min(0)
-  ivaProd!: number;
+  ivaProd: number = 0;
 
-  @Transform(({ value }) => toRequiredNumber(value))
+  @IsOptional()
+  @Transform(({ value }) => toOptionalNumber(value))
   @IsNumber()
   @Min(0)
-  totalProd!: number;
+  totalProd: number = 0;
 
-  @Transform(({ value }) => toRequiredNumber(value))
+  @IsOptional()
+  @Transform(({ value }) => toOptionalNumber(value))
   @IsNumber()
   @Min(0)
-  dctoCaducProd!: number;
+  dctoCaducProd: number = 0;
 
+  @IsOptional()
   @IsEnum(EnumEstadoDetalleEntrega)
-  estadoDetaEntr!: EnumEstadoDetalleEntrega;
+  estadoDetaEntr: EnumEstadoDetalleEntrega =
+    EnumEstadoDetalleEntrega.NO_ENTREGADO;
 
   @IsOptional()
   @IsArray()
-  @ArrayMinSize(1)
   @ValidateNested({ each: true })
   @Type(() => UpdateEntregaLoteDTO)
   lotesRecibidos?: UpdateEntregaLoteDTO[];

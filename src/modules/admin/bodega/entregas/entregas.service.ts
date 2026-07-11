@@ -41,6 +41,11 @@ interface TotalesEntregaCalculados {
   totalEntr: number;
 }
 
+interface AjusteStockProducto {
+  stockAnterior: number;
+  stockPosterior: number;
+}
+
 @Injectable()
 export class EntregasService {
   constructor(
@@ -114,6 +119,16 @@ export class EntregasService {
           pedido,
           EnumEstadoEntrega.BORRADOR,
           null,
+          manager,
+        );
+
+        /**
+         * Los importes enviados por el frontend se descartan.
+         * La entrega hereda sus valores del detalle del pedido.
+         */
+        await this.aplicarValoresEconomicosPedidoADetalles(
+          detalles,
+          pedido,
           manager,
         );
 
@@ -205,6 +220,16 @@ export class EntregasService {
           manager,
         );
 
+        /**
+         * Cada edición del borrador vuelve a calcular
+         * sus importes desde el pedido original.
+         */
+        await this.aplicarValoresEconomicosPedidoADetalles(
+          detalles,
+          pedido,
+          manager,
+        );
+
         const totales = this.calcularTotalesDesdeDetalle(
           detalles,
           body.cabeceraEntrega,
@@ -265,25 +290,15 @@ export class EntregasService {
             );
           }
 
-          const pedido = await this.entregasRepository.buscarPedidoPorId(
+          /**
+           * El pedido y el proveedor se vuelven a validar
+           * porque pudieron cambiar después de crear el borrador.
+           */
+          const pedido = await this.validarPedidoYProveedor(
             entrega.idePedi,
+            entrega.ideProv,
             manager,
           );
-
-          if (!pedido) {
-            throw new BadRequestException(
-              'El pedido relacionado con la entrega no existe.',
-            );
-          }
-
-          if (
-            pedido.estadoPedi === 'cancelado' ||
-            pedido.estadoPedi === 'cerrado_incompleto'
-          ) {
-            throw new BadRequestException(
-              `No se puede confirmar una entrega para un pedido "${pedido.estadoPedi}".`,
-            );
-          }
 
           const detalles =
             await this.entregasRepository.listarDetallesPorEntrega(
@@ -297,24 +312,77 @@ export class EntregasService {
             );
           }
 
-          const estadoConfirmado =
-            this.determinarEstadoConfirmadoEntrega(detalles);
-
           const detallesValidacion =
             this.mapearEntidadesDetalleParaValidacion(detalles);
 
+          /**
+           * Usamos PARCIAL para activar las validaciones
+           * propias de una confirmación:
+           * - cantidades positivas requieren lotes;
+           * - cantidad cero no admite lotes.
+           */
           this.validarDetalleEntrega(
             detallesValidacion,
             true,
-            estadoConfirmado,
+            EnumEstadoEntrega.PARCIAL,
           );
 
+          /**
+           * Este método calcula automáticamente:
+           * - no_entregado
+           * - incompleto
+           * - completo
+           */
           await this.validarDetallesContraPedidoYPendiente(
             detallesValidacion,
             pedido,
-            estadoConfirmado,
+            EnumEstadoEntrega.PARCIAL,
             null,
             manager,
+          );
+
+          /**
+           * Volvemos a calcular los importes justo antes de confirmar.
+           *
+           * Esto permite distribuir correctamente los centavos
+           * cuando un pedido es recibido en varias entregas.
+           */
+          await this.aplicarValoresEconomicosPedidoADetalles(
+            detallesValidacion,
+            pedido,
+            manager,
+          );
+
+          /**
+           * Persistimos los estados calculados por el backend.
+           */
+          await this.sincronizarDetallesEntregaCalculados(
+            detalles,
+            detallesValidacion,
+            manager,
+          );
+
+          /**
+           * La entrega será completa solamente cuando,
+           * después de esta recepción, todo el pedido quede cubierto.
+           */
+          const estadoConfirmado = this.determinarEstadoConfirmadoEntrega(
+            detallesValidacion,
+            pedido,
+          );
+
+          const totalesConfirmados = this.calcularTotalesDesdeDetalle(
+            detallesValidacion,
+            {
+              cantidadTotalEntr: 0,
+              totalEntr: 0,
+            },
+          );
+
+          entrega.cantidadTotalEntr = totalesConfirmados.cantidadTotalEntr;
+
+          entrega.totalEntr = MoneyUtil.toMoneyString(
+            totalesConfirmados.totalEntr,
           );
 
           const movimiento = this.obtenerMovimientoEntrega(
@@ -322,22 +390,34 @@ export class EntregasService {
             estadoConfirmado,
           );
 
-          await this.ajustarStockPorCambioDeEntrega(
-            new Map<number, number>(),
-            0,
-            this.consolidarCantidadesPorProducto(detalles),
-            movimiento,
-            manager,
-          );
+          /**
+           * Primero actualizamos y capturamos el cambio total
+           * del stock general de cada producto.
+           */
+          const ajustesStockProducto =
+            await this.ajustarStockPorCambioDeEntrega(
+              new Map<number, number>(),
+              0,
+              this.consolidarCantidadesPorProducto(detalles),
+              movimiento,
+              manager,
+            );
 
+          /**
+           * Después distribuimos ese cambio entre los lotes,
+           * registrando en cada movimiento:
+           *
+           * - stock general anterior y posterior;
+           * - stock del lote anterior y posterior.
+           */
           await this.aplicarMovimientoLotesEntrega(
             detalles,
             pedido,
             movimiento,
             this.obtenerTipoMovimientoNuevo(pedido, movimiento),
+            ajustesStockProducto,
             manager,
           );
-
           entrega.estadoEntr = estadoConfirmado;
           entrega.usuaActua = 'admin';
           entrega.fechaActua = new Date();
@@ -365,7 +445,6 @@ export class EntregasService {
       );
     }
   }
-
   async anular(id: number, body: AnularEntregaDTO) {
     const ideEntr = IdUtil.requireId(id, 'El ID de la entrega no es válido.');
 
@@ -418,21 +497,33 @@ export class EntregasService {
             entrega.estadoEntr,
           );
 
+          const movimientoReversion =
+            this.invertirMovimiento(movimientoAnterior);
+
+          /**
+           * Actualizamos primero el stock general y conservamos
+           * sus valores anterior y posterior.
+           *
+           * Todo permanece dentro de la misma transacción:
+           * si falla un lote, PostgreSQL revierte también el producto.
+           */
+          const ajustesStockProducto =
+            await this.ajustarStockPorCambioDeEntrega(
+              this.consolidarCantidadesPorProducto(detalles),
+              movimientoAnterior,
+              new Map<number, number>(),
+              0,
+              manager,
+            );
+
           await this.aplicarMovimientoLotesEntrega(
             detalles,
             pedido,
-            this.invertirMovimiento(movimientoAnterior),
+            movimientoReversion,
             EnumTipoMovimientoInventario.ANULACION_ENTREGA,
+            ajustesStockProducto,
             manager,
             true,
-          );
-
-          await this.ajustarStockPorCambioDeEntrega(
-            this.consolidarCantidadesPorProducto(detalles),
-            movimientoAnterior,
-            new Map<number, number>(),
-            0,
-            manager,
           );
 
           entrega.estadoEntr = 'anulada';
@@ -579,6 +670,15 @@ export class EntregasService {
       throw new BadRequestException('El pedido seleccionado no existe.');
     }
 
+    /**
+     * Únicamente los pedidos abiertos pueden recibir productos.
+     */
+    if (pedido.estadoPedi !== 'emitido' && pedido.estadoPedi !== 'parcial') {
+      throw new BadRequestException(
+        `El pedido no admite entregas porque se encuentra en estado "${pedido.estadoPedi}". Solo los pedidos emitidos o parciales pueden recibir productos.`,
+      );
+    }
+
     const proveedor = await this.entregasRepository.buscarProveedorPorId(
       ideProv,
       manager,
@@ -588,27 +688,19 @@ export class EntregasService {
       throw new BadRequestException('El proveedor seleccionado no existe.');
     }
 
+    if (proveedor.estadoProv !== 'activo') {
+      throw new BadRequestException(
+        'El proveedor seleccionado se encuentra inactivo.',
+      );
+    }
+
+    /**
+     * El contacto que realiza la entrega debe pertenecer
+     * a la misma empresa del pedido.
+     */
     if (proveedor.ideEmpr !== pedido.ideEmpr) {
       throw new BadRequestException(
         'El proveedor seleccionado no pertenece a la empresa del pedido.',
-      );
-    }
-
-    if (proveedor.estadoProv && proveedor.estadoProv !== 'activo') {
-      throw new BadRequestException(
-        'El proveedor seleccionado no está activo.',
-      );
-    }
-
-    if (pedido.estadoPedi === 'cancelado') {
-      throw new BadRequestException(
-        'No se puede registrar una entrega sobre un pedido cancelado.',
-      );
-    }
-
-    if (pedido.estadoPedi === 'cerrado_incompleto') {
-      throw new BadRequestException(
-        'No se puede registrar una entrega sobre un pedido cerrado incompleto.',
       );
     }
 
@@ -668,13 +760,13 @@ export class EntregasService {
       );
     }
 
-    const mueveInventario =
-      estadoEntr === 'parcial' || estadoEntr === 'completa';
+    const requiereLotes = estadoEntr === 'parcial' || estadoEntr === 'completa';
 
     const detallesPedidoUsados = new Set<number>();
 
     for (const detalle of detalles) {
       const ideDetaPedi = IdUtil.parseId(detalle.ideDetaPedi);
+
       const ideProd = IdUtil.parseId(detalle.ideProd);
 
       if (ideDetaPedi === null) {
@@ -697,48 +789,84 @@ export class EntregasService {
         );
       }
 
-      if (
-        detalle.cantidadProd === null ||
-        detalle.cantidadProd === undefined ||
-        Number.isNaN(Number(detalle.cantidadProd)) ||
-        Number(detalle.cantidadProd) < 0
-      ) {
+      const cantidad = Number(detalle.cantidadProd);
+
+      if (!Number.isInteger(cantidad) || cantidad < 0) {
         throw new BadRequestException(
-          'Todos los detalles deben tener una cantidad válida.',
+          'Todos los detalles deben tener una cantidad entera igual o mayor a cero.',
         );
       }
 
-      if (
-        detalle.estadoDetaEntr !== 'no_entregado' &&
-        Number(detalle.cantidadProd) <= 0
-      ) {
-        throw new BadRequestException(
-          'Los detalles entregados deben tener cantidad mayor a cero.',
-        );
-      }
+      const lotes = detalle.lotesRecibidos ?? [];
 
-      if (
-        mueveInventario &&
-        detalle.estadoDetaEntr !== 'no_entregado' &&
-        Number(detalle.cantidadProd) > 0 &&
-        !detalle.lotesRecibidos?.length
-      ) {
-        throw new BadRequestException(
-          'Toda entrega parcial o completa debe registrar lotes recibidos por cada producto entregado.',
-        );
-      }
+      /**
+       * Cantidad cero siempre significa no entregado.
+       * El estado recibido desde el frontend se ignora.
+       */
+      if (cantidad === 0) {
+        detalle.estadoDetaEntr = EnumEstadoDetalleEntrega.NO_ENTREGADO;
 
-      if (detalle.lotesRecibidos?.length) {
-        const totalLotes = detalle.lotesRecibidos.reduce(
-          (total, lote) => total + Number(lote.cantidadLote ?? 0),
-          0,
-        );
-
-        if (totalLotes !== Number(detalle.cantidadProd)) {
+        if (lotes.length > 0) {
           throw new BadRequestException(
-            'La suma de lotes recibidos debe coincidir con la cantidad recibida del producto.',
+            `El producto ${ideProd} está marcado sin unidades recibidas y no puede contener lotes.`,
           );
         }
+
+        continue;
+      }
+
+      /**
+       * Es un estado provisional.
+       * Luego se recalcula contra la cantidad pendiente.
+       */
+      detalle.estadoDetaEntr = EnumEstadoDetalleEntrega.INCOMPLETO;
+
+      if (requiereLotes && lotes.length === 0) {
+        throw new BadRequestException(
+          `El producto ${ideProd} tiene ${cantidad} unidades recibidas y debe registrar al menos un lote.`,
+        );
+      }
+
+      if (!lotes.length) {
+        continue;
+      }
+
+      const fechasRegistradas = new Set<string>();
+
+      let totalLotes = 0;
+
+      for (const lote of lotes) {
+        const cantidadLote = Number(lote.cantidadLote);
+
+        if (!Number.isInteger(cantidadLote) || cantidadLote <= 0) {
+          throw new BadRequestException(
+            `Todos los lotes del producto ${ideProd} deben tener una cantidad entera mayor a cero.`,
+          );
+        }
+
+        const fechaCaducidad = this.toDateOnly(lote.fechaCaducidadLote);
+
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(fechaCaducidad)) {
+          throw new BadRequestException(
+            `El producto ${ideProd} contiene una fecha de caducidad no válida.`,
+          );
+        }
+
+        if (fechasRegistradas.has(fechaCaducidad)) {
+          throw new BadRequestException(
+            `El producto ${ideProd} contiene dos lotes con la misma fecha de caducidad: ${fechaCaducidad}. Debe registrar una sola línea y acumular la cantidad.`,
+          );
+        }
+
+        fechasRegistradas.add(fechaCaducidad);
+
+        totalLotes += cantidadLote;
+      }
+
+      if (totalLotes !== cantidad) {
+        throw new BadRequestException(
+          `La suma de lotes del producto ${ideProd} es ${totalLotes}, pero la cantidad recibida es ${cantidad}.`,
+        );
       }
     }
   }
@@ -778,14 +906,9 @@ export class EntregasService {
       );
     }
 
-    const cantidadesNuevas = new Map<number, number>();
-
     /**
-     * Aunque sea borrador, la cantidad registrada no puede
-     * superar lo pedido o lo todavía pendiente.
-     *
-     * El estado se conserva en la firma porque será útil para
-     * otras reglas del flujo.
+     * Se mantiene en la firma porque forma parte
+     * del flujo de validación de entrega.
      */
     void estadoEntr;
 
@@ -810,42 +933,45 @@ export class EntregasService {
       }
 
       if (
-        detallePedido.estadoDetaPedi === 'cancelado' ||
-        detallePedido.estadoDetaPedi === 'cerrado_incompleto'
+        detallePedido.estadoDetaPedi !== 'pendiente' &&
+        detallePedido.estadoDetaPedi !== 'parcial'
       ) {
         throw new BadRequestException(
-          `El detalle de pedido ${ideDetaPedi} no puede recibir entregas porque está ${detallePedido.estadoDetaPedi}.`,
+          `El detalle de pedido ${ideDetaPedi} no admite nuevas entregas porque se encuentra en estado "${detallePedido.estadoDetaPedi}".`,
         );
       }
 
-      const cantidadAnterior = cantidadesNuevas.get(ideDetaPedi) ?? 0;
+      const cantidadNueva = Number(detalle.cantidadProd);
 
-      cantidadesNuevas.set(
-        ideDetaPedi,
-        cantidadAnterior + Number(detalle.cantidadProd),
+      const cantidadYaConfirmada = cantidadesConfirmadas.get(ideDetaPedi) ?? 0;
+
+      const cantidadPendiente = Math.max(
+        detallePedido.cantidadProd - cantidadYaConfirmada,
+        0,
       );
-    }
 
-    for (const [ideDetaPedi, cantidadNueva] of cantidadesNuevas.entries()) {
-      const detallePedido = detallesPedido.get(ideDetaPedi);
+      if (cantidadNueva > cantidadPendiente) {
+        throw new BadRequestException(
+          `No se puede recibir más de lo pendiente para "${detallePedido.producto?.nombreProd ?? `producto ${detallePedido.ideProd}`}". Pedido: ${detallePedido.cantidadProd}, ya confirmado: ${cantidadYaConfirmada}, pendiente: ${cantidadPendiente}, recibido ahora: ${cantidadNueva}.`,
+        );
+      }
 
-      if (!detallePedido) {
+      /**
+       * El backend es la única autoridad del estado.
+       */
+      if (cantidadNueva === 0) {
+        detalle.estadoDetaEntr = EnumEstadoDetalleEntrega.NO_ENTREGADO;
+
         continue;
       }
 
-      const cantidadYaConfirmada = cantidadesConfirmadas.get(ideDetaPedi) ?? 0;
-      const cantidadTotalConfirmada = cantidadYaConfirmada + cantidadNueva;
+      if (cantidadNueva === cantidadPendiente) {
+        detalle.estadoDetaEntr = EnumEstadoDetalleEntrega.COMPLETO;
 
-      if (cantidadTotalConfirmada > detallePedido.cantidadProd) {
-        const pendiente = Math.max(
-          detallePedido.cantidadProd - cantidadYaConfirmada,
-          0,
-        );
-
-        throw new BadRequestException(
-          `No se puede recibir más de lo pedido para "${detallePedido.producto?.nombreProd ?? `producto ${detallePedido.ideProd}`}". Pedido: ${detallePedido.cantidadProd}, ya confirmado: ${cantidadYaConfirmada}, pendiente: ${pendiente}, recibido ahora: ${cantidadNueva}.`,
-        );
+        continue;
       }
+
+      detalle.estadoDetaEntr = EnumEstadoDetalleEntrega.INCOMPLETO;
     }
   }
 
@@ -939,13 +1065,24 @@ export class EntregasService {
     const cantidades = new Map<number, number>();
 
     for (const detalle of detalles) {
+      const cantidad = Number(detalle.cantidadProd);
+
+      /**
+       * Defensa adicional:
+       * no entregado nunca modifica inventario.
+       */
+      if (detalle.estadoDetaEntr === 'no_entregado' || cantidad <= 0) {
+        continue;
+      }
+
       const ideProd = IdUtil.requireId(
         detalle.ideProd,
         'El ID del producto no es válido.',
       );
 
       const cantidadAnterior = cantidades.get(ideProd) ?? 0;
-      cantidades.set(ideProd, cantidadAnterior + detalle.cantidadProd);
+
+      cantidades.set(ideProd, cantidadAnterior + cantidad);
     }
 
     return cantidades;
@@ -957,14 +1094,23 @@ export class EntregasService {
     cantidadesNuevas: Map<number, number>,
     movimientoNuevo: MovimientoEntrega,
     manager: EntityManager,
-  ): Promise<void> {
+  ): Promise<Map<number, AjusteStockProducto>> {
+    const ajustes = new Map<number, AjusteStockProducto>();
+
     const productosIds = new Set<number>([
       ...cantidadesAnteriores.keys(),
       ...cantidadesNuevas.keys(),
     ]);
 
-    for (const ideProd of productosIds) {
+    /**
+     * Orden estable para adquirir bloqueos siempre
+     * en el mismo orden y disminuir riesgo de deadlocks.
+     */
+    const productosOrdenados = Array.from(productosIds).sort((a, b) => a - b);
+
+    for (const ideProd of productosOrdenados) {
       const cantidadAnterior = cantidadesAnteriores.get(ideProd) ?? 0;
+
       const cantidadNueva = cantidadesNuevas.get(ideProd) ?? 0;
 
       const delta =
@@ -992,21 +1138,33 @@ export class EntregasService {
         movimientoNuevo,
       );
 
-      const nuevoStock = producto.stockProd + delta;
+      const stockAnterior = Number(producto.stockProd);
 
-      if (nuevoStock < 0) {
+      const stockPosterior = stockAnterior + delta;
+
+      if (stockPosterior < 0) {
         throw new BadRequestException(
-          `Stock insuficiente para "${producto.nombreProd}". Disponible: ${producto.stockProd}, movimiento solicitado: ${delta}.`,
+          `Stock insuficiente para "${producto.nombreProd}". Disponible: ${stockAnterior}, movimiento solicitado: ${delta}.`,
         );
       }
 
-      producto.stockProd = nuevoStock;
-      producto.disponibleProd = producto.stockProd > 0 ? 'si' : 'no';
+      producto.stockProd = stockPosterior;
+
+      producto.disponibleProd = stockPosterior > 0 ? 'si' : 'no';
+
       producto.usuaActua = 'admin';
+
       producto.fechaActua = new Date();
 
       await this.entregasRepository.guardarProducto(producto, manager);
+
+      ajustes.set(ideProd, {
+        stockAnterior,
+        stockPosterior,
+      });
     }
+
+    return ajustes;
   }
 
   private validarProductoParaMovimientoNuevo(
@@ -1030,6 +1188,7 @@ export class EntregasService {
     pedido: PedidoEntity,
     movimiento: MovimientoEntrega,
     tipoMovi: EnumTipoMovimientoInventario,
+    ajustesStockProducto: Map<number, AjusteStockProducto>,
     manager: EntityManager,
     esReversion = false,
   ): Promise<void> {
@@ -1037,20 +1196,80 @@ export class EntregasService {
       return;
     }
 
-    for (const detalle of detalles) {
-      if (!detalle.lotesRecibidos?.length) {
+    /**
+     * Cada producto comienza en el stock que tenía
+     * antes de aplicar esta operación.
+     */
+    const cursoresStockProducto = new Map<number, number>();
+
+    for (const [ideProd, ajuste] of ajustesStockProducto) {
+      cursoresStockProducto.set(ideProd, ajuste.stockAnterior);
+    }
+
+    /**
+     * Ordenamos los detalles para generar una secuencia
+     * determinista en la trazabilidad.
+     */
+    const detallesOrdenados = [...detalles].sort(
+      (a, b) => a.ideDetaEntr - b.ideDetaEntr,
+    );
+
+    for (const detalle of detallesOrdenados) {
+      if (
+        detalle.estadoDetaEntr === 'no_entregado' ||
+        Number(detalle.cantidadProd) <= 0 ||
+        !detalle.lotesRecibidos?.length
+      ) {
         continue;
       }
 
-      for (const detalleLote of detalle.lotesRecibidos) {
-        await this.aplicarMovimientoLoteIndividual(
+      const ajusteProducto = ajustesStockProducto.get(detalle.ideProd);
+
+      if (!ajusteProducto) {
+        throw new BadRequestException(
+          `No se encontró el ajuste de stock general para el producto ${detalle.ideProd}.`,
+        );
+      }
+
+      const lotesOrdenados = [...detalle.lotesRecibidos].sort(
+        (a, b) => a.ideDetaEntrLote - b.ideDetaEntrLote,
+      );
+
+      for (const detalleLote of lotesOrdenados) {
+        const stockProdAnterior =
+          cursoresStockProducto.get(detalle.ideProd) ??
+          ajusteProducto.stockAnterior;
+
+        const stockProdPosterior = await this.aplicarMovimientoLoteIndividual(
           detalle,
           detalleLote,
           pedido,
           movimiento,
           tipoMovi,
+          stockProdAnterior,
           manager,
           esReversion,
+        );
+
+        cursoresStockProducto.set(detalle.ideProd, stockProdPosterior);
+      }
+    }
+
+    /**
+     * Verificación interna:
+     *
+     * la suma de movimientos por lote debe terminar
+     * exactamente en el stock general ya calculado.
+     *
+     * Si no coincide, la transacción completa se revierte.
+     */
+    for (const [ideProd, ajuste] of ajustesStockProducto) {
+      const stockCalculado =
+        cursoresStockProducto.get(ideProd) ?? ajuste.stockAnterior;
+
+      if (stockCalculado !== ajuste.stockPosterior) {
+        throw new BadRequestException(
+          `La trazabilidad del producto ${ideProd} no coincide con el stock general. Stock calculado por lotes: ${stockCalculado}, stock esperado: ${ajuste.stockPosterior}.`,
         );
       }
     }
@@ -1062,11 +1281,21 @@ export class EntregasService {
     pedido: PedidoEntity,
     movimiento: MovimientoEntrega,
     tipoMovi: EnumTipoMovimientoInventario,
+    stockProdAnterior: number,
     manager: EntityManager,
     esReversion: boolean,
-  ): Promise<void> {
+  ): Promise<number> {
     const fechaCaducidad = this.toDateOnly(detalleLote.fechaCaducidadLote);
-    const cantidadMovimiento = detalleLote.cantidadLote * movimiento;
+
+    const cantidadMovimiento = Number(detalleLote.cantidadLote) * movimiento;
+
+    const stockProdPosterior = stockProdAnterior + cantidadMovimiento;
+
+    if (stockProdPosterior < 0) {
+      throw new BadRequestException(
+        `La operación dejaría el stock general del producto ${detalle.ideProd} en negativo.`,
+      );
+    }
 
     let lote =
       await this.entregasRepository.buscarLotePorProductoYFechaForUpdate(
@@ -1090,7 +1319,8 @@ export class EntregasService {
       );
     }
 
-    const stockLoteAnterior = lote.stockLote;
+    const stockLoteAnterior = Number(lote.stockLote);
+
     const stockLotePosterior = stockLoteAnterior + cantidadMovimiento;
 
     if (stockLotePosterior < 0) {
@@ -1107,8 +1337,11 @@ export class EntregasService {
     );
 
     detalleLote.ideLote = loteGuardado.ideLote;
+
     detalleLote.estadoDetaEntrLote = esReversion ? 'anulado' : 'confirmado';
+
     detalleLote.fechaActua = new Date();
+
     detalleLote.usuaActua = 'admin';
 
     await manager.getRepository(DetalleEntregaLoteEntity).save(detalleLote);
@@ -1116,25 +1349,42 @@ export class EntregasService {
     await this.entregasRepository.registrarMovimientoInventario(
       {
         ideProd: detalle.ideProd,
+
         ideLote: loteGuardado.ideLote,
+
         ideDetaEntr: detalle.ideDetaEntr,
+
         ideDetaVent: null,
+
         tipoMovi,
+
         cantidadMovi: cantidadMovimiento,
-        stockProdAnterior: null,
-        stockProdPosterior: null,
+
+        /**
+         * Trazabilidad del stock general.
+         */
+        stockProdAnterior,
+        stockProdPosterior,
+
+        /**
+         * Trazabilidad del lote.
+         */
         stockLoteAnterior,
         stockLotePosterior,
+
         observacionMovi: this.obtenerObservacionMovimiento(
           pedido,
           detalle,
           fechaCaducidad,
           esReversion,
         ),
+
         usuaIngre: 'admin',
       },
       manager,
     );
+
+    return stockProdPosterior;
   }
 
   private obtenerObservacionMovimiento(
@@ -1150,12 +1400,243 @@ export class EntregasService {
     return `${accion}. Pedido ${pedido.idePedi}, detalle entrega ${detalle.ideDetaEntr}, producto ${detalle.ideProd}, caducidad ${fechaCaducidad}.`;
   }
 
+  private async aplicarValoresEconomicosPedidoADetalles(
+    detalles: Array<CreateEntregaDetalleDTO | UpdateEntregaDetalleDTO>,
+    pedido: PedidoEntity,
+    manager: EntityManager,
+  ): Promise<void> {
+    if (!pedido.detalles?.length) {
+      throw new BadRequestException(
+        'El pedido no contiene detalles para calcular los valores de la entrega.',
+      );
+    }
+
+    const detallesPedido = new Map<number, DetallePedidoEntity>();
+
+    for (const detallePedido of pedido.detalles) {
+      detallesPedido.set(detallePedido.ideDetaPedi, detallePedido);
+    }
+
+    /**
+     * Conocer la cantidad ya confirmada permite distribuir
+     * correctamente los centavos entre varias entregas.
+     */
+    const cantidadesConfirmadasRows =
+      await this.entregasRepository.obtenerCantidadesConfirmadasPorPedido(
+        pedido.idePedi,
+        null,
+        manager,
+      );
+
+    const cantidadesConfirmadas = new Map<number, number>();
+
+    for (const row of cantidadesConfirmadasRows) {
+      cantidadesConfirmadas.set(
+        Number(row.ide_deta_pedi),
+        Number(row.cantidad_confirmada),
+      );
+    }
+
+    for (const detalle of detalles) {
+      const ideDetaPedi = IdUtil.requireId(
+        detalle.ideDetaPedi,
+        'El detalle de pedido de la entrega no es válido.',
+      );
+
+      const detallePedido = detallesPedido.get(ideDetaPedi);
+
+      if (!detallePedido) {
+        throw new BadRequestException(
+          `El detalle de pedido ${ideDetaPedi} no pertenece al pedido seleccionado.`,
+        );
+      }
+
+      if (detallePedido.ideProd !== detalle.ideProd) {
+        throw new BadRequestException(
+          `El producto del detalle de entrega no coincide con el detalle de pedido ${ideDetaPedi}.`,
+        );
+      }
+
+      const cantidadPedido = Number(detallePedido.cantidadProd);
+
+      const cantidadRecibida = Number(detalle.cantidadProd);
+
+      const cantidadYaConfirmada = cantidadesConfirmadas.get(ideDetaPedi) ?? 0;
+
+      if (!Number.isInteger(cantidadPedido) || cantidadPedido <= 0) {
+        throw new BadRequestException(
+          `El detalle de pedido ${ideDetaPedi} tiene una cantidad solicitada inválida.`,
+        );
+      }
+
+      if (!Number.isInteger(cantidadRecibida) || cantidadRecibida < 0) {
+        throw new BadRequestException(
+          `El detalle de entrega relacionado con ${ideDetaPedi} tiene una cantidad inválida.`,
+        );
+      }
+
+      if (cantidadYaConfirmada + cantidadRecibida > cantidadPedido) {
+        throw new BadRequestException(
+          `La cantidad recibida para el detalle ${ideDetaPedi} supera la cantidad solicitada.`,
+        );
+      }
+
+      /**
+       * El precio unitario siempre se copia directamente
+       * desde el pedido.
+       */
+      detalle.precioUnitarioProd = MoneyUtil.toNumber(
+        detallePedido.precioUnitarioProd,
+      );
+
+      /**
+       * Los demás valores representan importes de línea
+       * y se distribuyen por el tramo de unidades recibido.
+       */
+      detalle.subtotalProd = this.prorratearImportePorTramo(
+        detallePedido.subtotalProd,
+        cantidadYaConfirmada,
+        cantidadRecibida,
+        cantidadPedido,
+      );
+
+      detalle.dctoCompraProd = this.prorratearImportePorTramo(
+        detallePedido.dctoCompraProd,
+        cantidadYaConfirmada,
+        cantidadRecibida,
+        cantidadPedido,
+      );
+
+      detalle.ivaProd = this.prorratearImportePorTramo(
+        detallePedido.ivaProd,
+        cantidadYaConfirmada,
+        cantidadRecibida,
+        cantidadPedido,
+      );
+
+      detalle.totalProd = this.prorratearImportePorTramo(
+        detallePedido.totalProd,
+        cantidadYaConfirmada,
+        cantidadRecibida,
+        cantidadPedido,
+      );
+
+      detalle.dctoCaducProd = this.prorratearImportePorTramo(
+        detallePedido.dctoCaducProd,
+        cantidadYaConfirmada,
+        cantidadRecibida,
+        cantidadPedido,
+      );
+    }
+  }
+
+  private prorratearImportePorTramo(
+    importeTotal: string | number | null | undefined,
+    cantidadAnterior: number,
+    cantidadNueva: number,
+    cantidadTotal: number,
+  ): number {
+    if (cantidadNueva <= 0 || cantidadTotal <= 0) {
+      return 0;
+    }
+
+    const importe = MoneyUtil.toNumber(importeTotal);
+
+    const limiteAnterior = Math.min(
+      Math.max(cantidadAnterior, 0),
+      cantidadTotal,
+    );
+
+    const limitePosterior = Math.min(
+      limiteAnterior + cantidadNueva,
+      cantidadTotal,
+    );
+
+    /**
+     * Calculamos importes acumulados y luego obtenemos
+     * la diferencia del tramo.
+     *
+     * Ejemplo:
+     * total = 10.00, cantidad = 3
+     *
+     * primera unidad  → 3.33
+     * segunda unidad  → 3.34
+     * tercera unidad  → 3.33
+     *
+     * suma final      → 10.00
+     */
+    const acumuladoAnterior = MoneyUtil.round(
+      (importe * limiteAnterior) / cantidadTotal,
+    );
+
+    const acumuladoPosterior = MoneyUtil.round(
+      (importe * limitePosterior) / cantidadTotal,
+    );
+
+    return MoneyUtil.subtract(acumuladoPosterior, acumuladoAnterior);
+  }
+
+  private async sincronizarDetallesEntregaCalculados(
+    entidades: DetalleEntregaEntity[],
+    detallesValidados: Array<CreateEntregaDetalleDTO | UpdateEntregaDetalleDTO>,
+    manager: EntityManager,
+  ): Promise<void> {
+    const detallesPorId = new Map<
+      number,
+      CreateEntregaDetalleDTO | UpdateEntregaDetalleDTO
+    >();
+
+    for (const detalle of detallesValidados) {
+      const ideDetaEntr = IdUtil.requireId(
+        detalle.ideDetaEntr,
+        'El ID del detalle de entrega no es válido.',
+      );
+
+      detallesPorId.set(ideDetaEntr, detalle);
+    }
+
+    for (const entidad of entidades) {
+      const detalleCalculado = detallesPorId.get(entidad.ideDetaEntr);
+
+      if (!detalleCalculado) {
+        throw new BadRequestException(
+          `No se pudo calcular el detalle de entrega ${entidad.ideDetaEntr}.`,
+        );
+      }
+
+      entidad.estadoDetaEntr = detalleCalculado.estadoDetaEntr;
+
+      entidad.precioUnitarioProd = MoneyUtil.toMoneyString(
+        detalleCalculado.precioUnitarioProd,
+      );
+
+      entidad.subtotalProd = MoneyUtil.toMoneyString(
+        detalleCalculado.subtotalProd,
+      );
+
+      entidad.dctoCompraProd = MoneyUtil.toMoneyString(
+        detalleCalculado.dctoCompraProd,
+      );
+
+      entidad.ivaProd = MoneyUtil.toMoneyString(detalleCalculado.ivaProd);
+
+      entidad.totalProd = MoneyUtil.toMoneyString(detalleCalculado.totalProd);
+
+      entidad.dctoCaducProd = MoneyUtil.toMoneyString(
+        detalleCalculado.dctoCaducProd,
+      );
+    }
+
+    await this.entregasRepository.guardarDetallesEntrega(entidades, manager);
+  }
+
   private determinarEstadoConfirmadoEntrega(
-    detalles: DetalleEntregaEntity[],
+    detalles: Array<CreateEntregaDetalleDTO | UpdateEntregaDetalleDTO>,
+    pedido: PedidoEntity,
   ): EnumEstadoEntrega {
     const detallesConRecepcion = detalles.filter(
       (detalle) =>
-        detalle.estadoDetaEntr !== 'no_entregado' &&
+        detalle.estadoDetaEntr !== EnumEstadoDetalleEntrega.NO_ENTREGADO &&
         Number(detalle.cantidadProd) > 0,
     );
 
@@ -1165,15 +1646,36 @@ export class EntregasService {
       );
     }
 
-    const todosCompletos = detalles.every(
-      (detalle) => detalle.estadoDetaEntr === 'completo',
+    const estadosActuales = new Map<number, EnumEstadoDetalleEntrega>();
+
+    for (const detalle of detalles) {
+      const ideDetaPedi = IdUtil.requireId(
+        detalle.ideDetaPedi,
+        'El detalle de pedido de la entrega no es válido.',
+      );
+
+      estadosActuales.set(ideDetaPedi, detalle.estadoDetaEntr);
+    }
+
+    const detallesPedidoActivos = (pedido.detalles ?? []).filter(
+      (detallePedido) =>
+        detallePedido.estadoDetaPedi !== 'cancelado' &&
+        detallePedido.estadoDetaPedi !== 'cerrado_incompleto',
     );
+
+    const todosCompletos =
+      detallesPedidoActivos.length > 0 &&
+      detallesPedidoActivos.every(
+        (detallePedido) =>
+          detallePedido.estadoDetaPedi === 'completo' ||
+          estadosActuales.get(detallePedido.ideDetaPedi) ===
+            EnumEstadoDetalleEntrega.COMPLETO,
+      );
 
     return todosCompletos
       ? EnumEstadoEntrega.COMPLETA
       : EnumEstadoEntrega.PARCIAL;
   }
-
   private mapearEntidadesDetalleParaValidacion(
     detalles: DetalleEntregaEntity[],
   ): CreateEntregaDetalleDTO[] {

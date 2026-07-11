@@ -2,15 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { LoteEntity, ProductoEntity } from '@entities';
 import { EntityManager, Repository } from 'typeorm';
-import { CreateLoteDTO } from './dto/create_lote.dto';
 import { FilterLoteDTO } from './dto/filter_lote.dto';
-import { UpdateLoteDTO } from './dto/update_lote.dto';
 
 @Injectable()
 export class LotesRepository {
   constructor(
     @InjectRepository(LoteEntity)
     private readonly loteRepository: Repository<LoteEntity>,
+
     @InjectRepository(ProductoEntity)
     private readonly productoRepository: Repository<ProductoEntity>,
   ) {}
@@ -96,43 +95,9 @@ export class LotesRepository {
     return qb.getMany();
   }
 
-  async crear(
-    dto: CreateLoteDTO,
-    manager?: EntityManager,
-  ): Promise<LoteEntity> {
-    const repository = this.getLoteRepository(manager);
-
-    const lote = repository.create({
-      ideProd: dto.ideProd,
-      fechaCaducidadLote: new Date(dto.fechaCaducidadLote),
-      stockLote: dto.stockLote,
-      estadoLote: dto.estadoLote as LoteEntity['estadoLote'],
-    });
-
-    return repository.save(lote);
-  }
-
-  async actualizar(
-    lote: LoteEntity,
-    dto: UpdateLoteDTO,
-    manager?: EntityManager,
-  ): Promise<LoteEntity> {
-    lote.ideProd = dto.ideProd;
-    lote.fechaCaducidadLote = new Date(dto.fechaCaducidadLote);
-    lote.stockLote = dto.stockLote;
-    lote.estadoLote = dto.estadoLote as LoteEntity['estadoLote'];
-
-    return this.getLoteRepository(manager).save(lote);
-  }
-
-  async eliminar(ideLote: number, manager?: EntityManager): Promise<number> {
-    const result = await this.getLoteRepository(manager).delete({
-      ideLote,
-    });
-
-    return result.affected ?? 0;
-  }
-
+  /**
+   * Solo se usa para filtros y consultas.
+   */
   async listarProductos(manager?: EntityManager): Promise<ProductoEntity[]> {
     return this.getProductoRepository(manager).find({
       order: {

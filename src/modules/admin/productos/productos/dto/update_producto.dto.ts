@@ -18,11 +18,7 @@ function toRequiredNumber(value: unknown): number | unknown {
 
   const numberValue = Number(value);
 
-  if (Number.isFinite(numberValue)) {
-    return numberValue;
-  }
-
-  return value;
+  return Number.isFinite(numberValue) ? numberValue : value;
 }
 
 function toRequiredInt(value: unknown): number | unknown {
@@ -32,11 +28,7 @@ function toRequiredInt(value: unknown): number | unknown {
 
   const numberValue = Number(value);
 
-  if (Number.isInteger(numberValue)) {
-    return numberValue;
-  }
-
-  return value;
+  return Number.isInteger(numberValue) ? numberValue : value;
 }
 
 function optionalInt(value: unknown): number | undefined | unknown {
@@ -46,11 +38,7 @@ function optionalInt(value: unknown): number | undefined | unknown {
 
   const numberValue = Number(value);
 
-  if (Number.isInteger(numberValue)) {
-    return numberValue;
-  }
-
-  return value;
+  return Number.isInteger(numberValue) ? numberValue : value;
 }
 
 function requiredLowerText(value: unknown): string | null | unknown {
@@ -139,13 +127,15 @@ export class UpdateProductoDTO {
   dctoPromoProd!: number;
 
   /**
-   * Temporalmente se mantiene editable para no romper formularios actuales.
-   * En una fase posterior lo limitaremos con reglas de inventario.
+   * Compatibilidad temporal con el frontend.
+   *
+   * El repository ignora cualquier cambio enviado aquí.
    */
-  @Transform(({ value }) => toRequiredInt(value))
+  @IsOptional()
+  @Transform(({ value }) => optionalInt(value))
   @IsInt()
   @Min(0)
-  stockProd!: number;
+  stockProd?: number;
 
   @IsOptional()
   @Transform(({ value }) => optionalInt(value))
@@ -153,8 +143,12 @@ export class UpdateProductoDTO {
   @Min(0)
   stockMinimoProd?: number;
 
+  /**
+   * La disponibilidad será recalculada desde el stock real.
+   */
+  @IsOptional()
   @IsIn(['si', 'no'])
-  disponibleProd!: 'si' | 'no';
+  disponibleProd?: 'si' | 'no';
 
   @IsEnum(EnumEstadosProducto)
   estadoProd!: EnumEstadosProducto;
