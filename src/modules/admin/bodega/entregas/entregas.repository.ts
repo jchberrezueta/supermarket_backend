@@ -197,7 +197,12 @@ export class EntregasRepository {
       fechaEntr: new Date(dto.fechaEntr),
       cantidadTotalEntr: totales.cantidadTotalEntr,
       totalEntr: totales.totalEntr.toFixed(2),
-      estadoEntr: dto.estadoEntr,
+
+      /**
+       * La creación nunca confirma inventario.
+       */
+      estadoEntr: 'borrador',
+
       observacionEntr: dto.observacionEntr ?? null,
       usuaIngre: 'admin',
     });
@@ -216,7 +221,13 @@ export class EntregasRepository {
     entrega.fechaEntr = new Date(dto.fechaEntr);
     entrega.cantidadTotalEntr = totales.cantidadTotalEntr;
     entrega.totalEntr = totales.totalEntr.toFixed(2);
-    entrega.estadoEntr = dto.estadoEntr;
+
+    /**
+     * Este método solo debe utilizarse con borradores.
+     * No acepta estados enviados por el frontend.
+     */
+    entrega.estadoEntr = 'borrador';
+
     entrega.observacionEntr = dto.observacionEntr ?? null;
     entrega.usuaActua = 'admin';
     entrega.fechaActua = new Date();
@@ -293,10 +304,14 @@ export class EntregasRepository {
         const lotes = detalleDto.lotesRecibidos.map((loteDto) =>
           detalleLoteRepository.create({
             ideDetaEntr: detalleGuardado.ideDetaEntr,
-            ideLote: loteDto.ideLote ?? null,
+            /**
+             * Mientras la entrega sea borrador, todavía no existe
+             * una afectación real sobre la tabla lote.
+             */
+            ideLote: null,
             fechaCaducidadLote: new Date(loteDto.fechaCaducidadLote),
             cantidadLote: loteDto.cantidadLote,
-            estadoDetaEntrLote: loteDto.estadoDetaEntrLote ?? 'registrado',
+            estadoDetaEntrLote: 'registrado',
             usuaIngre: 'admin',
           }),
         );
@@ -497,6 +512,13 @@ export class EntregasRepository {
     manager?: EntityManager,
   ): Promise<PedidoEntity> {
     return this.getPedidoRepository(manager).save(pedido);
+  }
+
+  async guardarEntrega(
+    entrega: EntregaEntity,
+    manager?: EntityManager,
+  ): Promise<EntregaEntity> {
+    return this.getEntregaRepository(manager).save(entrega);
   }
 
   private obtenerEstadoLotePorFecha(

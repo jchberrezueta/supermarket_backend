@@ -13,6 +13,7 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { Roles } from 'src/modules/auth/roles.decorator';
 import { RolesGuard } from 'src/modules/auth/roles.guard';
+import { AnularEntregaDTO } from './dto/anular_entrega.dto';
 import { CreateEntregaDTO } from './dto/create_entrega.dto';
 import { FilterEntregaDTO } from './dto/filter_entrega.dto';
 import { UpdateEntregaDTO } from './dto/update_entrega.dto';
@@ -52,6 +53,19 @@ export class EntregasController {
     body.cabeceraEntrega.ideEntr = id;
 
     return this.entregasService.actualizar(body);
+  }
+
+  @Put('confirmar/:id')
+  async confirmar(@Param('id', ParseIntPipe) id: number) {
+    return this.entregasService.confirmar(id);
+  }
+
+  @Put('anular/:id')
+  async anular(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: AnularEntregaDTO,
+  ) {
+    return this.entregasService.anular(id, body);
   }
 
   @Delete('eliminar/:id')

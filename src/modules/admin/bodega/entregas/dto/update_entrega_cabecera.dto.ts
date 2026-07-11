@@ -18,11 +18,7 @@ function toRequiredInt(value: unknown): number | unknown {
 
   const numberValue = Number(value);
 
-  if (Number.isInteger(numberValue)) {
-    return numberValue;
-  }
-
-  return value;
+  return Number.isInteger(numberValue) ? numberValue : value;
 }
 
 function toRequiredNumber(value: unknown): number | unknown {
@@ -32,11 +28,7 @@ function toRequiredNumber(value: unknown): number | unknown {
 
   const numberValue = Number(value);
 
-  if (Number.isFinite(numberValue)) {
-    return numberValue;
-  }
-
-  return value;
+  return Number.isFinite(numberValue) ? numberValue : value;
 }
 
 function optionalText(value: unknown): string | null | unknown {
@@ -44,12 +36,13 @@ function optionalText(value: unknown): string | null | unknown {
     return null;
   }
 
-  if (typeof value === 'string') {
-    const text = value.trim();
-    return text !== '' ? text.toLowerCase() : null;
+  if (typeof value !== 'string') {
+    return value;
   }
 
-  return value;
+  const text = value.trim();
+
+  return text !== '' ? text : null;
 }
 
 export class UpdateEntregaCabeceraDTO {
@@ -81,8 +74,13 @@ export class UpdateEntregaCabeceraDTO {
   @Min(0)
   totalEntr!: number;
 
+  /**
+   * Actualizar no permite cambiar formalmente el estado.
+   * El backend conservará la entrega como borrador.
+   */
+  @IsOptional()
   @IsEnum(EnumEstadoEntrega)
-  estadoEntr!: EnumEstadoEntrega;
+  estadoEntr: EnumEstadoEntrega = EnumEstadoEntrega.BORRADOR;
 
   @IsOptional()
   @IsString()

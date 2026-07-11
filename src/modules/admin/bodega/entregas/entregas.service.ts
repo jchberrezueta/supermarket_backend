@@ -18,8 +18,14 @@ import {
   PedidoEntity,
   ProductoEntity,
 } from '@entities';
-import { EnumEstadoEntrega, EnumTipoMovimientoInventario } from '@models';
+import {
+  EnumEstadoDetalleEntrega,
+  EnumEstadoDetalleEntregaLote,
+  EnumEstadoEntrega,
+  EnumTipoMovimientoInventario,
+} from '@models';
 import { DataSource, EntityManager } from 'typeorm';
+import { AnularEntregaDTO } from './dto/anular_entrega.dto';
 import { CreateEntregaDTO } from './dto/create_entrega.dto';
 import { CreateEntregaDetalleDTO } from './dto/create_entrega_detalle.dto';
 import { FilterEntregaDTO } from './dto/filter_entrega.dto';
@@ -81,7 +87,13 @@ export class EntregasService {
   async insertar(body: CreateEntregaDTO) {
     const detalles = body.detalleEntrega ?? [];
 
-    this.validarDetalleEntrega(detalles, true, body.cabeceraEntrega.estadoEntr);
+    /**
+     * La inserción siempre trabaja como borrador.
+     * Ignoramos cualquier otro estado recibido desde el cliente.
+     */
+    body.cabeceraEntrega.estadoEntr = EnumEstadoEntrega.BORRADOR;
+
+    this.validarDetalleEntrega(detalles, true, EnumEstadoEntrega.BORRADOR);
 
     try {
       const entrega = await this.dataSource.transaction(async (manager) => {
@@ -91,24 +103,17 @@ export class EntregasService {
           manager,
         );
 
+        /**
+         * Aunque todavía sea borrador, validamos que:
+         * - el detalle pertenezca al pedido;
+         * - el producto coincida;
+         * - no exceda la cantidad pendiente.
+         */
         await this.validarDetallesContraPedidoYPendiente(
           detalles,
           pedido,
-          body.cabeceraEntrega.estadoEntr,
+          EnumEstadoEntrega.BORRADOR,
           null,
-          manager,
-        );
-
-        const movimientoNuevo = this.obtenerMovimientoEntrega(
-          pedido,
-          body.cabeceraEntrega.estadoEntr,
-        );
-
-        await this.ajustarStockPorCambioDeEntrega(
-          new Map<number, number>(),
-          0,
-          this.consolidarCantidadesPorProducto(detalles),
-          movimientoNuevo,
           manager,
         );
 
@@ -129,34 +134,28 @@ export class EntregasService {
           manager,
         );
 
-        const detallesGuardados =
-          await this.entregasRepository.listarDetallesPorEntrega(
-            entregaCreada.ideEntr,
-            manager,
-          );
-
-        await this.aplicarMovimientoLotesEntrega(
-          detallesGuardados,
-          pedido,
-          movimientoNuevo,
-          this.obtenerTipoMovimientoNuevo(pedido, movimientoNuevo),
-          manager,
-        );
-
-        await this.actualizarEstadosPedidoPorEntregas(pedido.idePedi, manager);
+        /**
+         * Aquí no se toca:
+         * - producto.stock_prod
+         * - lote.stock_lote
+         * - movimiento_inventario
+         * - estado del pedido
+         *
+         * Eso ocurre exclusivamente en confirmar().
+         */
 
         return entregaCreada;
       });
 
       return ApiResponseFactory.legacyWrite(
         1,
-        'Entrega registrada correctamente',
+        'Entrega guardada como borrador correctamente.',
         entrega.ideEntr,
       );
     } catch (error) {
       return ApiResponseFactory.legacyWrite(
         0,
-        error?.message || 'No se pudo registrar la entrega.',
+        error?.message || 'No se pudo guardar la entrega.',
       );
     }
   }
@@ -164,7 +163,9 @@ export class EntregasService {
   async actualizar(body: UpdateEntregaDTO) {
     const detalles = body.detalleEntrega ?? [];
 
-    this.validarDetalleEntrega(detalles, true, body.cabeceraEntrega.estadoEntr);
+    body.cabeceraEntrega.estadoEntr = EnumEstadoEntrega.BORRADOR;
+
+    this.validarDetalleEntrega(detalles, true, EnumEstadoEntrega.BORRADOR);
 
     const ideEntr = IdUtil.requireId(
       body.cabeceraEntrega.ideEntr,
@@ -180,24 +181,17 @@ export class EntregasService {
           throw new NotFoundException('No se encontró la entrega indicada.');
         }
 
-        const detallesActuales =
-          await this.entregasRepository.listarDetallesPorEntrega(
-            ideEntr,
-            manager,
-          );
-
-        const pedidoAnterior = await this.entregasRepository.buscarPedidoPorId(
-          entregaActual.idePedi,
-          manager,
-        );
-
-        if (!pedidoAnterior) {
+        /**
+         * Una entrega que ya afectó inventario no puede editarse.
+         * Debe anularse para generar la trazabilidad inversa.
+         */
+        if (entregaActual.estadoEntr !== 'borrador') {
           throw new BadRequestException(
-            'El pedido original de la entrega ya no existe.',
+            `La entrega no puede modificarse porque se encuentra en estado "${entregaActual.estadoEntr}".`,
           );
         }
 
-        const pedidoNuevo = await this.validarPedidoYProveedor(
+        const pedido = await this.validarPedidoYProveedor(
           body.cabeceraEntrega.idePedi,
           body.cabeceraEntrega.ideProv,
           manager,
@@ -205,36 +199,9 @@ export class EntregasService {
 
         await this.validarDetallesContraPedidoYPendiente(
           detalles,
-          pedidoNuevo,
-          body.cabeceraEntrega.estadoEntr,
-          ideEntr,
-          manager,
-        );
-
-        const movimientoAnterior = this.obtenerMovimientoEntrega(
-          pedidoAnterior,
-          entregaActual.estadoEntr,
-        );
-
-        const movimientoNuevo = this.obtenerMovimientoEntrega(
-          pedidoNuevo,
-          body.cabeceraEntrega.estadoEntr,
-        );
-
-        await this.aplicarMovimientoLotesEntrega(
-          detallesActuales,
-          pedidoAnterior,
-          this.invertirMovimiento(movimientoAnterior),
-          EnumTipoMovimientoInventario.ANULACION_ENTREGA,
-          manager,
-          true,
-        );
-
-        await this.ajustarStockPorCambioDeEntrega(
-          this.consolidarCantidadesPorProducto(detallesActuales),
-          movimientoAnterior,
-          this.consolidarCantidadesPorProducto(detalles),
-          movimientoNuevo,
+          pedido,
+          EnumEstadoEntrega.BORRADOR,
+          null,
           manager,
         );
 
@@ -257,38 +224,16 @@ export class EntregasService {
           manager,
         );
 
-        const detallesGuardados =
-          await this.entregasRepository.listarDetallesPorEntrega(
-            entregaActualizada.ideEntr,
-            manager,
-          );
-
-        await this.aplicarMovimientoLotesEntrega(
-          detallesGuardados,
-          pedidoNuevo,
-          movimientoNuevo,
-          this.obtenerTipoMovimientoNuevo(pedidoNuevo, movimientoNuevo),
-          manager,
-        );
-
-        await this.actualizarEstadosPedidoPorEntregas(
-          pedidoNuevo.idePedi,
-          manager,
-        );
-
-        if (pedidoAnterior.idePedi !== pedidoNuevo.idePedi) {
-          await this.actualizarEstadosPedidoPorEntregas(
-            pedidoAnterior.idePedi,
-            manager,
-          );
-        }
+        /**
+         * Como continúa en borrador, no se generan movimientos.
+         */
 
         return entregaActualizada;
       });
 
       return ApiResponseFactory.legacyWrite(
         1,
-        'Entrega actualizada correctamente',
+        'Borrador de entrega actualizado correctamente.',
         entrega.ideEntr,
       );
     } catch (error) {
@@ -299,68 +244,257 @@ export class EntregasService {
     }
   }
 
+  async confirmar(id: number) {
+    const ideEntr = IdUtil.requireId(id, 'El ID de la entrega no es válido.');
+
+    try {
+      const entregaConfirmada = await this.dataSource.transaction(
+        async (manager) => {
+          const entrega = await this.entregasRepository.buscarPorIdForUpdate(
+            ideEntr,
+            manager,
+          );
+
+          if (!entrega) {
+            throw new NotFoundException('No se encontró la entrega indicada.');
+          }
+
+          if (entrega.estadoEntr !== 'borrador') {
+            throw new BadRequestException(
+              `La entrega no puede confirmarse porque se encuentra en estado "${entrega.estadoEntr}".`,
+            );
+          }
+
+          const pedido = await this.entregasRepository.buscarPedidoPorId(
+            entrega.idePedi,
+            manager,
+          );
+
+          if (!pedido) {
+            throw new BadRequestException(
+              'El pedido relacionado con la entrega no existe.',
+            );
+          }
+
+          if (
+            pedido.estadoPedi === 'cancelado' ||
+            pedido.estadoPedi === 'cerrado_incompleto'
+          ) {
+            throw new BadRequestException(
+              `No se puede confirmar una entrega para un pedido "${pedido.estadoPedi}".`,
+            );
+          }
+
+          const detalles =
+            await this.entregasRepository.listarDetallesPorEntrega(
+              ideEntr,
+              manager,
+            );
+
+          if (!detalles.length) {
+            throw new BadRequestException(
+              'La entrega no tiene productos registrados.',
+            );
+          }
+
+          const estadoConfirmado =
+            this.determinarEstadoConfirmadoEntrega(detalles);
+
+          const detallesValidacion =
+            this.mapearEntidadesDetalleParaValidacion(detalles);
+
+          this.validarDetalleEntrega(
+            detallesValidacion,
+            true,
+            estadoConfirmado,
+          );
+
+          await this.validarDetallesContraPedidoYPendiente(
+            detallesValidacion,
+            pedido,
+            estadoConfirmado,
+            null,
+            manager,
+          );
+
+          const movimiento = this.obtenerMovimientoEntrega(
+            pedido,
+            estadoConfirmado,
+          );
+
+          await this.ajustarStockPorCambioDeEntrega(
+            new Map<number, number>(),
+            0,
+            this.consolidarCantidadesPorProducto(detalles),
+            movimiento,
+            manager,
+          );
+
+          await this.aplicarMovimientoLotesEntrega(
+            detalles,
+            pedido,
+            movimiento,
+            this.obtenerTipoMovimientoNuevo(pedido, movimiento),
+            manager,
+          );
+
+          entrega.estadoEntr = estadoConfirmado;
+          entrega.usuaActua = 'admin';
+          entrega.fechaActua = new Date();
+
+          await this.entregasRepository.guardarEntrega(entrega, manager);
+
+          await this.actualizarEstadosPedidoPorEntregas(
+            pedido.idePedi,
+            manager,
+          );
+
+          return entrega;
+        },
+      );
+
+      return ApiResponseFactory.legacyWrite(
+        1,
+        `Entrega confirmada como ${entregaConfirmada.estadoEntr}.`,
+        entregaConfirmada.ideEntr,
+      );
+    } catch (error) {
+      return ApiResponseFactory.legacyWrite(
+        0,
+        error?.message || 'No se pudo confirmar la entrega.',
+      );
+    }
+  }
+
+  async anular(id: number, body: AnularEntregaDTO) {
+    const ideEntr = IdUtil.requireId(id, 'El ID de la entrega no es válido.');
+
+    try {
+      const entregaAnulada = await this.dataSource.transaction(
+        async (manager) => {
+          const entrega = await this.entregasRepository.buscarPorIdForUpdate(
+            ideEntr,
+            manager,
+          );
+
+          if (!entrega) {
+            throw new NotFoundException('No se encontró la entrega indicada.');
+          }
+
+          if (
+            entrega.estadoEntr !== 'parcial' &&
+            entrega.estadoEntr !== 'completa'
+          ) {
+            throw new BadRequestException(
+              `La entrega no puede anularse porque se encuentra en estado "${entrega.estadoEntr}".`,
+            );
+          }
+
+          const pedido = await this.entregasRepository.buscarPedidoPorId(
+            entrega.idePedi,
+            manager,
+          );
+
+          if (!pedido) {
+            throw new BadRequestException(
+              'El pedido relacionado con la entrega no existe.',
+            );
+          }
+
+          const detalles =
+            await this.entregasRepository.listarDetallesPorEntrega(
+              ideEntr,
+              manager,
+            );
+
+          if (!detalles.length) {
+            throw new BadRequestException(
+              'La entrega no tiene detalles para revertir.',
+            );
+          }
+
+          const movimientoAnterior = this.obtenerMovimientoEntrega(
+            pedido,
+            entrega.estadoEntr,
+          );
+
+          await this.aplicarMovimientoLotesEntrega(
+            detalles,
+            pedido,
+            this.invertirMovimiento(movimientoAnterior),
+            EnumTipoMovimientoInventario.ANULACION_ENTREGA,
+            manager,
+            true,
+          );
+
+          await this.ajustarStockPorCambioDeEntrega(
+            this.consolidarCantidadesPorProducto(detalles),
+            movimientoAnterior,
+            new Map<number, number>(),
+            0,
+            manager,
+          );
+
+          entrega.estadoEntr = 'anulada';
+          entrega.observacionEntr = this.construirObservacionAnulacion(
+            entrega.observacionEntr,
+            body.motivoAnulacion,
+          );
+          entrega.usuaActua = 'admin';
+          entrega.fechaActua = new Date();
+
+          await this.entregasRepository.guardarEntrega(entrega, manager);
+
+          await this.actualizarEstadosPedidoPorEntregas(
+            pedido.idePedi,
+            manager,
+          );
+
+          return entrega;
+        },
+      );
+
+      return ApiResponseFactory.legacyWrite(
+        1,
+        'Entrega anulada y movimientos de inventario revertidos correctamente.',
+        entregaAnulada.ideEntr,
+      );
+    } catch (error) {
+      return ApiResponseFactory.legacyWrite(
+        0,
+        error?.message || 'No se pudo anular la entrega.',
+      );
+    }
+  }
+
   async eliminar(id: number) {
     const ideEntr = IdUtil.requireId(id, 'El ID de la entrega no es válido.');
 
     try {
       const affected = await this.dataSource.transaction(async (manager) => {
-        const entregaActual =
-          await this.entregasRepository.buscarPorIdForUpdate(ideEntr, manager);
+        const entrega = await this.entregasRepository.buscarPorIdForUpdate(
+          ideEntr,
+          manager,
+        );
 
-        if (!entregaActual) {
+        if (!entrega) {
           return 0;
         }
 
-        const idePediAnterior = entregaActual.idePedi;
-
-        const detallesActuales =
-          await this.entregasRepository.listarDetallesPorEntrega(
-            ideEntr,
-            manager,
-          );
-
-        const pedidoAnterior = await this.entregasRepository.buscarPedidoPorId(
-          entregaActual.idePedi,
-          manager,
-        );
-
-        if (!pedidoAnterior) {
+        /**
+         * Las entregas confirmadas no se eliminan físicamente.
+         * Se deben anular mediante el endpoint formal.
+         */
+        if (entrega.estadoEntr !== 'borrador') {
           throw new BadRequestException(
-            'El pedido original de la entrega ya no existe.',
+            `La entrega no puede eliminarse porque se encuentra en estado "${entrega.estadoEntr}". Utilice la opción de anulación.`,
           );
         }
 
-        const movimientoAnterior = this.obtenerMovimientoEntrega(
-          pedidoAnterior,
-          entregaActual.estadoEntr,
-        );
-
-        await this.aplicarMovimientoLotesEntrega(
-          detallesActuales,
-          pedidoAnterior,
-          this.invertirMovimiento(movimientoAnterior),
-          EnumTipoMovimientoInventario.ANULACION_ENTREGA,
-          manager,
-          true,
-        );
-
-        await this.ajustarStockPorCambioDeEntrega(
-          this.consolidarCantidadesPorProducto(detallesActuales),
-          movimientoAnterior,
-          new Map<number, number>(),
-          0,
+        return this.entregasRepository.eliminarEntregaConDetalles(
+          ideEntr,
           manager,
         );
-
-        const eliminados =
-          await this.entregasRepository.eliminarEntregaConDetalles(
-            ideEntr,
-            manager,
-          );
-
-        await this.actualizarEstadosPedidoPorEntregas(idePediAnterior, manager);
-
-        return eliminados;
       });
 
       if (affected === 0) {
@@ -372,7 +506,7 @@ export class EntregasService {
 
       return ApiResponseFactory.legacyWrite(
         1,
-        'Entrega eliminada correctamente',
+        'Borrador de entrega eliminado correctamente.',
       );
     } catch (error) {
       return ApiResponseFactory.legacyWrite(
@@ -645,8 +779,15 @@ export class EntregasService {
     }
 
     const cantidadesNuevas = new Map<number, number>();
-    const mueveInventario =
-      estadoEntr === 'parcial' || estadoEntr === 'completa';
+
+    /**
+     * Aunque sea borrador, la cantidad registrada no puede
+     * superar lo pedido o lo todavía pendiente.
+     *
+     * El estado se conserva en la firma porque será útil para
+     * otras reglas del flujo.
+     */
+    void estadoEntr;
 
     for (const detalle of detalles) {
       const ideDetaPedi = IdUtil.requireId(
@@ -678,9 +819,10 @@ export class EntregasService {
       }
 
       const cantidadAnterior = cantidadesNuevas.get(ideDetaPedi) ?? 0;
+
       cantidadesNuevas.set(
         ideDetaPedi,
-        cantidadAnterior + (mueveInventario ? Number(detalle.cantidadProd) : 0),
+        cantidadAnterior + Number(detalle.cantidadProd),
       );
     }
 
@@ -1006,6 +1148,71 @@ export class EntregasService {
       : 'Confirmación de entrega';
 
     return `${accion}. Pedido ${pedido.idePedi}, detalle entrega ${detalle.ideDetaEntr}, producto ${detalle.ideProd}, caducidad ${fechaCaducidad}.`;
+  }
+
+  private determinarEstadoConfirmadoEntrega(
+    detalles: DetalleEntregaEntity[],
+  ): EnumEstadoEntrega {
+    const detallesConRecepcion = detalles.filter(
+      (detalle) =>
+        detalle.estadoDetaEntr !== 'no_entregado' &&
+        Number(detalle.cantidadProd) > 0,
+    );
+
+    if (!detallesConRecepcion.length) {
+      throw new BadRequestException(
+        'La entrega no contiene productos recibidos para confirmar.',
+      );
+    }
+
+    const todosCompletos = detalles.every(
+      (detalle) => detalle.estadoDetaEntr === 'completo',
+    );
+
+    return todosCompletos
+      ? EnumEstadoEntrega.COMPLETA
+      : EnumEstadoEntrega.PARCIAL;
+  }
+
+  private mapearEntidadesDetalleParaValidacion(
+    detalles: DetalleEntregaEntity[],
+  ): CreateEntregaDetalleDTO[] {
+    return detalles.map((detalle) => ({
+      ideDetaEntr: detalle.ideDetaEntr,
+      ideEntr: detalle.ideEntr,
+      ideDetaPedi: detalle.ideDetaPedi ?? undefined,
+      ideProd: detalle.ideProd,
+      cantidadProd: detalle.cantidadProd,
+      precioUnitarioProd: Number(detalle.precioUnitarioProd),
+      subtotalProd: Number(detalle.subtotalProd),
+      dctoCompraProd: Number(detalle.dctoCompraProd),
+      ivaProd: Number(detalle.ivaProd),
+      totalProd: Number(detalle.totalProd),
+      dctoCaducProd: Number(detalle.dctoCaducProd),
+      estadoDetaEntr: detalle.estadoDetaEntr as EnumEstadoDetalleEntrega,
+      lotesRecibidos: (detalle.lotesRecibidos ?? []).map((detalleLote) => ({
+        ideDetaEntrLote: detalleLote.ideDetaEntrLote,
+        ideDetaEntr: detalleLote.ideDetaEntr,
+        ideLote: detalleLote.ideLote ?? undefined,
+        fechaCaducidadLote: this.toDateOnly(detalleLote.fechaCaducidadLote),
+        cantidadLote: detalleLote.cantidadLote,
+        estadoDetaEntrLote:
+          detalleLote.estadoDetaEntrLote as EnumEstadoDetalleEntregaLote,
+      })),
+    }));
+  }
+
+  private construirObservacionAnulacion(
+    observacionActual: string | null | undefined,
+    motivoAnulacion: string,
+  ): string {
+    const nuevaObservacion = `ANULACIÓN: ${motivoAnulacion.trim()}`;
+
+    if (!observacionActual?.trim()) {
+      return nuevaObservacion.slice(0, 250);
+    }
+
+    return `${observacionActual.trim()} | ${nuevaObservacion}`.slice(0, 250);
   }
 
   private calcularTotalesDesdeDetalle(
