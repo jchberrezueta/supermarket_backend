@@ -10,7 +10,13 @@ import {
   IdUtil,
   MoneyUtil,
 } from '@common/index';
-import { DetalleEntregaEntity, PedidoEntity, ProductoEntity } from '@entities';
+import {
+  DetalleEntregaEntity,
+  EstadoEntrega,
+  PedidoEntity,
+  ProductoEntity,
+} from '@entities';
+import { EnumEstadoEntrega } from '@models';
 import { DataSource, EntityManager } from 'typeorm';
 import { CreateEntregaDTO } from './dto/create_entrega.dto';
 import { CreateEntregaDetalleDTO } from './dto/create_entrega_detalle.dto';
@@ -320,7 +326,12 @@ export class EntregasService {
    * COMBOS
    */
   async listarComboEstados() {
-    return ComboMapper.fromValues(['completo', 'incompleto']);
+    return ComboMapper.fromValues([
+      'borrador',
+      'parcial',
+      'completa',
+      'anulada',
+    ]);
   }
 
   private async validarPedidoYProveedor(
@@ -356,14 +367,40 @@ export class EntregasService {
       throw new BadRequestException('El proveedor seleccionado no existe.');
     }
 
+    if (proveedor.ideEmpr !== pedido.ideEmpr) {
+      throw new BadRequestException(
+        'El proveedor seleccionado no pertenece a la empresa del pedido.',
+      );
+    }
+
+    if (proveedor.estadoProv && proveedor.estadoProv !== 'activo') {
+      throw new BadRequestException(
+        'El proveedor seleccionado no está activo.',
+      );
+    }
+
     return pedido;
   }
 
   private obtenerMovimientoEntrega(
     pedido: PedidoEntity,
-    estadoEntr: 'completo' | 'incompleto',
+    estadoEntr: EstadoEntrega | EnumEstadoEntrega,
   ): MovimientoEntrega {
-    if (estadoEntr !== 'completo') {
+    /**
+     * Reglas temporales de Fase 2A:
+     *
+     * borrador:
+     *   No afecta stock.
+     *
+     * parcial / completa:
+     *   Entrega confirmada, sí afecta stock.
+     *
+     * anulada:
+     *   No aplica stock como nueva entrada.
+     *   En una fase posterior, una anulación formal registrará
+     *   movimiento inverso en movimiento_inventario.
+     */
+    if (estadoEntr === 'borrador' || estadoEntr === 'anulada') {
       return 0;
     }
 
@@ -384,8 +421,25 @@ export class EntregasService {
       );
     }
 
+    const detallesPedidoUsados = new Set<number>();
+
     for (const detalle of detalles) {
+      const ideDetaPedi = IdUtil.parseId(detalle.ideDetaPedi);
       const ideProd = IdUtil.parseId(detalle.ideProd);
+
+      if (ideDetaPedi === null) {
+        throw new BadRequestException(
+          'Todos los detalles deben estar relacionados con un detalle de pedido válido.',
+        );
+      }
+
+      if (detallesPedidoUsados.has(ideDetaPedi)) {
+        throw new BadRequestException(
+          'No se puede repetir el mismo detalle de pedido en una entrega.',
+        );
+      }
+
+      detallesPedidoUsados.add(ideDetaPedi);
 
       if (ideProd === null) {
         throw new BadRequestException(
@@ -397,11 +451,33 @@ export class EntregasService {
         detalle.cantidadProd === null ||
         detalle.cantidadProd === undefined ||
         Number.isNaN(Number(detalle.cantidadProd)) ||
-        Number(detalle.cantidadProd) <= 0
+        Number(detalle.cantidadProd) < 0
       ) {
         throw new BadRequestException(
           'Todos los detalles deben tener una cantidad válida.',
         );
+      }
+
+      if (
+        detalle.estadoDetaEntr !== 'no_entregado' &&
+        Number(detalle.cantidadProd) <= 0
+      ) {
+        throw new BadRequestException(
+          'Los detalles entregados deben tener cantidad mayor a cero.',
+        );
+      }
+
+      if (detalle.lotesRecibidos?.length) {
+        const totalLotes = detalle.lotesRecibidos.reduce(
+          (total, lote) => total + Number(lote.cantidadLote ?? 0),
+          0,
+        );
+
+        if (totalLotes !== Number(detalle.cantidadProd)) {
+          throw new BadRequestException(
+            'La suma de lotes recibidos debe coincidir con la cantidad recibida del producto.',
+          );
+        }
       }
     }
   }

@@ -2,8 +2,12 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import {
   DetalleEntregaEntity,
+  DetalleEntregaLoteEntity,
+  DetallePedidoEntity,
   EmpresaEntity,
   EntregaEntity,
+  LoteEntity,
+  MovimientoInventarioEntity,
   PedidoEntity,
   ProductoEntity,
   ProveedorEntity,
@@ -18,10 +22,14 @@ import { EntregasService } from './entregas.service';
     TypeOrmModule.forFeature([
       EntregaEntity,
       DetalleEntregaEntity,
+      DetalleEntregaLoteEntity,
+      DetallePedidoEntity,
       PedidoEntity,
       ProveedorEntity,
       EmpresaEntity,
       ProductoEntity,
+      LoteEntity,
+      MovimientoInventarioEntity,
     ]),
   ],
   controllers: [EntregasController],
