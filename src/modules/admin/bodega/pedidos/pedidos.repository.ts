@@ -116,15 +116,15 @@ export class PedidosRepository {
       });
     }
 
-    if (filtros.fechaPedi) {
+    if (filtros.fechaPediDesde) {
       qb.andWhere('DATE(pedido.fechaPedi) >= :fechaPedi', {
-        fechaPedi: filtros.fechaPedi,
+        fechaPedi: filtros.fechaPediDesde,
       });
     }
 
-    if (filtros.fechaEntrPedi) {
-      qb.andWhere('DATE(pedido.fechaEntrPedi) <= :fechaEntrPedi', {
-        fechaEntrPedi: filtros.fechaEntrPedi,
+    if (filtros.fechaPediHasta) {
+      qb.andWhere('DATE(pedido.fechaPedi) <= :fechaPediHasta', {
+        fechaPediHasta: filtros.fechaPediHasta,
       });
     }
 
@@ -157,8 +157,8 @@ export class PedidosRepository {
 
     const pedido = repository.create({
       ideEmpr: cabecera.ideEmpr,
-      fechaPedi: new Date(cabecera.fechaPedi),
-      fechaEntrPedi: new Date(cabecera.fechaEntrPedi),
+      fechaPedi: new Date(),
+      fechaEntrPedi: this.toCalendarDate(cabecera.fechaEntrPedi),
       cantidadTotalPedi: totales.cantidadTotalPedi,
       totalPedi: MoneyUtil.toMoneyString(totales.totalPedi),
 
@@ -182,8 +182,8 @@ export class PedidosRepository {
     manager: EntityManager,
   ): Promise<PedidoEntity> {
     pedido.ideEmpr = cabecera.ideEmpr;
-    pedido.fechaPedi = new Date(cabecera.fechaPedi);
-    pedido.fechaEntrPedi = new Date(cabecera.fechaEntrPedi);
+    // fechaPedi conserva la fecha original bajo autoridad del servidor.
+    pedido.fechaEntrPedi = this.toCalendarDate(cabecera.fechaEntrPedi);
     pedido.cantidadTotalPedi = totales.cantidadTotalPedi;
     pedido.totalPedi = MoneyUtil.toMoneyString(totales.totalPedi);
 
@@ -199,6 +199,11 @@ export class PedidosRepository {
     pedido.fechaActua = new Date();
 
     return manager.getRepository(PedidoEntity).save(pedido);
+  }
+
+  private toCalendarDate(value: string): Date {
+    const [year, month, day] = value.split('-').map(Number);
+    return new Date(year, month - 1, day);
   }
 
   async reemplazarDetalles(

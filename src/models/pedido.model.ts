@@ -16,7 +16,7 @@ export interface IPedido {
   idePedi: number;
   ideEmpr: number;
   fechaPedi: string;
-  fechaEntrPedi: string;
+  fechaEntrPedi: string | null;
   cantidadTotalPedi: number;
   totalPedi: number;
   estadoPedi: EnumEstadosPedido;
@@ -29,7 +29,7 @@ export class CPedido implements IPedido {
     private _idePedi: number,
     private _ideEmpr: number,
     private _fechaPedi: string,
-    private _fechaEntrPedi: string,
+    private _fechaEntrPedi: string | null,
     private _cantidadTotalPedi: number,
     private _totalPedi: number,
     private _estadoPedi: EnumEstadosPedido,
@@ -61,7 +61,7 @@ export class CPedido implements IPedido {
   get fechaEntrPedi() {
     return this._fechaEntrPedi;
   }
-  set fechaEntrPedi(value: string) {
+  set fechaEntrPedi(value: string | null) {
     this._fechaEntrPedi = value;
   }
 
@@ -105,7 +105,7 @@ export interface IPedidoResult {
   ide_pedi: number;
   ide_empr: number;
   fecha_pedi: string;
-  fecha_entr_pedi: string;
+  fecha_entr_pedi: string | null;
   cantidad_total_pedi: number;
   total_pedi: number;
   estado_pedi: EnumEstadosPedido;

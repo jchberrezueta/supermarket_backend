@@ -6,7 +6,7 @@ export interface PedidoRow {
   ide_empr: number;
   nombre_empr?: string | null;
   fecha_pedi: string;
-  fecha_entr_pedi: string;
+  fecha_entr_pedi: string | null;
   cantidad_total_pedi: number;
   total_pedi: number;
   estado_pedi: string;
@@ -18,6 +18,7 @@ export interface DetallePedidoRow {
   ide_deta_pedi: number;
   ide_pedi: number;
   ide_prod: number;
+  nombre_prod?: string | null;
   cantidad_prod: number;
   precio_unitario_prod: number;
   subtotal_prod: number;
@@ -35,7 +36,9 @@ export class PedidosMapper {
       ide_empr: pedido.ideEmpr,
       nombre_empr: pedido.empresa?.nombreEmpr ?? null,
       fecha_pedi: this.formatDateTimeDDMMYYYY(pedido.fechaPedi),
-      fecha_entr_pedi: this.formatDateTimeDDMMYYYY(pedido.fechaEntrPedi),
+      fecha_entr_pedi: pedido.fechaEntrPedi
+        ? this.formatCalendarDate(pedido.fechaEntrPedi)
+        : null,
       cantidad_total_pedi: pedido.cantidadTotalPedi,
       total_pedi: MoneyUtil.toNumber(pedido.totalPedi),
       estado_pedi: pedido.estadoPedi,
@@ -53,6 +56,7 @@ export class PedidosMapper {
       ide_deta_pedi: detalle.ideDetaPedi,
       ide_pedi: detalle.idePedi,
       ide_prod: detalle.ideProd,
+      nombre_prod: detalle.producto?.nombreProd ?? null,
       cantidad_prod: detalle.cantidadProd,
       precio_unitario_prod: MoneyUtil.toNumber(detalle.precioUnitarioProd),
       subtotal_prod: MoneyUtil.toNumber(detalle.subtotalProd),
@@ -86,5 +90,12 @@ export class PedidosMapper {
     const minute = String(date.getMinutes()).padStart(2, '0');
 
     return `${day}/${month}/${year} ${hour}:${minute}`;
+  }
+
+  private static formatCalendarDate(value: Date): string {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, '0');
+    const day = String(value.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 }

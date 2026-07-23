@@ -1,13 +1,13 @@
-import { EnumEstadosPedido, EnumMotivosPedido } from '@models';
+import { EnumMotivosPedido } from '@models';
 import { Transform } from 'class-transformer';
 import {
   IsDateString,
   IsEnum,
   IsInt,
-  IsNumber,
   IsOptional,
   IsString,
   Length,
+  Matches,
   Min,
 } from 'class-validator';
 
@@ -19,16 +19,6 @@ function toRequiredInt(value: unknown): number | unknown {
   const numberValue = Number(value);
 
   return Number.isInteger(numberValue) ? numberValue : value;
-}
-
-function toRequiredNumber(value: unknown): number | unknown {
-  if (value === null || value === undefined || value === '') {
-    return value;
-  }
-
-  const numberValue = Number(value);
-
-  return Number.isFinite(numberValue) ? numberValue : value;
 }
 
 function optionalText(value: unknown): string | null | unknown {
@@ -56,29 +46,9 @@ export class UpdatePedidoCabeceraDTO {
   @Min(1)
   ideEmpr!: number;
 
-  @IsDateString()
-  fechaPedi!: string;
-
-  @IsDateString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  @IsDateString({ strict: true, strictSeparator: true })
   fechaEntrPedi!: string;
-
-  @Transform(({ value }) => toRequiredInt(value))
-  @IsInt()
-  @Min(1)
-  cantidadTotalPedi!: number;
-
-  @Transform(({ value }) => toRequiredNumber(value))
-  @IsNumber()
-  @Min(0)
-  totalPedi!: number;
-
-  /**
-   * Actualizar no cambia formalmente el estado.
-   * El service conservará siempre el borrador.
-   */
-  @IsOptional()
-  @IsEnum(EnumEstadosPedido)
-  estadoPedi: EnumEstadosPedido = EnumEstadosPedido.BORRADOR;
 
   @IsEnum(EnumMotivosPedido)
   motivoPedi!: EnumMotivosPedido;

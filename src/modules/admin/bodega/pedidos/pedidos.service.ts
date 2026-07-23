@@ -11,7 +11,7 @@ import {
   MoneyUtil,
 } from '@common/index';
 import { DetallePedidoEntity, EmpresaPreciosEntity } from '@entities';
-import { EnumEstadoDetallePedido, EnumEstadosPedido } from '@models';
+import { EnumEstadoDetallePedido } from '@models';
 import { DataSource, EntityManager } from 'typeorm';
 import { CancelarPedidoDTO } from './dto/cancelar_pedido.dto';
 import { CerrarPedidoIncompletoDTO } from './dto/cerrar_pedido_incompleto.dto';
@@ -88,16 +88,11 @@ export class PedidosService {
   // ==========================================================
 
   async insertar(body: CreatePedidoDTO) {
-    body.cabeceraPedido.estadoPedi = EnumEstadosPedido.BORRADOR;
+    this.validarFechaEsperada(body.cabeceraPedido.fechaEntrPedi, new Date());
 
     for (const detalle of body.detallePedido) {
       detalle.estadoDetaPedi = EnumEstadoDetallePedido.PENDIENTE;
     }
-
-    this.validarFechasPedido(
-      body.cabeceraPedido.fechaPedi,
-      body.cabeceraPedido.fechaEntrPedi,
-    );
 
     this.validarDetallePedido(body.detallePedido);
 
@@ -111,6 +106,7 @@ export class PedidosService {
          */
         await this.aplicarPreciosEmpresaADetalles(
           body.cabeceraPedido.ideEmpr,
+          body.cabeceraPedido.motivoPedi,
           body.detallePedido,
           manager,
         );
@@ -155,16 +151,9 @@ export class PedidosService {
       'El ID del pedido no es válido.',
     );
 
-    body.cabeceraPedido.estadoPedi = EnumEstadosPedido.BORRADOR;
-
     for (const detalle of body.detallePedido) {
       detalle.estadoDetaPedi = EnumEstadoDetallePedido.PENDIENTE;
     }
-
-    this.validarFechasPedido(
-      body.cabeceraPedido.fechaPedi,
-      body.cabeceraPedido.fechaEntrPedi,
-    );
 
     this.validarDetallePedido(body.detallePedido);
 
@@ -184,6 +173,11 @@ export class PedidosService {
             `El pedido no puede modificarse porque se encuentra en estado "${pedidoActual.estadoPedi}".`,
           );
         }
+
+        this.validarFechaEsperada(
+          body.cabeceraPedido.fechaEntrPedi,
+          pedidoActual.fechaPedi,
+        );
 
         const entregasExistentes =
           await this.pedidosRepository.contarEntregasNoAnuladas(
@@ -205,6 +199,7 @@ export class PedidosService {
          */
         await this.aplicarPreciosEmpresaADetalles(
           body.cabeceraPedido.ideEmpr,
+          body.cabeceraPedido.motivoPedi,
           body.detallePedido,
           manager,
         );
@@ -276,7 +271,11 @@ export class PedidosService {
 
           await this.validarEmpresaActiva(pedido.ideEmpr, manager);
 
-          this.validarFechasPedido(pedido.fechaPedi, pedido.fechaEntrPedi);
+          if (!pedidoBloqueado.fechaEntrPedi) {
+            throw new BadRequestException(
+              'El pedido no puede emitirse sin una fecha esperada de entrega.',
+            );
+          }
 
           const detalles = await this.pedidosRepository.listarDetallesPorPedido(
             idePedi,
@@ -324,6 +323,7 @@ export class PedidosService {
            */
           const totales = await this.recalcularDetallesPersistidosDesdeEmpresa(
             pedido.ideEmpr,
+            pedido.motivoPedi,
             detalles,
             manager,
           );
@@ -691,28 +691,43 @@ export class PedidosService {
     }
   }
 
-  private validarFechasPedido(
-    fechaPediRaw: Date | string,
-    fechaEntrPediRaw: Date | string,
+  private validarFechaEsperada(
+    fechaEsperada: string,
+    fechaPedido: Date,
   ): void {
-    const fechaPedido =
-      fechaPediRaw instanceof Date ? fechaPediRaw : new Date(fechaPediRaw);
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(fechaEsperada);
 
-    const fechaEntrega =
-      fechaEntrPediRaw instanceof Date
-        ? fechaEntrPediRaw
-        : new Date(fechaEntrPediRaw);
-
-    if (
-      Number.isNaN(fechaPedido.getTime()) ||
-      Number.isNaN(fechaEntrega.getTime())
-    ) {
-      throw new BadRequestException('Las fechas del pedido no son válidas.');
+    if (!match) {
+      throw new BadRequestException(
+        'La fecha esperada de entrega debe tener formato YYYY-MM-DD.',
+      );
     }
 
-    if (fechaEntrega.getTime() < fechaPedido.getTime()) {
+    const [, yearText, monthText, dayText] = match;
+    const year = Number(yearText);
+    const month = Number(monthText);
+    const day = Number(dayText);
+    const parsed = new Date(year, month - 1, day);
+
+    if (
+      parsed.getFullYear() !== year ||
+      parsed.getMonth() !== month - 1 ||
+      parsed.getDate() !== day
+    ) {
       throw new BadRequestException(
-        'La fecha prevista de entrega no puede ser anterior a la fecha del pedido.',
+        'La fecha esperada de entrega no es válida.',
+      );
+    }
+
+    const expectedKey = year * 10000 + month * 100 + day;
+    const orderKey =
+      fechaPedido.getFullYear() * 10000 +
+      (fechaPedido.getMonth() + 1) * 100 +
+      fechaPedido.getDate();
+
+    if (expectedKey < orderKey) {
+      throw new BadRequestException(
+        'La fecha esperada de entrega no puede ser anterior a la fecha del pedido.',
       );
     }
   }
@@ -801,6 +816,7 @@ export class PedidosService {
 
   private async aplicarPreciosEmpresaADetalles(
     ideEmpr: number,
+    motivoPedi: 'peticion' | 'devolucion',
     detalles: CreatePedidoDetalleDTO[],
     manager: EntityManager,
   ): Promise<void> {
@@ -822,6 +838,7 @@ export class PedidosService {
       const valores = this.calcularValoresEconomicosDetalle(
         precioEmpresa,
         detalle.cantidadProd,
+        motivoPedi,
       );
 
       detalle.precioUnitarioProd = valores.precioUnitarioProd;
@@ -842,6 +859,7 @@ export class PedidosService {
 
   private async recalcularDetallesPersistidosDesdeEmpresa(
     ideEmpr: number,
+    motivoPedi: 'peticion' | 'devolucion',
     detalles: DetallePedidoEntity[],
     manager: EntityManager,
   ): Promise<TotalesPedidoCalculados> {
@@ -868,6 +886,7 @@ export class PedidosService {
       const valores = this.calcularValoresEconomicosDetalle(
         precioEmpresa,
         detalle.cantidadProd,
+        motivoPedi,
       );
 
       detalle.precioUnitarioProd = MoneyUtil.toMoneyString(
@@ -954,6 +973,7 @@ export class PedidosService {
   private calcularValoresEconomicosDetalle(
     precioEmpresa: EmpresaPreciosEntity,
     cantidad: number,
+    motivoPedi: 'peticion' | 'devolucion',
   ): ValoresEconomicosDetallePedido {
     const precioUnitario = MoneyUtil.toNumber(precioEmpresa.precioCompraProd);
 
@@ -984,6 +1004,12 @@ export class PedidosService {
       );
     }
 
+    if (descuentoCompraUnitario < 0 || descuentoCaducidadUnitario < 0) {
+      throw new BadRequestException(
+        `Los descuentos configurados para el producto ${precioEmpresa.ideProd} no son válidos.`,
+      );
+    }
+
     const subtotalBruto = MoneyUtil.multiply(precioUnitario, cantidad);
 
     const descuentoCompra = MoneyUtil.multiply(
@@ -991,10 +1017,10 @@ export class PedidosService {
       cantidad,
     );
 
-    const descuentoCaducidad = MoneyUtil.multiply(
-      descuentoCaducidadUnitario,
-      cantidad,
-    );
+    const descuentoCaducidad =
+      motivoPedi === 'devolucion'
+        ? MoneyUtil.multiply(descuentoCaducidadUnitario, cantidad)
+        : 0;
 
     const descuentoTotal = MoneyUtil.add(descuentoCompra, descuentoCaducidad);
 

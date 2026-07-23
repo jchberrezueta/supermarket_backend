@@ -31,8 +31,8 @@ export class PedidoEntity {
   @Column({ name: 'fecha_pedi', type: 'timestamp' })
   fechaPedi!: Date;
 
-  @Column({ name: 'fecha_entr_pedi', type: 'timestamp' })
-  fechaEntrPedi!: Date;
+  @Column({ name: 'fecha_entr_pedi', type: 'timestamp', nullable: true })
+  fechaEntrPedi!: Date | null;
 
   @Column({ name: 'cantidad_total_pedi', type: 'int' })
   cantidadTotalPedi!: number;

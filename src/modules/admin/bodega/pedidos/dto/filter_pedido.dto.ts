@@ -39,10 +39,10 @@ export class FilterPedidoDTO {
   @IsOptional()
   @Transform(({ value }) => optionalString(value))
   @IsDateString()
-  fechaPedi?: string;
+  fechaPediDesde?: string;
 
   @IsOptional()
   @Transform(({ value }) => optionalString(value))
   @IsDateString()
-  fechaEntrPedi?: string;
+  fechaPediHasta?: string;
 }
