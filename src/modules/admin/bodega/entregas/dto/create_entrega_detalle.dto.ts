@@ -1,6 +1,7 @@
 import { EnumEstadoDetalleEntrega } from '@models';
 import { Transform, Type } from 'class-transformer';
 import {
+  Allow,
   IsArray,
   IsEnum,
   IsInt,
@@ -59,9 +60,7 @@ export class CreateEntregaDetalleDTO {
   @Min(1)
   ideDetaPedi!: number;
 
-  @Transform(({ value }) => toRequiredInt(value))
-  @IsInt()
-  @Min(1)
+  @Allow()
   ideProd!: number;
 
   @Transform(({ value }) => toRequiredInt(value))

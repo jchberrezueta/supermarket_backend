@@ -92,14 +92,6 @@ export class EntregasService {
   async insertar(body: CreateEntregaDTO) {
     const detalles = body.detalleEntrega ?? [];
 
-    /**
-     * La inserción siempre trabaja como borrador.
-     * Ignoramos cualquier otro estado recibido desde el cliente.
-     */
-    body.cabeceraEntrega.estadoEntr = EnumEstadoEntrega.BORRADOR;
-
-    this.validarDetalleEntrega(detalles, true, EnumEstadoEntrega.BORRADOR);
-
     try {
       const entrega = await this.dataSource.transaction(async (manager) => {
         const pedido = await this.validarPedidoYProveedor(
@@ -107,6 +99,10 @@ export class EntregasService {
           body.cabeceraEntrega.ideProv,
           manager,
         );
+
+        this.validarFechaReal(body.cabeceraEntrega.fechaEntr, pedido);
+        this.completarProductosDesdePedido(detalles, pedido);
+        this.validarDetalleEntrega(detalles, true, EnumEstadoEntrega.BORRADOR);
 
         /**
          * Aunque todavía sea borrador, validamos que:
@@ -132,10 +128,7 @@ export class EntregasService {
           manager,
         );
 
-        const totales = this.calcularTotalesDesdeDetalle(
-          detalles,
-          body.cabeceraEntrega,
-        );
+        const totales = this.calcularTotalesDesdeDetalle(detalles);
 
         const entregaCreada = await this.entregasRepository.crearEntrega(
           body.cabeceraEntrega,
@@ -175,15 +168,10 @@ export class EntregasService {
     }
   }
 
-  async actualizar(body: UpdateEntregaDTO) {
+  async actualizar(id: number, body: UpdateEntregaDTO) {
     const detalles = body.detalleEntrega ?? [];
-
-    body.cabeceraEntrega.estadoEntr = EnumEstadoEntrega.BORRADOR;
-
-    this.validarDetalleEntrega(detalles, true, EnumEstadoEntrega.BORRADOR);
-
     const ideEntr = IdUtil.requireId(
-      body.cabeceraEntrega.ideEntr,
+      id,
       'El ID de la entrega no es válido.',
     );
 
@@ -206,11 +194,21 @@ export class EntregasService {
           );
         }
 
+        if (body.cabeceraEntrega.idePedi !== entregaActual.idePedi) {
+          throw new BadRequestException(
+            'El pedido de una entrega en borrador no puede modificarse.',
+          );
+        }
+
         const pedido = await this.validarPedidoYProveedor(
-          body.cabeceraEntrega.idePedi,
+          entregaActual.idePedi,
           body.cabeceraEntrega.ideProv,
           manager,
         );
+
+        this.validarFechaReal(body.cabeceraEntrega.fechaEntr, pedido);
+        this.completarProductosDesdePedido(detalles, pedido);
+        this.validarDetalleEntrega(detalles, true, EnumEstadoEntrega.BORRADOR);
 
         await this.validarDetallesContraPedidoYPendiente(
           detalles,
@@ -230,10 +228,7 @@ export class EntregasService {
           manager,
         );
 
-        const totales = this.calcularTotalesDesdeDetalle(
-          detalles,
-          body.cabeceraEntrega,
-        );
+        const totales = this.calcularTotalesDesdeDetalle(detalles);
 
         const entregaActualizada =
           await this.entregasRepository.actualizarEntrega(
@@ -373,10 +368,6 @@ export class EntregasService {
 
           const totalesConfirmados = this.calcularTotalesDesdeDetalle(
             detallesValidacion,
-            {
-              cantidadTotalEntr: 0,
-              totalEntr: 0,
-            },
           );
 
           entrega.cantidadTotalEntr = totalesConfirmados.cantidadTotalEntr;
@@ -634,6 +625,94 @@ export class EntregasService {
     );
   }
 
+  async listarPedidosDisponibles() {
+    const pedidos = await this.dataSource.transaction((manager) =>
+      this.entregasRepository.listarPedidosDisponibles(manager),
+    );
+
+    return ApiResponseFactory.legacyRead(
+      pedidos.map((pedido) => ({
+        ide_pedi: pedido.idePedi,
+        label: `Pedido #${pedido.idePedi} · ${pedido.empresa?.nombreEmpr ?? 'Empresa'}`,
+        ide_empr: pedido.ideEmpr,
+        nombre_empr: pedido.empresa?.nombreEmpr ?? null,
+        responsable_empr: pedido.empresa?.responsableEmpr ?? null,
+        fecha_pedi: this.toDateOnly(pedido.fechaPedi),
+        fecha_entr_pedi: pedido.fechaEntrPedi
+          ? this.toDateOnly(pedido.fechaEntrPedi)
+          : null,
+        estado_pedi: pedido.estadoPedi,
+      })),
+      'Pedidos disponibles para entrega obtenidos.',
+    );
+  }
+
+  async obtenerPedidoPendiente(id: number) {
+    const idePedi = IdUtil.requireId(id, 'El ID del pedido no es válido.');
+    const data = await this.dataSource.transaction(async (manager) => {
+      const pedido = await this.entregasRepository.buscarPedidoPorId(
+        idePedi,
+        manager,
+      );
+      if (!pedido || pedido.motivoPedi !== 'peticion') {
+        throw new NotFoundException('No se encontró un pedido de petición válido.');
+      }
+      if (pedido.estadoPedi !== 'emitido' && pedido.estadoPedi !== 'parcial') {
+        throw new BadRequestException('El pedido no está disponible para entregas.');
+      }
+      const confirmadas = await this.entregasRepository.obtenerCantidadesConfirmadasPorPedido(
+        idePedi,
+        null,
+        manager,
+      );
+      const recibidas = new Map(confirmadas.map((row) => [Number(row.ide_deta_pedi), Number(row.cantidad_confirmada)]));
+      const detalles = (pedido.detalles ?? []).map((detalle) => {
+        const cantidadRecibidaConfirmada = recibidas.get(detalle.ideDetaPedi) ?? 0;
+        return {
+          ideDetaPedi: detalle.ideDetaPedi,
+          ideProd: detalle.ideProd,
+          nombreProd: detalle.producto?.nombreProd ?? `Producto #${detalle.ideProd}`,
+          cantidadSolicitada: detalle.cantidadProd,
+          cantidadRecibidaConfirmada,
+          cantidadPendiente: Math.max(detalle.cantidadProd - cantidadRecibidaConfirmada, 0),
+          precioUnitarioProd: MoneyUtil.toNumber(detalle.precioUnitarioProd),
+          subtotalProd: MoneyUtil.toNumber(detalle.subtotalProd),
+          dctoCompraProd: MoneyUtil.toNumber(detalle.dctoCompraProd),
+          ivaProd: MoneyUtil.toNumber(detalle.ivaProd),
+          totalProd: MoneyUtil.toNumber(detalle.totalProd),
+          dctoCaducProd: MoneyUtil.toNumber(detalle.dctoCaducProd),
+          estadoDetaPedi: detalle.estadoDetaPedi,
+        };
+      }).filter((detalle) => detalle.cantidadPendiente > 0);
+
+      return {
+        idePedi: pedido.idePedi,
+        ideEmpr: pedido.ideEmpr,
+        nombreEmpr: pedido.empresa?.nombreEmpr ?? null,
+        responsableEmpr: pedido.empresa?.responsableEmpr ?? null,
+        fechaPedi: this.toDateOnly(pedido.fechaPedi),
+        fechaEntrPedi: pedido.fechaEntrPedi ? this.toDateOnly(pedido.fechaEntrPedi) : null,
+        estadoPedi: pedido.estadoPedi,
+        motivoPedi: pedido.motivoPedi,
+        detalles,
+      };
+    });
+
+    return ApiResponseFactory.legacyRead([data], 'Información pendiente del pedido obtenida.');
+  }
+
+  async listarProveedoresEmpresa(id: number) {
+    const ideEmpr = IdUtil.requireId(id, 'El ID de la empresa no es válido.');
+    const proveedores = await this.dataSource.transaction((manager) =>
+      this.entregasRepository.listarProveedoresActivosPorEmpresa(ideEmpr, manager),
+    );
+    return proveedores.map((proveedor) => ({
+      value: proveedor.ideProv,
+      label: [proveedor.primerNombreProv, proveedor.segundoNombreProv, proveedor.apellidoPaternoProv, proveedor.apellidoMaternoProv]
+        .filter(Boolean).join(' '),
+    }));
+  }
+
   /**
    * COMBOS
    */
@@ -661,6 +740,8 @@ export class EntregasService {
       'El ID del proveedor no es válido.',
     );
 
+    await this.entregasRepository.bloquearPedidoYDetalles(idePedi, manager);
+
     const pedido = await this.entregasRepository.buscarPedidoPorId(
       idePedi,
       manager,
@@ -676,6 +757,12 @@ export class EntregasService {
     if (pedido.estadoPedi !== 'emitido' && pedido.estadoPedi !== 'parcial') {
       throw new BadRequestException(
         `El pedido no admite entregas porque se encuentra en estado "${pedido.estadoPedi}". Solo los pedidos emitidos o parciales pueden recibir productos.`,
+      );
+    }
+
+    if (pedido.motivoPedi !== 'peticion') {
+      throw new BadRequestException(
+        'En este proceso solo se admiten pedidos con motivo petición.',
       );
     }
 
@@ -760,7 +847,7 @@ export class EntregasService {
       );
     }
 
-    const requiereLotes = estadoEntr === 'parcial' || estadoEntr === 'completa';
+    const requiereLotes = estadoEntr !== 'anulada';
 
     const detallesPedidoUsados = new Set<number>();
 
@@ -903,6 +990,22 @@ export class EntregasService {
       cantidadesConfirmadas.set(
         Number(row.ide_deta_pedi),
         Number(row.cantidad_confirmada),
+      );
+    }
+
+    const pendientesEsperados = new Set(
+      (pedido.detalles ?? [])
+        .filter((detalle) => {
+          const confirmado = cantidadesConfirmadas.get(detalle.ideDetaPedi) ?? 0;
+          return (detalle.estadoDetaPedi === 'pendiente' || detalle.estadoDetaPedi === 'parcial')
+            && detalle.cantidadProd - confirmado > 0;
+        })
+        .map((detalle) => detalle.ideDetaPedi),
+    );
+    const recibidos = new Set(detalles.map((detalle) => Number(detalle.ideDetaPedi)));
+    if (recibidos.size !== pendientesEsperados.size || [...pendientesEsperados].some((id) => !recibidos.has(id))) {
+      throw new BadRequestException(
+        'La entrega debe incluir exactamente todas las líneas pendientes del pedido, incluso las recibidas con cantidad cero.',
       );
     }
 
@@ -1717,17 +1820,50 @@ export class EntregasService {
     return `${observacionActual.trim()} | ${nuevaObservacion}`.slice(0, 250);
   }
 
+  private completarProductosDesdePedido(
+    detalles: Array<CreateEntregaDetalleDTO | UpdateEntregaDetalleDTO>,
+    pedido: PedidoEntity,
+  ): void {
+    const porId = new Map(
+      (pedido.detalles ?? []).map((detalle) => [detalle.ideDetaPedi, detalle]),
+    );
+    for (const detalle of detalles) {
+      const detallePedido = porId.get(Number(detalle.ideDetaPedi));
+      if (!detallePedido) {
+        throw new BadRequestException(
+          `El detalle de pedido ${detalle.ideDetaPedi} no pertenece al pedido seleccionado.`,
+        );
+      }
+      detalle.ideProd = detallePedido.ideProd;
+    }
+  }
+
+  private validarFechaReal(fechaEntr: string, pedido: PedidoEntity): void {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fechaEntr)) {
+      throw new BadRequestException('La fecha real debe tener formato YYYY-MM-DD.');
+    }
+    const fecha = new Date(`${fechaEntr}T00:00:00`);
+    if (Number.isNaN(fecha.getTime()) || this.toDateOnly(fecha) !== fechaEntr) {
+      throw new BadRequestException('La fecha real de entrega no es válida.');
+    }
+    const fechaPedido = this.toDateOnly(pedido.fechaPedi);
+    const ahora = new Date();
+    const hoy = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')}`;
+    if (fechaEntr < fechaPedido) {
+      throw new BadRequestException('La fecha real no puede ser anterior a la fecha del pedido.');
+    }
+    if (fechaEntr > hoy) {
+      throw new BadRequestException('La fecha real no puede ser futura respecto a la fecha del servidor.');
+    }
+  }
+
   private calcularTotalesDesdeDetalle(
     detalles: Array<CreateEntregaDetalleDTO | UpdateEntregaDetalleDTO>,
-    cabecera: {
-      cantidadTotalEntr: number;
-      totalEntr: number;
-    },
   ): TotalesEntregaCalculados {
     if (!detalles.length) {
       return {
-        cantidadTotalEntr: cabecera.cantidadTotalEntr,
-        totalEntr: cabecera.totalEntr,
+        cantidadTotalEntr: 0,
+        totalEntr: 0,
       };
     }
 
@@ -1744,6 +1880,9 @@ export class EntregasService {
   }
 
   private toDateOnly(value: Date | string): string {
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) {
+      return value.slice(0, 10);
+    }
     const date = value instanceof Date ? value : new Date(value);
 
     if (Number.isNaN(date.getTime())) {

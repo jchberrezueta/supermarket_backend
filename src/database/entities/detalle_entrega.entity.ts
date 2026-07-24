@@ -21,8 +21,8 @@ export class DetalleEntregaEntity {
   @Column({ name: 'ide_entr', type: 'int' })
   ideEntr!: number;
 
-  @Column({ name: 'ide_deta_pedi', type: 'int', nullable: true })
-  ideDetaPedi?: number | null;
+  @Column({ name: 'ide_deta_pedi', type: 'int' })
+  ideDetaPedi!: number;
 
   @Column({ name: 'ide_prod', type: 'int' })
   ideProd!: number;
@@ -91,12 +91,11 @@ export class DetalleEntregaEntity {
     () => DetallePedidoEntity,
     (detallePedido) => detallePedido.detallesEntrega,
     {
-      nullable: true,
       onDelete: 'RESTRICT',
     },
   )
   @JoinColumn({ name: 'ide_deta_pedi' })
-  detallePedido?: DetallePedidoEntity | null;
+  detallePedido?: DetallePedidoEntity;
 
   @ManyToOne(() => ProductoEntity, (producto) => producto.detallesEntrega, {
     onDelete: 'CASCADE',

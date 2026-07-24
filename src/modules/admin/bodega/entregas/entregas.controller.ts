@@ -50,9 +50,22 @@ export class EntregasController {
     @Param('id', ParseIntPipe) id: number,
     @Body() body: UpdateEntregaDTO,
   ) {
-    body.cabeceraEntrega.ideEntr = id;
+    return this.entregasService.actualizar(id, body);
+  }
 
-    return this.entregasService.actualizar(body);
+  @Get('pedidos/disponibles')
+  async listarPedidosDisponibles() {
+    return this.entregasService.listarPedidosDisponibles();
+  }
+
+  @Get('pedidos/:id/pendientes')
+  async obtenerPedidoPendiente(@Param('id', ParseIntPipe) id: number) {
+    return this.entregasService.obtenerPedidoPendiente(id);
+  }
+
+  @Get('proveedores/empresa/:id')
+  async listarProveedoresEmpresa(@Param('id', ParseIntPipe) id: number) {
+    return this.entregasService.listarProveedoresEmpresa(id);
   }
 
   @Put('confirmar/:id')

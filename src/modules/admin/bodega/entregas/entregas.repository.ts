@@ -194,7 +194,7 @@ export class EntregasRepository {
     const entrega = repository.create({
       idePedi: dto.idePedi,
       ideProv: dto.ideProv,
-      fechaEntr: new Date(dto.fechaEntr),
+      fechaEntr: new Date(`${dto.fechaEntr}T00:00:00`),
       cantidadTotalEntr: totales.cantidadTotalEntr,
       totalEntr: totales.totalEntr.toFixed(2),
 
@@ -216,9 +216,9 @@ export class EntregasRepository {
     totales: TotalesEntregaCalculados,
     manager?: EntityManager,
   ): Promise<EntregaEntity> {
-    entrega.idePedi = dto.idePedi;
+    // El pedido original es inmutable durante la edición del borrador.
     entrega.ideProv = dto.ideProv;
-    entrega.fechaEntr = new Date(dto.fechaEntr);
+    entrega.fechaEntr = new Date(`${dto.fechaEntr}T00:00:00`);
     entrega.cantidadTotalEntr = totales.cantidadTotalEntr;
     entrega.totalEntr = totales.totalEntr.toFixed(2);
 
@@ -286,7 +286,7 @@ export class EntregasRepository {
     for (const detalleDto of detalles) {
       const detalle = detalleRepository.create({
         ideEntr,
-        ideDetaPedi: detalleDto.ideDetaPedi ?? null,
+        ideDetaPedi: detalleDto.ideDetaPedi,
         ideProd: detalleDto.ideProd,
         cantidadProd: detalleDto.cantidadProd,
         precioUnitarioProd: detalleDto.precioUnitarioProd.toFixed(2),
@@ -309,7 +309,7 @@ export class EntregasRepository {
              * una afectación real sobre la tabla lote.
              */
             ideLote: null,
-            fechaCaducidadLote: new Date(loteDto.fechaCaducidadLote),
+            fechaCaducidadLote: new Date(`${loteDto.fechaCaducidadLote}T00:00:00`),
             cantidadLote: loteDto.cantidadLote,
             estadoDetaEntrLote: 'registrado',
             usuaIngre: 'admin',
@@ -368,6 +368,48 @@ export class EntregasRepository {
           producto: true,
         },
       },
+    });
+  }
+
+  async bloquearPedidoYDetalles(
+    idePedi: number,
+    manager: EntityManager,
+  ): Promise<void> {
+    await manager
+      .getRepository(PedidoEntity)
+      .createQueryBuilder('pedido')
+      .setLock('pessimistic_read')
+      .where('pedido.idePedi = :idePedi', { idePedi })
+      .getOne();
+
+    await manager
+      .getRepository(DetallePedidoEntity)
+      .createQueryBuilder('detallePedido')
+      .setLock('pessimistic_read')
+      .where('detallePedido.idePedi = :idePedi', { idePedi })
+      .getMany();
+  }
+
+  async listarPedidosDisponibles(
+    manager?: EntityManager,
+  ): Promise<PedidoEntity[]> {
+    return this.getPedidoRepository(manager).find({
+      where: [
+        { motivoPedi: 'peticion', estadoPedi: 'emitido' },
+        { motivoPedi: 'peticion', estadoPedi: 'parcial' },
+      ],
+      relations: { empresa: true },
+      order: { idePedi: 'DESC' },
+    });
+  }
+
+  async listarProveedoresActivosPorEmpresa(
+    ideEmpr: number,
+    manager?: EntityManager,
+  ): Promise<ProveedorEntity[]> {
+    return this.getProveedorRepository(manager).find({
+      where: { ideEmpr, estadoProv: 'activo' },
+      order: { apellidoPaternoProv: 'ASC', primerNombreProv: 'ASC' },
     });
   }
 
