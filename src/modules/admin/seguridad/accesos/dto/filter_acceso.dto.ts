@@ -43,6 +43,14 @@ export class FilterAccesoUsuarioDto {
   @Transform(({ value }) =>
     typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
   )
+  usuarioCuen?: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(1, 250)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
+  )
   navegadorAcce?: string;
 
   @IsOptional()

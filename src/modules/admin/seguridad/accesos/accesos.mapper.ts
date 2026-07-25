@@ -7,7 +7,7 @@ export interface AccesoUsuarioRow {
   usuario_cuen?: string | null;
   estado_cuen?: string | null;
   navegador_acce: string;
-  fecha_acce: string;
+  fecha_acce: Date;
   num_int_fall_acce: number;
   ip_acce: string;
   latitud_acce?: number | null;
@@ -22,7 +22,7 @@ export class AccesosMapper {
       usuario_cuen: acceso.cuenta?.usuarioCuen ?? null,
       estado_cuen: acceso.cuenta?.estadoCuen ?? null,
       navegador_acce: acceso.navegadorAcce,
-      fecha_acce: this.formatDateTime(acceso.fechaAcce),
+      fecha_acce: acceso.fechaAcce,
       num_int_fall_acce: acceso.numIntFallAcce,
       ip_acce: acceso.ipAcce,
       latitud_acce:

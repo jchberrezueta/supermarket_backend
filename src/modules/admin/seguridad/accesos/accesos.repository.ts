@@ -55,10 +55,15 @@ export class AccesosRepository {
         ideCuen: filtros.ideCuen,
       });
     }
-
     if (filtros.ipAcce) {
-      qb.andWhere('acceso.ipAcce = :ipAcce', {
-        ipAcce: filtros.ipAcce,
+      qb.andWhere('acceso.ipAcce LIKE :ipAcce', {
+        ipAcce: `%${filtros.ipAcce}%`,
+      });
+    }
+
+    if (filtros.usuarioCuen) {
+      qb.andWhere('LOWER(cuenta.usuarioCuen) LIKE LOWER(:usuarioCuen)', {
+        usuarioCuen: `%${filtros.usuarioCuen}%`,
       });
     }
 
