@@ -61,8 +61,14 @@ export class FilterProveedorDTO {
   ideEmpr?: number;
 
   @IsOptional()
+  @IsString()
+  @Length(1, 50)
+  @Transform(({ value }) => optionalString(value))
+  nombreEmp?: number;
+
+  @IsOptional()
   @IsNumberString()
-  @Length(7, 15)
+  @Length(1, 15)
   @Transform(({ value }) => optionalString(value))
   cedulaProv?: string;
 

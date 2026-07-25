@@ -31,11 +31,13 @@ export class ProveedoresController {
 
   @Get('buscar/:id')
   async buscar(@Param('id', ParseIntPipe) id: number) {
+    console.log(id);
     return this.proveedoresService.buscar(id);
   }
 
   @Get('filtrar')
   async filtrar(@Query() queryParams: FilterProveedorDTO) {
+    console.log(queryParams);
     return this.proveedoresService.filtrar(queryParams);
   }
 

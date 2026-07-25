@@ -55,9 +55,15 @@ export class ProveedoresRepository {
       });
     }
 
+    if (filtros.nombreEmp) {
+      qb.andWhere('LOWER(empresa.nombreEmpr) LIKE LOWER(:nombreEmp)', {
+        nombreEmp: `%${filtros.nombreEmp}%`,
+      });
+    }
+
     if (filtros.cedulaProv) {
-      qb.andWhere('proveedor.cedulaProv = :cedulaProv', {
-        cedulaProv: filtros.cedulaProv,
+      qb.andWhere('proveedor.cedulaProv LIKE :cedulaProv', {
+        cedulaProv: `%${filtros.cedulaProv}%`,
       });
     }
 

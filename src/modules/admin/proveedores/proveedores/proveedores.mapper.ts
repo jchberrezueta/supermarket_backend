@@ -13,6 +13,7 @@ export interface ProveedorRow {
   apellido_paterno_prov: string;
   segundo_nombre_prov?: string | null;
   apellido_materno_prov?: string | null;
+  nombre_completo?: string | null;
   estado_prov: string;
   cargo_prov?: string | null;
   usua_ingre?: string;
@@ -26,6 +27,10 @@ export interface ProveedorEmpresaRow {
   ide_empr: number;
   nombre_empr?: string | null;
   cedula_prov: string;
+  primer_nombre_prov: string;
+  apellido_paterno_prov: string;
+  segundo_nombre_prov?: string | null;
+  apellido_materno_prov?: string | null;
   nombre_completo: string;
   fecha_nacimiento_prov: string;
   edad_prov: number;
@@ -50,6 +55,7 @@ export class ProveedoresMapper {
       apellido_paterno_prov: proveedor.apellidoPaternoProv,
       segundo_nombre_prov: proveedor.segundoNombreProv ?? null,
       apellido_materno_prov: proveedor.apellidoMaternoProv ?? null,
+      nombre_completo: this.getNombreCompleto(proveedor),
       estado_prov: proveedor.estadoProv ?? 'activo',
       cargo_prov: proveedor.cargoProv ?? null,
       usua_ingre: proveedor.usuaIngre,
@@ -69,6 +75,10 @@ export class ProveedoresMapper {
       ide_empr: proveedor.ideEmpr,
       nombre_empr: proveedor.empresa?.nombreEmpr ?? null,
       cedula_prov: proveedor.cedulaProv,
+      primer_nombre_prov: proveedor.primerNombreProv,
+      apellido_paterno_prov: proveedor.apellidoPaternoProv,
+      segundo_nombre_prov: proveedor.segundoNombreProv ?? null,
+      apellido_materno_prov: proveedor.apellidoMaternoProv ?? null,
       nombre_completo: this.getNombreCompleto(proveedor),
       fecha_nacimiento_prov: this.formatDateTimeDDMMYYYY(
         proveedor.fechaNacimientoProv,
