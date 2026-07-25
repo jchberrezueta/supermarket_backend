@@ -63,8 +63,8 @@ export class EmpleadosRepository {
     }
 
     if (filtros.cedulaEmpl) {
-      qb.andWhere('empleado.cedulaEmpl = :cedulaEmpl', {
-        cedulaEmpl: filtros.cedulaEmpl,
+      qb.andWhere('empleado.cedulaEmpl LIKE :cedulaEmpl', {
+        cedulaEmpl: `%${filtros.cedulaEmpl}`,
       });
     }
 
@@ -106,7 +106,6 @@ export class EmpleadosRepository {
     manager?: EntityManager,
   ): Promise<EmpleadoEntity> {
     const repository = this.getEmpleadoRepository(manager);
-
     const empleado = repository.create({
       ideRol: dto.ideRol,
       cedulaEmpl: dto.cedulaEmpl,

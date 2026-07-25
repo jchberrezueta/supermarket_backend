@@ -32,7 +32,7 @@ export class FilterEmpleadoDTO {
 
   @IsOptional()
   @IsNumberString()
-  @Length(7, 15)
+  @Length(1, 15)
   @Transform(({ value }) =>
     typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
   )

@@ -16,6 +16,7 @@ export interface EmpleadoRow {
   estado_empl: string;
   segundo_nombre_empl?: string | null;
   apellido_materno_empl?: string | null;
+  nombre_completo?: string | null;
   fecha_termino_empl?: string | null;
   usua_ingre?: string;
   fecha_ingre?: Date;
@@ -56,6 +57,7 @@ export class EmpleadosMapper {
       estado_empl: empleado.estadoEmpl,
       segundo_nombre_empl: empleado.segundoNombreEmpl ?? null,
       apellido_materno_empl: empleado.apellidoMaternoEmpl ?? null,
+      nombre_completo: this.getNombreCompleto(empleado),
       fecha_termino_empl: empleado.fechaTerminoEmpl
         ? this.formatDate(empleado.fechaTerminoEmpl)
         : null,

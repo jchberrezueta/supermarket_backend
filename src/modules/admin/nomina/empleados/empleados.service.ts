@@ -56,7 +56,6 @@ export class EmpleadosService {
       const empleado = await this.dataSource.transaction((manager) =>
         this.empleadosRepository.crear(body, manager),
       );
-
       return ApiResponseFactory.legacyWrite(
         1,
         'Empleado registrado correctamente',
