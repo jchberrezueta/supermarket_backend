@@ -93,6 +93,30 @@ export class CuentasRepository {
       });
     }
 
+    if (filtros.nombrePerf) {
+      qb.andWhere('LOWER(perfil.nombrePerf) LIKE LOWER(:nombrePerf)', {
+        nombrePerf: `%${filtros.nombrePerf}%`,
+      });
+    }
+
+    if (filtros.nombreCompletoEmpl) {
+      qb.andWhere(
+        `
+          LOWER(
+            CONCAT_WS(
+              ' ',
+              empleado.primer_nombre_empl,
+              empleado.segundo_nombre_empl,
+              empleado.apellido_paterno_empl,
+              empleado.apellido_materno_empl
+            )
+          ) LIKE LOWER(:nombreCompletoEmpl)
+        `,
+        {
+          nombreCompletoEmpl: `%${filtros.nombreCompletoEmpl}%`,
+        },
+      );
+    }
     if (filtros.usuarioCuen) {
       qb.andWhere('LOWER(cuenta.usuarioCuen) LIKE LOWER(:usuarioCuen)', {
         usuarioCuen: `%${filtros.usuarioCuen}%`,

@@ -63,6 +63,22 @@ export class FiltroCuentaDto {
 
   @IsOptional()
   @IsString()
+  @Length(1, 100)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
+  )
+  nombrePerf?: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(1, 250)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
+  )
+  nombreCompletoEmpl?: string;
+
+  @IsOptional()
+  @IsString()
   @Length(1, 25)
   @Transform(({ value }) =>
     typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
