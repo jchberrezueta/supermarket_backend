@@ -52,7 +52,6 @@ export class EmpresasController {
     @Body() body: UpdateEmpresaDTO,
   ) {
     body.ideEmp = id;
-
     return this.empresasService.actualizar(body);
   }
 
@@ -67,6 +66,11 @@ export class EmpresasController {
   @Get('listar/combo/empresas')
   async listarComboEmpresas() {
     return this.empresasService.listarComboEmpresas();
+  }
+
+  @Get('listar/combo/empresas/responsables')
+  async listarComboResponsable() {
+    return this.empresasService.listarComboResponsable();
   }
 
   @Get('listar/combo/empresas/estados')

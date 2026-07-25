@@ -5,7 +5,7 @@ export interface EmpresaRow {
   ide_empr: number;
   nombre_empr: string;
   responsable_empr: string;
-  fecha_contrato_empr: string;
+  fecha_contrato_empr: Date;
   direccion_empr: string;
   telefono_empr: string;
   email_empr: string;
@@ -32,7 +32,7 @@ export class EmpresasMapper {
       ide_empr: empresa.ideEmpr,
       nombre_empr: empresa.nombreEmpr,
       responsable_empr: empresa.responsableEmpr,
-      fecha_contrato_empr: this.formatDateTimeText(empresa.fechaContratoEmpr),
+      fecha_contrato_empr: empresa.fechaContratoEmpr,
       direccion_empr: empresa.direccionEmpr,
       telefono_empr: empresa.telefonoEmpr,
       email_empr: empresa.emailEmpr,

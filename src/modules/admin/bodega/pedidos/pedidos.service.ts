@@ -691,10 +691,7 @@ export class PedidosService {
     }
   }
 
-  private validarFechaEsperada(
-    fechaEsperada: string,
-    fechaPedido: Date,
-  ): void {
+  private validarFechaEsperada(fechaEsperada: string, fechaPedido: Date): void {
     const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(fechaEsperada);
 
     if (!match) {

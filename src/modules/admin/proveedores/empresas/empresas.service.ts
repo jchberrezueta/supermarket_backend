@@ -147,6 +147,18 @@ export class EmpresasService {
     );
   }
 
+  async listarComboResponsable() {
+    const empresas = await this.dataSource.transaction((manager) =>
+      this.empresasRepository.listarActivas(manager),
+    );
+
+    return ComboMapper.fromEntities(
+      empresas,
+      (empresa) => empresa.responsableEmpr,
+      (empresa) => empresa.ideEmpr,
+    );
+  }
+
   async listarEstados() {
     return ComboMapper.fromValues(['activo', 'inactivo']);
   }
