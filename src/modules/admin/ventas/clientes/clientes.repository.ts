@@ -59,8 +59,8 @@ export class ClientesRepository {
       .addOrderBy('cliente.primerNombreClie', 'ASC');
 
     if (filtros.cedulaClie) {
-      qb.andWhere('cliente.cedulaClie = :cedulaClie', {
-        cedulaClie: filtros.cedulaClie,
+      qb.andWhere('cliente.cedulaClie LIKE :cedulaClie', {
+        cedulaClie: `%${filtros.cedulaClie}%`,
       });
     }
 
