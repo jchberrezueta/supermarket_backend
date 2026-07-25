@@ -3,6 +3,9 @@
 /node_modules
 /build
 
+# Certificados locales HTTPS
+/certs
+
 # Logs
 logs
 *.log
