@@ -55,6 +55,12 @@ export class PerfilesRepository {
       });
     }
 
+    if (filtros.nombreRol) {
+      qb.andWhere('LOWER(rol.nombreRol) LIKE LOWER(:nombreRol)', {
+        nombreRol: `%${filtros.nombreRol}%`,
+      });
+    }
+
     if (filtros.nombrePerf) {
       qb.andWhere('LOWER(perfil.nombrePerf) LIKE LOWER(:nombrePerf)', {
         nombrePerf: `%${filtros.nombrePerf}%`,

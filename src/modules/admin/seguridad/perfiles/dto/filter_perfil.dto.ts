@@ -28,6 +28,14 @@ export class FilterPerfilDto {
   @Transform(({ value }) =>
     typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
   )
+  nombreRol?: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(1, 100)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
+  )
   nombrePerf?: string;
 
   @IsOptional()
