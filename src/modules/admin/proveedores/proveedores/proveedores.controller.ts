@@ -31,13 +31,11 @@ export class ProveedoresController {
 
   @Get('buscar/:id')
   async buscar(@Param('id', ParseIntPipe) id: number) {
-    console.log(id);
     return this.proveedoresService.buscar(id);
   }
 
   @Get('filtrar')
   async filtrar(@Query() queryParams: FilterProveedorDTO) {
-    console.log(queryParams);
     return this.proveedoresService.filtrar(queryParams);
   }
 
@@ -85,6 +83,10 @@ export class ProveedoresController {
   @Get('listar/proveedores/combo/proveedores')
   async listarComboProveedores() {
     return this.proveedoresService.listarComboProveedores();
+  }
+  @Get('listar/proveedores/combo/estados')
+  async listarComboEstados() {
+    return this.proveedoresService.listarComboEstados();
   }
 
   @Get('listar/proveedores/combo/cedula')

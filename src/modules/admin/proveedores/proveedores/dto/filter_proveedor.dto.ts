@@ -1,7 +1,6 @@
 import { EnumEstadoProveedor } from '@models';
 import { Transform } from 'class-transformer';
 import {
-  IsEmail,
   IsEnum,
   IsInt,
   IsNumberString,
@@ -43,13 +42,11 @@ function optionalLowerString(value: unknown): string | undefined | unknown {
   if (value === null || value === undefined) {
     return undefined;
   }
-
   if (typeof value !== 'string') {
     return value;
   }
 
   const text = value.trim();
-
   return text !== '' ? text.toLowerCase() : undefined;
 }
 
@@ -85,7 +82,7 @@ export class FilterProveedorDTO {
   apellidoPaternoProv?: string;
 
   @IsOptional()
-  @IsEmail()
+  @IsString()
   @Length(1, 100)
   @Transform(({ value }) => optionalLowerString(value))
   emailProv?: string;

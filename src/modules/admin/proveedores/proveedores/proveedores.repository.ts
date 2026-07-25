@@ -48,7 +48,7 @@ export class ProveedoresRepository {
       .leftJoinAndSelect('proveedor.empresa', 'empresa')
       .orderBy('proveedor.apellidoPaternoProv', 'ASC')
       .addOrderBy('proveedor.primerNombreProv', 'ASC');
-
+    console.log(filtros);
     if (filtros.ideEmpr !== undefined && filtros.ideEmpr !== null) {
       qb.andWhere('proveedor.ideEmpr = :ideEmpr', {
         ideEmpr: filtros.ideEmpr,

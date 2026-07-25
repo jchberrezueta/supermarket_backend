@@ -187,6 +187,10 @@ export class ProveedoresService {
     );
   }
 
+  async listarComboEstados() {
+    return ComboMapper.fromValues(['activo', 'inactivo']);
+  }
+
   async listarComboProveedorCedula() {
     const proveedores = await this.dataSource.transaction((manager) =>
       this.proveedoresRepository.listar(manager),
