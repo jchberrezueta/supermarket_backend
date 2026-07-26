@@ -189,6 +189,12 @@ export class CuentasService {
     );
   }
 
+  async cambiarClave(idCuenta: number, passwordHash: string) {
+    await this.dataSource.transaction((manager) =>
+      this.cuentasRepository.cambiarClave(idCuenta, passwordHash, manager),
+    );
+  }
+
   /**
    * IMPORTANTE:
    * auth.service.ts espera snake_case:
@@ -206,6 +212,12 @@ export class CuentasService {
     }
 
     return CuentasMapper.toAuthRaw(cuenta);
+  }
+
+  async buscarCuentaInterna(idCuenta: number) {
+    return this.dataSource.transaction((manager) =>
+      this.cuentasRepository.buscarPorId(idCuenta, manager),
+    );
   }
 
   async getPerfilPermisos(idCuenta: string) {

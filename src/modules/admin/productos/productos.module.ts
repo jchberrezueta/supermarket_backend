@@ -5,11 +5,6 @@ import { ProductitosModule } from './productos/productos.module';
 import { LotesModule } from './lotes/lotes.module';
 
 @Module({
-    imports: [
-        CategoriasModule,
-        MarcasModule,
-        ProductitosModule,
-        LotesModule
-    ]
+  imports: [CategoriasModule, MarcasModule, ProductitosModule, LotesModule],
 })
 export class ProductosModule {}

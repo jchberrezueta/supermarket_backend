@@ -10,6 +10,7 @@ import {
 import { AccesoUsuarioEntity } from './acceso_usuario.entity';
 import { EmpleadoEntity } from './empleado.entity';
 import { PerfilEntity } from './perfil.entity';
+import { RefreshTokenEntity } from './refresh_token.entity';
 
 export type EstadoCuenta = 'activo' | 'inactivo' | 'bloqueado';
 
@@ -91,6 +92,9 @@ export class CuentaEntity {
 
   @OneToMany(() => AccesoUsuarioEntity, (acceso) => acceso.cuenta)
   accesos?: AccesoUsuarioEntity[];
+
+  @OneToMany(() => RefreshTokenEntity, (refreshToken) => refreshToken.cuenta)
+  refreshTokens?: RefreshTokenEntity[];
 }
 
 export { CuentaEntity as Cuenta };

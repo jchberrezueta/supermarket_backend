@@ -5,11 +5,16 @@ import {
   UnauthorizedException,
   Req,
   Ip,
+  UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AccesosUsuariosService } from '../admin/seguridad/accesos/accesos.service';
 import { CreateAccesoUsuarioDto } from '../admin/seguridad/accesos/dto/create_acceso.dto';
 import { formatDate } from '@helpers/utilities';
+import { ChangePasswordDto } from './dto/change_password.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { LogoutDto } from './dto/logout.dto';
+import { AuthGuard } from '@nestjs/passport';
 
 interface ICredential {
   usuario: string;
@@ -44,6 +49,10 @@ export class AuthController {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
+    if (!('user' in result)) {
+      throw new Error();
+    }
+
     const user = result.user;
     if (ip.startsWith('::ffff:')) {
       ip = ip.split('::ffff:')[1]; // ahora tienes IPv4
@@ -60,5 +69,36 @@ export class AuthController {
     // Registrar acceso usuario
     await this.servicio.insertarAccesoUsuario(accesoUsuario);
     return this.authService.login(user);
+  }
+
+  @Post('cambiar-clave')
+  async cambiarClave(@Body() body: ChangePasswordDto) {
+    const result = await this.authService.cambiarClave(
+      body.ideCuen,
+      body.claveActual,
+      body.claveNueva,
+    );
+
+    if (!result.success) {
+      throw new UnauthorizedException(result.message);
+    }
+
+    return result;
+  }
+
+  @Post('refresh')
+  async refresh(@Body() body: RefreshTokenDto) {
+    return this.authService.refresh(body.refreshToken);
+  }
+
+  @Post('logout')
+  async logout(@Body() body: LogoutDto) {
+    return this.authService.logout(body.refreshToken);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Post('logout-all')
+  async logoutAll(@Req() req: any) {
+    return this.authService.logoutAll(req.user.sub);
   }
 }

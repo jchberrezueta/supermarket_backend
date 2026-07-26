@@ -379,6 +379,22 @@ export class CuentasRepository {
     );
   }
 
+  async cambiarClave(
+    ideCuen: number,
+    passwordHash: string,
+    manager?: EntityManager,
+  ): Promise<void> {
+    await this.getCuentaRepository(manager).update(
+      { ideCuen },
+      {
+        passwordCuen: passwordHash,
+        debeCambiarClave: false,
+        fechaActua: new Date(),
+        usuaActua: 'usuario',
+      },
+    );
+  }
+
   private getCuentaRepository(
     manager?: EntityManager,
   ): Repository<CuentaEntity> {
