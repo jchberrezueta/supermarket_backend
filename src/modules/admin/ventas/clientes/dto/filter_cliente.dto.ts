@@ -33,6 +33,14 @@ export class FilterClienteDTO {
   apellidoPaternoClie?: string;
 
   @IsOptional()
+  @IsString()
+  @Length(1, 250)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
+  )
+  nombreCompletoClie?: string;
+
+  @IsOptional()
   @IsIn(['si', 'no'])
   esSocio?: 'si' | 'no';
 

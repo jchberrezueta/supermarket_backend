@@ -64,6 +64,25 @@ export class ClientesRepository {
       });
     }
 
+    if (filtros.nombreCompletoClie) {
+      qb.andWhere(
+        `
+          LOWER(
+            CONCAT_WS(
+              ' ',
+              cliente.primer_nombre_clie,
+              cliente.segundo_nombre_clie,
+              cliente.apellido_paterno_clie,
+              cliente.apellido_materno_clie
+            )
+          ) LIKE LOWER(:nombreCompletoClie)
+        `,
+        {
+          nombreCompletoClie: `%${filtros.nombreCompletoClie}%`,
+        },
+      );
+    }
+
     if (filtros.primerNombreClie) {
       qb.andWhere(
         'LOWER(cliente.primerNombreClie) LIKE LOWER(:primerNombreClie)',

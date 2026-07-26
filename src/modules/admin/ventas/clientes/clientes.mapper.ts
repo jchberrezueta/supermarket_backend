@@ -8,6 +8,7 @@ export interface ClienteRow {
   telefono_clie: string;
   primer_nombre_clie: string;
   apellido_paterno_clie: string;
+  nombre_completo: string;
   email_clie: string;
   es_socio: string;
   es_tercera_edad: string;
@@ -42,6 +43,7 @@ export class ClientesMapper {
       telefono_clie: cliente.telefonoClie,
       primer_nombre_clie: cliente.primerNombreClie,
       apellido_paterno_clie: cliente.apellidoPaternoClie,
+      nombre_completo: this.getNombreCompleto(cliente),
       email_clie: cliente.emailClie,
       es_socio: cliente.esSocio,
       es_tercera_edad: cliente.esTerceraEdad,

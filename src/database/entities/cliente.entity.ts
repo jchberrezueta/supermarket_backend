@@ -18,7 +18,7 @@ export class ClienteEntity {
   @Column({ name: 'cedula_clie', type: 'varchar', length: 15 })
   cedulaClie!: string;
 
-  @Column({ name: 'fecha_nacimiento_clie', type: 'date' })
+  @Column({ name: 'fecha_nacimiento_clie', type: 'timestamp' })
   fechaNacimientoClie!: Date;
 
   @Column({ name: 'edad_clie', type: 'int' })
