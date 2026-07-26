@@ -75,6 +75,7 @@ export class OpcionesRepository {
       nivelOpci: dto.nivelOpci,
       padreOpci: dto.padreOpci ?? null,
       iconoOpci: dto.iconoOpci ?? null,
+      visibleOpci: dto.visibleOpci,
       usuaIngre: 'admin',
     });
 
@@ -93,6 +94,7 @@ export class OpcionesRepository {
     opcion.nivelOpci = dto.nivelOpci;
     opcion.padreOpci = dto.padreOpci ?? null;
     opcion.iconoOpci = dto.iconoOpci ?? null;
+    opcion.visibleOpci = dto.visibleOpci;
     opcion.usuaActua = 'admin';
     opcion.fechaActua = new Date();
 

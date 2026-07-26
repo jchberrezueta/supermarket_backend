@@ -1,5 +1,6 @@
 import { Transform } from 'class-transformer';
 import {
+  IsBoolean,
   IsIn,
   IsInt,
   IsOptional,
@@ -85,4 +86,7 @@ export class UpdateOpcionDto {
     typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
   )
   iconoOpci?: string | null;
+
+  @IsBoolean()
+  visibleOpci!: boolean;
 }

@@ -9,6 +9,7 @@ export interface OpcionRow {
   nivel_opci: number;
   padre_opci?: number | null;
   icono_opci?: string | null;
+  visible_opci?: boolean;
   usua_ingre?: string;
   fecha_ingre?: Date;
   usua_actua?: string;
@@ -26,6 +27,7 @@ export class OpcionesMapper {
       nivel_opci: opcion.nivelOpci,
       padre_opci: opcion.padreOpci ?? null,
       icono_opci: opcion.iconoOpci ?? null,
+      visible_opci: opcion.visibleOpci,
       usua_ingre: opcion.usuaIngre,
       fecha_ingre: opcion.fechaIngre,
       usua_actua: opcion.usuaActua,

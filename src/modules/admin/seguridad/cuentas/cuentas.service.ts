@@ -16,6 +16,7 @@ export interface SidebarOption {
   icono: string | null;
   activo: 'si' | 'no';
   hijas: SidebarOption[];
+  visible: boolean;
 }
 
 @Injectable()
@@ -309,6 +310,7 @@ export class CuentasService {
         icono: opcion.icono ?? null,
         activo: opcion.activo,
         hijas: [],
+        visible: opcion.visible,
       });
     }
 

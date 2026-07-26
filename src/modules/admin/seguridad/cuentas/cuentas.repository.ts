@@ -20,6 +20,7 @@ export interface SidebarOptionRaw {
   activo: 'si' | 'no';
   nivel: number;
   padre: number | null;
+  visible: boolean;
 }
 
 @Injectable()
@@ -253,6 +254,7 @@ export class CuentasRepository {
         'opcion.activoOpci AS activo',
         'opcion.nivelOpci AS nivel',
         'opcion.padreOpci AS padre',
+        'opcion.visibleOpci AS visible',
       ])
       .where('cuenta.ideCuen = :ideCuen', { ideCuen })
       .andWhere('cuenta.estadoCuen = :estadoCuen', {
@@ -276,6 +278,7 @@ export class CuentasRepository {
         row.padre === null || row.padre === undefined
           ? null
           : Number(row.padre),
+      visible: row.visible,
     }));
   }
 

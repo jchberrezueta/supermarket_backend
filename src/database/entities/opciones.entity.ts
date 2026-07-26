@@ -23,6 +23,13 @@ export class OpcionesEntity {
   })
   descripcionOpci?: string | null;
 
+  @Column({
+    name: 'visible_opci',
+    type: 'boolean',
+    default: true,
+  })
+  visibleOpci!: boolean;
+
   @Column({ name: 'usua_ingre', type: 'varchar', length: 25 })
   usuaIngre!: string;
 
