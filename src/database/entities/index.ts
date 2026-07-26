@@ -27,3 +27,4 @@ export * from './proveedor.entity';
 export * from './rol.entity';
 export * from './venta.entity';
 export * from './refresh_token.entity';
+export * from './password_reset_token.entity';

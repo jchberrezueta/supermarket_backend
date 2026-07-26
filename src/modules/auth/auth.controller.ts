@@ -15,6 +15,8 @@ import { ChangePasswordDto } from './dto/change_password.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { LogoutDto } from './dto/logout.dto';
 import { AuthGuard } from '@nestjs/passport';
+import { ForgotPasswordDto } from './dto/forgot_password.dto';
+import { ResetPasswordDto } from './dto/reset_password.dto';
 
 interface ICredential {
   usuario: string;
@@ -100,5 +102,15 @@ export class AuthController {
   @Post('logout-all')
   async logoutAll(@Req() req: any) {
     return this.authService.logoutAll(req.user.sub);
+  }
+
+  @Post('forgot-password')
+  async forgotPassword(@Body() body: ForgotPasswordDto) {
+    return this.authService.solicitarRecuperacion(body.usuario);
+  }
+
+  @Post('reset-password')
+  async resetPassword(@Body() body: ResetPasswordDto) {
+    return this.authService.resetPassword(body.token, body.nuevaClave);
   }
 }

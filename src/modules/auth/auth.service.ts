@@ -4,6 +4,8 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { RefreshTokenService } from './refresh_token.service';
 import { randomUUID } from 'crypto';
+import { randomBytes } from 'crypto';
+import { PasswordResetTokenService } from './password_reset_token.service';
 
 type ValidateResult =
   | {
@@ -30,6 +32,7 @@ export class AuthService {
     private cuentasService: CuentasService,
     private jwtService: JwtService,
     private refreshTokenService: RefreshTokenService,
+    private passwordResetTokenService: PasswordResetTokenService,
   ) {}
 
   async validateUser(usuario: string, clave: string): Promise<ValidateResult> {
@@ -215,6 +218,8 @@ export class AuthService {
 
     await this.cuentasService.cambiarClave(ideCuen, nuevoHash);
 
+    await this.refreshTokenService.revocarTodos(ideCuen);
+
     return {
       success: true,
       message: 'Clave actualizada correctamente',
@@ -318,6 +323,78 @@ export class AuthService {
 
     return {
       success: true,
+    };
+  }
+
+  async solicitarRecuperacion(usuario: string) {
+    const cuenta = await this.cuentasService.buscarUsuario(usuario);
+
+    /*
+    Por seguridad no revelamos si existe o no.
+    En sistemas reales siempre se responde igual.
+  */
+
+    if (!cuenta) {
+      return {
+        success: true,
+        message: 'Si la cuenta existe, recibirá instrucciones de recuperación',
+      };
+    }
+
+    const token = randomBytes(32).toString('hex');
+
+    const expiracion = new Date();
+
+    expiracion.setMinutes(expiracion.getMinutes() + 15);
+
+    await this.refreshTokenService;
+
+    await this.passwordResetTokenService.guardar(
+      cuenta.ide_cuen,
+      token,
+      expiracion,
+    );
+
+    /*
+    Aquí posteriormente irá:
+    - envío de correo
+    - enlace frontend
+  */
+
+    return {
+      success: true,
+      message: 'Si la cuenta existe, recibirá instrucciones de recuperación',
+
+      // temporal para pruebas
+      token,
+    };
+  }
+
+  async resetPassword(token: string, nuevaClave: string) {
+    const registro = await this.passwordResetTokenService.validar(token);
+
+    if (!registro) {
+      throw new UnauthorizedException('Token inválido o expirado');
+    }
+
+    if (registro.fechaExpiracion < new Date()) {
+      await this.passwordResetTokenService.usar(registro.idePrt);
+
+      throw new UnauthorizedException('Token expirado');
+    }
+
+    const nuevoHash = await this.cuentasService.encriptadorHash(nuevaClave);
+
+    await this.cuentasService.cambiarClave(registro.ideCuen, nuevoHash);
+
+    await this.refreshTokenService.revocarTodos(registro.ideCuen);
+
+    // El token ya no puede volver a utilizarse
+    await this.passwordResetTokenService.usar(registro.idePrt);
+
+    return {
+      success: true,
+      message: 'Contraseña actualizada correctamente',
     };
   }
 }

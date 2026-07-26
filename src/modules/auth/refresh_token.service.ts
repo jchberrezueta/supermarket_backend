@@ -68,4 +68,8 @@ export class RefreshTokenService {
       this.repository.buscarPorJti(jti, manager),
     );
   }
+
+  async revocarTodosPorCuenta(ideCuen: number): Promise<void> {
+    return this.repository.revocarTodosPorCuenta(ideCuen);
+  }
 }

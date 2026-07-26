@@ -75,4 +75,16 @@ export class RefreshTokenRepository {
 
     return this.repository;
   }
+
+  async revocarTodosPorCuenta(ideCuen: number): Promise<void> {
+    await this.repository.update(
+      {
+        ideCuen,
+        revocado: false,
+      },
+      {
+        revocado: true,
+      },
+    );
+  }
 }
