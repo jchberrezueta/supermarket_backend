@@ -96,6 +96,11 @@ export class EmpresasController {
     return this.empresasService.listarPrecios();
   }
 
+  @Get('listar/precios/estados')
+  async listarPreciosEstados() {
+    return this.empresasService.listarPreciosEstados();
+  }
+
   @Get('listar/precios/:id')
   async listarPreciosProductosEmpresa(@Param('id', ParseIntPipe) id: number) {
     return this.empresasService.listarPreciosProductosEmpresa(id);

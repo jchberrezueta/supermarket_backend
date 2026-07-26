@@ -202,6 +202,10 @@ export class EmpresasService {
     );
   }
 
+  async listarPreciosEstados() {
+    return ComboMapper.fromValues(['activo', 'inactivo']);
+  }
+
   async listarPreciosProductosEmpresa(id: number) {
     const ideEmpr = IdUtil.requireId(id, 'El ID de la empresa no es válido.');
 

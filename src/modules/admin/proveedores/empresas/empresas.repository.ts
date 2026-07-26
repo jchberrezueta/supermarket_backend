@@ -115,6 +115,7 @@ export class EmpresasRepository {
     empresa.emailEmpr = dto.emailEmp;
     empresa.estadoEmpr = dto.estadoEmp as EmpresaEntity['estadoEmpr'];
     empresa.descripcionEmpr = dto.descripcionEmp;
+
     empresa.usuaActua = 'admin';
     empresa.fechaActua = new Date();
 
@@ -189,6 +190,7 @@ export class EmpresasRepository {
       dctoCompraProd: MoneyUtil.toMoneyString(dto.dctoCompraProd),
       dctoCaducidadProd: MoneyUtil.toMoneyString(dto.dctoCaducidadProd),
       ivaProd: MoneyUtil.toMoneyString(dto.ivaProd),
+      estadoEmprProd: dto.estadoEmprProd,
       usuaIngre: 'admin',
     });
 
@@ -217,6 +219,7 @@ export class EmpresasRepository {
     precio.dctoCompraProd = MoneyUtil.toMoneyString(dto.dctoCompraProd);
     precio.dctoCaducidadProd = MoneyUtil.toMoneyString(dto.dctoCaducidadProd);
     precio.ivaProd = MoneyUtil.toMoneyString(dto.ivaProd);
+    precio.estadoEmprProd = dto.estadoEmprProd;
     precio.usuaActua = 'admin';
     precio.fechaActua = new Date();
 
