@@ -15,10 +15,18 @@ import { RefreshTokenRepository } from './refresh_token.repository';
 import { RefreshTokenService } from './refresh_token.service';
 import { PasswordResetTokenRepository } from './password_reset_token.repository';
 import { PasswordResetTokenService } from './password_reset_token.service';
+import { PasswordPolicyService } from './password_policy.service';
+import { HistorialClaveEntity } from '../../database/entities/historial_clave.entity';
+import { HistorialClaveService } from './historial_clave.service';
+import { HistorialClaveRepository } from './historial_clave.repository';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([RefreshTokenEntity, PasswordResetTokenEntity]),
+    TypeOrmModule.forFeature([
+      RefreshTokenEntity,
+      PasswordResetTokenEntity,
+      HistorialClaveEntity,
+    ]),
 
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'haki',
@@ -37,6 +45,9 @@ import { PasswordResetTokenService } from './password_reset_token.service';
     RefreshTokenService,
     PasswordResetTokenRepository,
     PasswordResetTokenService,
+    PasswordPolicyService,
+    HistorialClaveRepository,
+    HistorialClaveService,
   ],
 
   controllers: [AuthController],

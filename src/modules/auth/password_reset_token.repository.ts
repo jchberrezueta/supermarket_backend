@@ -19,7 +19,7 @@ export class PasswordResetTokenRepository {
       ideCuen,
       tokenHash,
       fechaExpiracion,
-      usado: false,
+      utilizado: false,
     });
 
     return this.repository.save(registro);
@@ -28,7 +28,7 @@ export class PasswordResetTokenRepository {
   async obtenerActivos(): Promise<PasswordResetTokenEntity[]> {
     return this.repository.find({
       where: {
-        usado: false,
+        utilizado: false,
       },
     });
   }
@@ -39,7 +39,7 @@ export class PasswordResetTokenRepository {
         idePrt,
       },
       {
-        usado: true,
+        utilizado: true,
       },
     );
   }

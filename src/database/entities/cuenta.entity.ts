@@ -12,6 +12,7 @@ import { EmpleadoEntity } from './empleado.entity';
 import { PerfilEntity } from './perfil.entity';
 import { RefreshTokenEntity } from './refresh_token.entity';
 import { PasswordResetTokenEntity } from './password_reset_token.entity';
+import { HistorialClaveEntity } from './historial_clave.entity';
 
 export type EstadoCuenta = 'activo' | 'inactivo' | 'bloqueado';
 
@@ -113,6 +114,9 @@ export class CuentaEntity {
 
   @OneToMany(() => RefreshTokenEntity, (refreshToken) => refreshToken.cuenta)
   refreshTokens?: RefreshTokenEntity[];
+
+  @OneToMany(() => HistorialClaveEntity, (historial) => historial.cuenta)
+  historialClaves?: HistorialClaveEntity[];
 }
 
 export { CuentaEntity as Cuenta };

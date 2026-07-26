@@ -32,11 +32,40 @@ export class PasswordResetTokenEntity {
   fechaExpiracion!: Date;
 
   @Column({
-    name: 'usado',
+    name: 'utilizado',
     type: 'boolean',
     default: false,
   })
-  usado!: boolean;
+  utilizado!: boolean;
+
+  @Column({
+    name: 'usua_ingre',
+    type: 'varchar',
+    length: 25,
+  })
+  usuaIngre!: string;
+
+  @Column({
+    name: 'fecha_ingre',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
+  fechaIngre!: Date;
+
+  @Column({
+    name: 'usua_actua',
+    type: 'varchar',
+    length: 25,
+    nullable: true,
+  })
+  usuaActua?: string;
+
+  @Column({
+    name: 'fecha_actua',
+    type: 'timestamp',
+    nullable: true,
+  })
+  fechaActua?: Date;
 
   @ManyToOne(() => CuentaEntity, (cuenta) => cuenta.passwordResetTokens, {
     onDelete: 'CASCADE',

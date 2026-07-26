@@ -6,6 +6,8 @@ import { RefreshTokenService } from './refresh_token.service';
 import { randomUUID } from 'crypto';
 import { randomBytes } from 'crypto';
 import { PasswordResetTokenService } from './password_reset_token.service';
+import { PasswordPolicyService } from './password_policy.service';
+import { HistorialClaveService } from './historial_clave.service';
 
 type ValidateResult =
   | {
@@ -33,6 +35,8 @@ export class AuthService {
     private jwtService: JwtService,
     private refreshTokenService: RefreshTokenService,
     private passwordResetTokenService: PasswordResetTokenService,
+    private passwordPolicyService: PasswordPolicyService,
+    private historialClaveService: HistorialClaveService,
   ) {}
 
   async validateUser(usuario: string, clave: string): Promise<ValidateResult> {
@@ -214,6 +218,30 @@ export class AuthService {
       };
     }
 
+    const politica = this.passwordPolicyService.validar(claveNueva);
+
+    if (!politica.valido) {
+      return {
+        success: false,
+        message: politica.errores,
+      };
+    }
+
+    const repetida = await this.historialClaveService.fueUsadaAnteriormente(
+      ideCuen,
+      claveNueva,
+    );
+
+    if (repetida) {
+      return {
+        success: false,
+        message: 'No puede reutilizar una de sus últimas 5 contraseñas',
+      };
+    }
+
+    // Guardamos la clave actual antes de reemplazarla
+    await this.historialClaveService.guardar(ideCuen, cuenta.passwordCuen);
+
     const nuevoHash = await this.cuentasService.encriptadorHash(claveNueva);
 
     await this.cuentasService.cambiarClave(ideCuen, nuevoHash);
@@ -347,7 +375,7 @@ export class AuthService {
 
     expiracion.setMinutes(expiracion.getMinutes() + 15);
 
-    await this.refreshTokenService;
+    //await this.refreshTokenService;
 
     await this.passwordResetTokenService.guardar(
       cuenta.ide_cuen,
@@ -383,13 +411,46 @@ export class AuthService {
       throw new UnauthorizedException('Token expirado');
     }
 
+    const politica = this.passwordPolicyService.validar(nuevaClave);
+
+    if (!politica.valido) {
+      return {
+        success: false,
+        message: politica.errores,
+      };
+    }
+
+    const cuenta = await this.cuentasService.buscarCuentaInterna(
+      registro.ideCuen,
+    );
+
+    if (!cuenta) {
+      throw new UnauthorizedException('Cuenta no encontrada');
+    }
+
+    const repetida = await this.historialClaveService.fueUsadaAnteriormente(
+      registro.ideCuen,
+      nuevaClave,
+    );
+
+    if (repetida) {
+      throw new UnauthorizedException(
+        'No puede reutilizar una contraseña anterior',
+      );
+    }
+
+    // Guardar contraseña antigua antes de reemplazarla
+    await this.historialClaveService.guardar(
+      registro.ideCuen,
+      cuenta.passwordCuen,
+    );
+
     const nuevoHash = await this.cuentasService.encriptadorHash(nuevaClave);
 
     await this.cuentasService.cambiarClave(registro.ideCuen, nuevoHash);
 
     await this.refreshTokenService.revocarTodos(registro.ideCuen);
 
-    // El token ya no puede volver a utilizarse
     await this.passwordResetTokenService.usar(registro.idePrt);
 
     return {
