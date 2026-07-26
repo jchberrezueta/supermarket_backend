@@ -37,6 +37,18 @@ export class EmpresasRepository {
     });
   }
 
+  async buscarPorIdActiva(
+    ideEmpr: number,
+    manager?: EntityManager,
+  ): Promise<EmpresaEntity | null> {
+    return this.getEmpresaRepository(manager).findOne({
+      where: {
+        ideEmpr,
+        estadoEmpr: 'activo',
+      },
+    });
+  }
+
   async filtrar(
     filtros: FilterEmpresaDTO,
     manager?: EntityManager,

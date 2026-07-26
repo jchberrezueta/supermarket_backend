@@ -25,6 +25,43 @@ export class ProductosRepository {
     });
   }
 
+  async listarActivos(manager?: EntityManager): Promise<ProductoEntity[]> {
+    return this.getRepository(manager).find({
+      relations: {
+        categoria: true,
+        marca: true,
+      },
+      where: {
+        estadoProd: 'activo',
+      },
+      order: {
+        nombreProd: 'ASC',
+      },
+    });
+  }
+
+  async listarActivosSinPrecioPorEmpresa(
+    id: number,
+    manager?: EntityManager,
+  ): Promise<ProductoEntity[]> {
+    return this.getRepository(manager)
+      .createQueryBuilder('producto')
+      .leftJoinAndSelect('producto.categoria', 'categoria')
+      .leftJoinAndSelect('producto.marca', 'marca')
+      .leftJoin(
+        'producto.preciosEmpresa',
+        'precioEmpresa',
+        'precioEmpresa.ide_empr = :id',
+        { id },
+      )
+      .where('producto.estadoProd = :estado', {
+        estado: 'activo',
+      })
+      .andWhere('precioEmpresa.ide_empr IS NULL')
+      .orderBy('producto.nombreProd', 'ASC')
+      .getMany();
+  }
+
   async buscarPorId(
     ideProd: number,
     manager?: EntityManager,

@@ -24,6 +24,7 @@ export interface EmpresaPrecioRow {
   dcto_compra_prod: number;
   dcto_caducidad_prod: number;
   iva_prod: number;
+  estado_empr_prod: string;
 }
 
 export class EmpresasMapper {
@@ -57,6 +58,7 @@ export class EmpresasMapper {
       dcto_compra_prod: MoneyUtil.toNumber(precio.dctoCompraProd),
       dcto_caducidad_prod: MoneyUtil.toNumber(precio.dctoCaducidadProd),
       iva_prod: MoneyUtil.toNumber(precio.ivaProd),
+      estado_empr_prod: precio.estadoEmprProd,
     };
   }
 

@@ -36,6 +36,11 @@ export class EmpresasController {
     return this.empresasService.buscar(id);
   }
 
+  @Get('buscar/activa/:id')
+  async getEmpresaActiva(@Param('id', ParseIntPipe) id: number) {
+    return this.empresasService.buscarActiva(id);
+  }
+
   @Get('filtrar')
   async filtrar(@Query() queryParams: FilterEmpresaDTO) {
     return this.empresasService.filtrar(queryParams);
@@ -66,6 +71,11 @@ export class EmpresasController {
   @Get('listar/combo/empresas')
   async listarComboEmpresas() {
     return this.empresasService.listarComboEmpresas();
+  }
+
+  @Get('listar/combo/empresas/activas')
+  async listarComboEmpresasActivas() {
+    return this.empresasService.listarComboEmpresasActivas();
   }
 
   @Get('listar/combo/empresas/responsables')

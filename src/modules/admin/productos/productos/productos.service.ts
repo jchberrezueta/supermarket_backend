@@ -171,6 +171,30 @@ export class ProductosService {
     );
   }
 
+  async listarComboProductosActivos() {
+    const productos = await this.dataSource.transaction((manager) =>
+      this.productosRepository.listarActivos(manager),
+    );
+
+    return ComboMapper.fromEntities(
+      productos,
+      (producto) => producto.nombreProd,
+      (producto) => producto.ideProd,
+    );
+  }
+
+  async listarComboProductosActivosSinPrecioPorEmpresa(id: number) {
+    const productos = await this.dataSource.transaction((manager) =>
+      this.productosRepository.listarActivosSinPrecioPorEmpresa(id, manager),
+    );
+
+    return ComboMapper.fromEntities(
+      productos,
+      (producto) => producto.nombreProd,
+      (producto) => producto.ideProd,
+    );
+  }
+
   async listarComboCodigosBarras() {
     const productos = await this.dataSource.transaction((manager) =>
       this.productosRepository.listar(manager),

@@ -51,6 +51,14 @@ export class EmpresaPreciosEntity {
   })
   ivaProd!: string;
 
+  @Column({
+    name: 'estado_empr_prod',
+    type: 'varchar',
+    length: 10,
+    default: 'activo',
+  })
+  estadoEmprProd!: string;
+
   @Column({ name: 'usua_ingre', type: 'varchar', length: 25 })
   usuaIngre!: string;
 

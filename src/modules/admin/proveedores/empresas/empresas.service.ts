@@ -42,6 +42,19 @@ export class EmpresasService {
     );
   }
 
+  async buscarActiva(id: number) {
+    const ideEmpr = IdUtil.requireId(id, 'El ID de la empresa no es válido.');
+
+    const empresa = await this.dataSource.transaction((manager) =>
+      this.empresasRepository.buscarPorIdActiva(ideEmpr, manager),
+    );
+
+    return ApiResponseFactory.legacyRead(
+      empresa ? [EmpresasMapper.toRow(empresa)] : [],
+      'Empresa encontrada',
+    );
+  }
+
   async filtrar(queryParams: FilterEmpresaDTO) {
     const empresas = await this.dataSource.transaction((manager) =>
       this.empresasRepository.filtrar(queryParams, manager),
@@ -136,6 +149,18 @@ export class EmpresasService {
    * COMBOS
    */
   async listarComboEmpresas() {
+    const empresas = await this.dataSource.transaction((manager) =>
+      this.empresasRepository.listar(manager),
+    );
+
+    return ComboMapper.fromEntities(
+      empresas,
+      (empresa) => empresa.nombreEmpr,
+      (empresa) => empresa.ideEmpr,
+    );
+  }
+
+  async listarComboEmpresasActivas() {
     const empresas = await this.dataSource.transaction((manager) =>
       this.empresasRepository.listarActivas(manager),
     );

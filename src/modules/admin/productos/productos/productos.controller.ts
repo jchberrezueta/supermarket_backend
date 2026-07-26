@@ -85,6 +85,20 @@ export class ProductosController {
     return this.productosService.listarComboProductos();
   }
 
+  @Get('listar/combo/productos/activos')
+  async listarComboProductosActivos() {
+    return this.productosService.listarComboProductosActivos();
+  }
+
+  @Get('listar/combo/productos/activos/empresa/:id')
+  async listarComboProductosActivosSinPrecioPorEmpresa(
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.productosService.listarComboProductosActivosSinPrecioPorEmpresa(
+      id,
+    );
+  }
+
   @Get('listar/combo/codigo/barras')
   async listarComboCodigosBarras() {
     return this.productosService.listarComboCodigosBarras();
