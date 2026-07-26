@@ -6,9 +6,9 @@ export interface EmpleadoRow {
   ide_rol: number;
   nombre_rol?: string | null;
   cedula_empl: string;
-  fecha_nacimiento_empl: string;
+  fecha_nacimiento_empl: Date;
   edad_empl: number;
-  fecha_inicio_empl: string;
+  fecha_inicio_empl: Date;
   primer_nombre_empl: string;
   apellido_paterno_empl: string;
   rmu_empl: number;
@@ -17,7 +17,7 @@ export interface EmpleadoRow {
   segundo_nombre_empl?: string | null;
   apellido_materno_empl?: string | null;
   nombre_completo?: string | null;
-  fecha_termino_empl?: string | null;
+  fecha_termino_empl?: Date | null;
   usua_ingre?: string;
   fecha_ingre?: Date;
   usua_actua?: string;
@@ -30,10 +30,10 @@ export interface EmpleadoRolRow {
   nombre_rol?: string | null;
   cedula_empl: string;
   nombre_completo: string;
-  fecha_nacimiento_empl: string;
+  fecha_nacimiento_empl: Date;
   edad_empl: number;
-  fecha_inicio_empl: string;
-  fecha_termino_empl?: string | null;
+  fecha_inicio_empl: Date;
+  fecha_termino_empl?: Date | null;
   telefono_empl?: string | null;
   titulo_empl: string;
   rmu_empl: number;
@@ -47,9 +47,9 @@ export class EmpleadosMapper {
       ide_rol: empleado.ideRol,
       nombre_rol: empleado.rol?.nombreRol ?? null,
       cedula_empl: empleado.cedulaEmpl,
-      fecha_nacimiento_empl: this.formatDate(empleado.fechaNacimientoEmpl),
+      fecha_nacimiento_empl: empleado.fechaNacimientoEmpl,
       edad_empl: empleado.edadEmpl,
-      fecha_inicio_empl: this.formatDate(empleado.fechaInicioEmpl),
+      fecha_inicio_empl: empleado.fechaInicioEmpl,
       primer_nombre_empl: empleado.primerNombreEmpl,
       apellido_paterno_empl: empleado.apellidoPaternoEmpl,
       rmu_empl: MoneyUtil.toNumber(empleado.rmuEmpl),
@@ -59,7 +59,7 @@ export class EmpleadosMapper {
       apellido_materno_empl: empleado.apellidoMaternoEmpl ?? null,
       nombre_completo: this.getNombreCompleto(empleado),
       fecha_termino_empl: empleado.fechaTerminoEmpl
-        ? this.formatDate(empleado.fechaTerminoEmpl)
+        ? empleado.fechaTerminoEmpl
         : null,
       usua_ingre: empleado.usuaIngre,
       fecha_ingre: empleado.fechaIngre,
@@ -79,11 +79,11 @@ export class EmpleadosMapper {
       nombre_rol: empleado.rol?.nombreRol ?? null,
       cedula_empl: empleado.cedulaEmpl,
       nombre_completo: this.getNombreCompleto(empleado),
-      fecha_nacimiento_empl: this.formatDate(empleado.fechaNacimientoEmpl),
+      fecha_nacimiento_empl: empleado.fechaNacimientoEmpl,
       edad_empl: empleado.edadEmpl,
-      fecha_inicio_empl: this.formatDate(empleado.fechaInicioEmpl),
+      fecha_inicio_empl: empleado.fechaInicioEmpl,
       fecha_termino_empl: empleado.fechaTerminoEmpl
-        ? this.formatDate(empleado.fechaTerminoEmpl)
+        ? empleado.fechaTerminoEmpl
         : null,
       telefono_empl: null,
       titulo_empl: empleado.tituloEmpl,

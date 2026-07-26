@@ -31,6 +31,14 @@ export class FilterEmpleadoDTO {
   ideRol?: number;
 
   @IsOptional()
+  @IsString()
+  @Length(1, 100)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
+  )
+  nombreRol?: string;
+
+  @IsOptional()
   @IsNumberString()
   @Length(1, 15)
   @Transform(({ value }) =>
@@ -53,6 +61,14 @@ export class FilterEmpleadoDTO {
     typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
   )
   apellidoPaternoEmpl?: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(1, 250)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
+  )
+  nombreCompletoEmpl?: string;
 
   @IsOptional()
   @IsString()

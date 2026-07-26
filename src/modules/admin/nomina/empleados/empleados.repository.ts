@@ -61,11 +61,35 @@ export class EmpleadosRepository {
         ideRol: filtros.ideRol,
       });
     }
+    if (filtros.nombreRol) {
+      qb.andWhere('LOWER(rol.nombreRol) LIKE LOWER(:nombreRol)', {
+        nombreRol: `%${filtros.nombreRol}%`,
+      });
+    }
 
     if (filtros.cedulaEmpl) {
       qb.andWhere('empleado.cedulaEmpl LIKE :cedulaEmpl', {
         cedulaEmpl: `%${filtros.cedulaEmpl}`,
       });
+    }
+
+    if (filtros.nombreCompletoEmpl) {
+      qb.andWhere(
+        `
+          LOWER(
+            CONCAT_WS(
+              ' ',
+              empleado.primer_nombre_empl,
+              empleado.segundo_nombre_empl,
+              empleado.apellido_paterno_empl,
+              empleado.apellido_materno_empl
+            )
+          ) LIKE LOWER(:nombreCompletoEmpl)
+        `,
+        {
+          nombreCompletoEmpl: `%${filtros.nombreCompletoEmpl}%`,
+        },
+      );
     }
 
     if (filtros.primerNombreEmpl) {

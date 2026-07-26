@@ -23,13 +23,13 @@ export class EmpleadoEntity {
   @Column({ name: 'cedula_empl', type: 'varchar', length: 15 })
   cedulaEmpl!: string;
 
-  @Column({ name: 'fecha_nacimiento_empl', type: 'date' })
+  @Column({ name: 'fecha_nacimiento_empl', type: 'timestamp' })
   fechaNacimientoEmpl!: Date;
 
   @Column({ name: 'edad_empl', type: 'int' })
   edadEmpl!: number;
 
-  @Column({ name: 'fecha_inicio_empl', type: 'date' })
+  @Column({ name: 'fecha_inicio_empl', type: 'timestamp' })
   fechaInicioEmpl!: Date;
 
   @Column({ name: 'primer_nombre_empl', type: 'varchar', length: 50 })
@@ -68,7 +68,7 @@ export class EmpleadoEntity {
   })
   apellidoMaternoEmpl?: string | null;
 
-  @Column({ name: 'fecha_termino_empl', type: 'date', nullable: true })
+  @Column({ name: 'fecha_termino_empl', type: 'timestamp', nullable: true })
   fechaTerminoEmpl?: Date | null;
 
   @Column({ name: 'usua_ingre', type: 'varchar', length: 25 })
