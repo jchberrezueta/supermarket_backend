@@ -62,6 +62,20 @@ export class CuentaEntity {
   })
   ultimoLoginCuen?: Date | null;
 
+  @Column({
+    name: 'reset_token',
+    nullable: true,
+    length: 255,
+  })
+  resetToken?: string | null;
+
+  @Column({
+    name: 'reset_expira',
+    type: 'timestamp',
+    nullable: true,
+  })
+  resetExpira?: Date | null;
+
   @Column({ name: 'usua_ingre', type: 'varchar', length: 25 })
   usuaIngre!: string;
 
