@@ -20,12 +20,17 @@ export interface CuentaAuthRaw {
   ide_cuen: number;
   ide_empl: number;
   ide_perf: number;
+
   usuario_cuen: string;
   password_cuen: string;
+
   estado_cuen: string;
   debe_cambiar_clave: boolean;
-}
 
+  intentos_fallidos: number;
+  bloqueado_hasta?: Date | null;
+  ultimo_login?: Date | null;
+}
 export class CuentasMapper {
   static toRow(cuenta: CuentaEntity): CuentaRow {
     return {
@@ -56,10 +61,16 @@ export class CuentasMapper {
       ide_cuen: cuenta.ideCuen,
       ide_empl: cuenta.ideEmpl,
       ide_perf: cuenta.idePerf,
+
       usuario_cuen: cuenta.usuarioCuen,
       password_cuen: cuenta.passwordCuen,
+
       estado_cuen: cuenta.estadoCuen,
       debe_cambiar_clave: cuenta.debeCambiarClave ?? false,
+
+      intentos_fallidos: cuenta.intentosFallidosCuen,
+      bloqueado_hasta: cuenta.fechaBloqueoCuen,
+      ultimo_login: cuenta.ultimoLoginCuen,
     };
   }
 

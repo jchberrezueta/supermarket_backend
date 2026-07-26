@@ -159,6 +159,36 @@ export class CuentasService {
     return bcrypt.hash(value, saltRounds);
   }
 
+  async incrementarIntentos(idCuenta: number) {
+    await this.dataSource.transaction((manager) =>
+      this.cuentasRepository.incrementarIntentos(idCuenta, manager),
+    );
+  }
+
+  async reiniciarIntentos(idCuenta: number) {
+    await this.dataSource.transaction((manager) =>
+      this.cuentasRepository.reiniciarIntentos(idCuenta, manager),
+    );
+  }
+
+  async bloquearCuenta(idCuenta: number, fecha: Date) {
+    await this.dataSource.transaction((manager) =>
+      this.cuentasRepository.bloquearCuenta(idCuenta, fecha, manager),
+    );
+  }
+
+  async desbloquearCuenta(idCuenta: number) {
+    await this.dataSource.transaction((manager) =>
+      this.cuentasRepository.desbloquearCuenta(idCuenta, manager),
+    );
+  }
+
+  async actualizarUltimoLogin(idCuenta: number) {
+    await this.dataSource.transaction((manager) =>
+      this.cuentasRepository.actualizarUltimoLogin(idCuenta, manager),
+    );
+  }
+
   /**
    * IMPORTANTE:
    * auth.service.ts espera snake_case:

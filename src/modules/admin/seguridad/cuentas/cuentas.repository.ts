@@ -69,6 +69,10 @@ export class CuentasRepository {
       where: {
         usuarioCuen,
       },
+      relations: {
+        empleado: true,
+        perfil: true,
+      },
     });
   }
 
@@ -297,6 +301,82 @@ export class CuentasRepository {
         nombrePerf: 'ASC',
       },
     });
+  }
+
+  async incrementarIntentos(
+    ideCuen: number,
+    manager?: EntityManager,
+  ): Promise<void> {
+    await this.getCuentaRepository(manager)
+      .createQueryBuilder()
+      .update(CuentaEntity)
+      .set({
+        intentosFallidosCuen: () => '"intentos_fallidos_cuen" + 1',
+        fechaActua: () => 'CURRENT_TIMESTAMP',
+        usuaActua: 'sistema',
+      })
+      .where('ide_cuen = :ideCuen', { ideCuen })
+      .execute();
+  }
+
+  async reiniciarIntentos(
+    ideCuen: number,
+    manager?: EntityManager,
+  ): Promise<void> {
+    await this.getCuentaRepository(manager).update(
+      { ideCuen },
+      {
+        intentosFallidosCuen: 0,
+        fechaActua: new Date(),
+        usuaActua: 'sistema',
+      },
+    );
+  }
+
+  async bloquearCuenta(
+    ideCuen: number,
+    fechaBloqueo: Date,
+    manager?: EntityManager,
+  ): Promise<void> {
+    await this.getCuentaRepository(manager).update(
+      { ideCuen },
+      {
+        estadoCuen: 'bloqueado',
+        fechaBloqueoCuen: fechaBloqueo,
+        fechaActua: new Date(),
+        usuaActua: 'sistema',
+      },
+    );
+  }
+
+  async desbloquearCuenta(
+    ideCuen: number,
+    manager?: EntityManager,
+  ): Promise<void> {
+    await this.getCuentaRepository(manager).update(
+      { ideCuen },
+      {
+        estadoCuen: 'activo',
+        intentosFallidosCuen: 0,
+        fechaBloqueoCuen: null,
+        fechaActua: new Date(),
+        usuaActua: 'sistema',
+      },
+    );
+  }
+
+  async actualizarUltimoLogin(
+    ideCuen: number,
+    manager?: EntityManager,
+  ): Promise<void> {
+    await this.getCuentaRepository(manager).update(
+      { ideCuen },
+      {
+        ultimoLoginCuen: new Date(),
+        fechaActua: new Date(),
+        usuaActua: 'sistema',
+      },
+    );
   }
 
   private getCuentaRepository(

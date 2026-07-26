@@ -14,7 +14,6 @@ import { formatDate } from '@helpers/utilities';
 interface ICredential {
   usuario: string;
   clave: string;
-  numIntentos: number;
 }
 
 @Controller('auth')
@@ -26,10 +25,26 @@ export class AuthController {
 
   @Post('login')
   async login(@Body() body: ICredential, @Req() req: Request, @Ip() ip) {
-    const user = await this.authService.validateUser(body.usuario, body.clave);
-    if (!user) {
+    const result = await this.authService.validateUser(
+      body.usuario,
+      body.clave,
+    );
+
+    if (result.success === false) {
+      if (result.reason === 'BLOCKED') {
+        throw new UnauthorizedException(
+          `Cuenta bloqueada hasta ${result.blockedUntil}`,
+        );
+      }
+
+      if (result.reason === 'INACTIVE') {
+        throw new UnauthorizedException('Cuenta inactiva');
+      }
+
       throw new UnauthorizedException('Credenciales inválidas');
     }
+
+    const user = result.user;
     if (ip.startsWith('::ffff:')) {
       ip = ip.split('::ffff:')[1]; // ahora tienes IPv4
     }
@@ -37,7 +52,7 @@ export class AuthController {
       ideCuen: user.ide_cuen,
       navegadorAcce: req.headers['user-agent'] || '',
       fechaAcce: formatDate(new Date()),
-      numIntFallAcce: body.numIntentos ?? 0,
+      numIntFallAcce: 0,
       ipAcce: ip || '999.999.999.999',
       latitudAcce: null,
       longitudAcce: null,

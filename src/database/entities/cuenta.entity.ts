@@ -41,6 +41,26 @@ export class CuentaEntity {
   })
   debeCambiarClave!: boolean;
 
+  @Column({
+    name: 'intentos_fallidos_cuen',
+    type: 'int',
+    default: 0,
+  })
+  intentosFallidosCuen!: number;
+
+  @Column({
+    name: 'bloqueo_hasta_cuen',
+    nullable: true,
+  })
+  fechaBloqueoCuen?: Date | null;
+
+  @Column({
+    name: 'ultimo_login_cuen',
+    type: 'timestamp',
+    nullable: true,
+  })
+  ultimoLoginCuen?: Date | null;
+
   @Column({ name: 'usua_ingre', type: 'varchar', length: 25 })
   usuaIngre!: string;
 
