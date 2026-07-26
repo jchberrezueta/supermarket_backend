@@ -67,6 +67,25 @@ export class ProveedoresRepository {
       });
     }
 
+    if (filtros.nombreCompletoProv) {
+      qb.andWhere(
+        `
+          LOWER(
+            CONCAT_WS(
+              ' ',
+              proveedor.primer_nombre_prov,
+              proveedor.segundo_nombre_prov,
+              proveedor.apellido_paterno_prov,
+              proveedor.apellido_materno_prov
+            )
+          ) LIKE LOWER(:nombreCompletoProv)
+        `,
+        {
+          nombreCompletoProv: `%${filtros.nombreCompletoProv}%`,
+        },
+      );
+    }
+
     if (filtros.primerNombreProv) {
       qb.andWhere(
         'LOWER(proveedor.primerNombreProv) LIKE LOWER(:primerNombreProv)',

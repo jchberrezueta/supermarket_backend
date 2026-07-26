@@ -83,6 +83,14 @@ export class FilterProveedorDTO {
 
   @IsOptional()
   @IsString()
+  @Length(1, 250)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
+  )
+  nombreCompletoProv?: string;
+
+  @IsOptional()
+  @IsString()
   @Length(1, 100)
   @Transform(({ value }) => optionalLowerString(value))
   emailProv?: string;

@@ -215,6 +215,28 @@ export class ProveedoresService {
     );
   }
 
+  async listarComboProveedorNombres() {
+    const proveedores = await this.dataSource.transaction((manager) =>
+      this.proveedoresRepository.listar(manager),
+    );
+
+    return ComboMapper.fromEntities(
+      proveedores,
+      (proveedor) =>
+        [
+          proveedor.primerNombreProv,
+          proveedor.segundoNombreProv,
+          proveedor.apellidoPaternoProv,
+          proveedor.apellidoMaternoProv,
+        ]
+          .filter((value) => !!value)
+          .join(' ')
+          .replace(/\s+/g, ' ')
+          .trim(),
+      (proveedor) => proveedor.ideProv,
+    );
+  }
+
   async listarComboProveedorApellidoPaterno() {
     const proveedores = await this.dataSource.transaction((manager) =>
       this.proveedoresRepository.listar(manager),

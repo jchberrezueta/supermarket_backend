@@ -94,6 +94,11 @@ export class ProveedoresController {
     return this.proveedoresService.listarComboProveedorCedula();
   }
 
+  @Get('listar/proveedores/combo/nombres')
+  async listarProveedoresComboNombres() {
+    return this.proveedoresService.listarComboProveedorNombres();
+  }
+
   @Get('listar/proveedores/combo/primer/nombre')
   async listarProveedoresComboPrimerNombre() {
     return this.proveedoresService.listarComboProveedorPrimerNombre();
