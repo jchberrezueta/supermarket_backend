@@ -26,6 +26,7 @@ import { HistorialClaveRepository } from './historial_clave/historial_clave.repo
 import { CuentaMfaRepository } from './cuenta_mfa/cuenta_mfa.repository';
 import { CuentaMfaService } from './cuenta_mfa/cuenta_mfa.service';
 import { EmailModule } from './email/email.module';
+import { GeolocationService } from './services/geolocation.service';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { EmailModule } from './email/email.module';
     HistorialClaveService,
     CuentaMfaRepository,
     CuentaMfaService,
+    GeolocationService,
   ],
 
   controllers: [AuthController],

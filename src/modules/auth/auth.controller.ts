@@ -9,8 +9,6 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AccesosUsuariosService } from '../admin/seguridad/accesos/accesos.service';
-import { CreateAccesoUsuarioDto } from '../admin/seguridad/accesos/dto/create_acceso.dto';
-import { formatDate } from '@helpers/utilities';
 import { ChangePasswordDto } from './dto/change_password.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { LogoutDto } from './dto/logout.dto';
@@ -56,13 +54,24 @@ export class AuthController {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
-    if (!('user' in result)) {
-      throw new Error();
+    if ('requiresPasswordChange' in result) {
+      return result;
     }
 
-    const user = result.user;
+    if ('requiresMfa' in result) {
+      return result;
+    }
+
+    return this.authService.login(
+      result.user,
+      req.headers['user-agent'] || '',
+      ip,
+    );
+
+    /*const user = result.user;
+
     if (ip.startsWith('::ffff:')) {
-      ip = ip.split('::ffff:')[1]; // ahora tienes IPv4
+      ip = ip.split('::ffff:')[1];
     }
     const accesoUsuario: CreateAccesoUsuarioDto = {
       ideCuen: user.ide_cuen,
@@ -75,7 +84,7 @@ export class AuthController {
     };
     // Registrar acceso usuario
     await this.servicio.insertarAccesoUsuario(accesoUsuario);
-    return this.authService.login(user);
+    return this.authService.login(user);*/
   }
 
   @Post('cambiar-clave')
@@ -133,7 +142,16 @@ export class AuthController {
   }
 
   @Post('mfa/verificar-login')
-  async verificarMfaLogin(@Body() body: VerificarMfaDto) {
-    return this.authService.verificarMfaLogin(body.ideCuen, body.codigo);
+  async verificarMfaLogin(
+    @Body() body: VerificarMfaDto,
+    @Req() req: Request,
+    @Ip() ip,
+  ) {
+    return this.authService.verificarMfaLogin(
+      body.ideCuen,
+      body.codigo,
+      req.headers['user-agent'] || '',
+      ip,
+    );
   }
 }

@@ -10,6 +10,9 @@ import { PasswordPolicyService } from './password_policy/password_policy.service
 import { HistorialClaveService } from './historial_clave/historial_clave.service';
 import { CuentaMfaService } from './cuenta_mfa/cuenta_mfa.service';
 import { EmailService } from './email/email.service';
+import { AccesosUsuariosService } from '../admin/seguridad/accesos/accesos.service';
+import { formatDate } from '@helpers/utilities';
+import { GeolocationService } from './services/geolocation.service';
 
 type ValidateResult =
   | {
@@ -46,6 +49,8 @@ export class AuthService {
     private historialClaveService: HistorialClaveService,
     private cuentaMfaService: CuentaMfaService,
     private emailService: EmailService,
+    private readonly accesosService: AccesosUsuariosService,
+    private readonly geolocationService: GeolocationService,
   ) {}
 
   async validateUser(usuario: string, clave: string): Promise<ValidateResult> {
@@ -145,7 +150,7 @@ export class AuthService {
     };
   }
 
-  async login(user: any) {
+  async login(user: any, navegador?: string, ip?: string) {
     const info = await this.cuentasService.getPerfilPermisos(user.ide_cuen);
 
     if (!info.length) {
@@ -157,6 +162,22 @@ export class AuthService {
     );
 
     const tokens = await this.generarTokens(user, info, rutasSidebar);
+
+    if (ip?.startsWith('::ffff:')) {
+      ip = ip.substring(7);
+    }
+
+    const geo = await this.geolocationService.buscar(ip);
+
+    await this.accesosService.insertarAccesoUsuario({
+      ideCuen: user.ide_cuen,
+      navegadorAcce: navegador ?? '',
+      fechaAcce: formatDate(new Date()),
+      numIntFallAcce: 0,
+      ipAcce: ip ?? '',
+      latitudAcce: geo?.latitud ?? null,
+      longitudAcce: geo?.longitud ?? null,
+    });
 
     return {
       access_token: tokens.accessToken,
@@ -490,7 +511,12 @@ export class AuthService {
     };
   }
 
-  async verificarMfaLogin(ideCuen: number, codigo: string) {
+  async verificarMfaLogin(
+    ideCuen: number,
+    codigo: string,
+    navegador?: string,
+    ip?: string,
+  ) {
     const resultado = await this.cuentaMfaService.verificarLogin(
       ideCuen,
       codigo,
@@ -506,11 +532,19 @@ export class AuthService {
       throw new UnauthorizedException('Cuenta no encontrada');
     }
 
-    return this.login({
-      ide_cuen: cuenta.ideCuen,
-      usuario_cuen: cuenta.usuarioCuen,
-      estado_cuen: cuenta.estadoCuen,
-      ide_empl: cuenta.ideEmpl,
-    });
+    await this.cuentasService.reiniciarIntentos(ideCuen);
+
+    await this.cuentasService.actualizarUltimoLogin(ideCuen);
+
+    return this.login(
+      {
+        ide_cuen: cuenta.ideCuen,
+        usuario_cuen: cuenta.usuarioCuen,
+        estado_cuen: cuenta.estadoCuen,
+        ide_empl: cuenta.ideEmpl,
+      },
+      navegador,
+      ip,
+    );
   }
 }
