@@ -8,11 +8,17 @@ import { randomBytes } from 'crypto';
 import { PasswordResetTokenService } from './password_reset_token.service';
 import { PasswordPolicyService } from './password_policy.service';
 import { HistorialClaveService } from './historial_clave.service';
+import { CuentaMfaService } from './cuenta_mfa.service';
 
 type ValidateResult =
   | {
       success: true;
       user: any;
+    }
+  | {
+      success: true;
+      requiresMfa: true;
+      userId: number;
     }
   | {
       success: true;
@@ -37,6 +43,7 @@ export class AuthService {
     private passwordResetTokenService: PasswordResetTokenService,
     private passwordPolicyService: PasswordPolicyService,
     private historialClaveService: HistorialClaveService,
+    private cuentaMfaService: CuentaMfaService,
   ) {}
 
   async validateUser(usuario: string, clave: string): Promise<ValidateResult> {
@@ -110,6 +117,16 @@ export class AuthService {
         requiresPasswordChange: true,
         userId: user.ide_cuen,
         usuario: user.usuario_cuen,
+      };
+    }
+
+    const mfa = await this.cuentaMfaService.buscarPorCuenta(user.ide_cuen);
+
+    if (mfa?.habilitado) {
+      return {
+        success: true,
+        requiresMfa: true,
+        userId: user.ide_cuen,
       };
     }
 
@@ -457,5 +474,29 @@ export class AuthService {
       success: true,
       message: 'Contraseña actualizada correctamente',
     };
+  }
+
+  async verificarMfaLogin(ideCuen: number, codigo: string) {
+    const resultado = await this.cuentaMfaService.verificarLogin(
+      ideCuen,
+      codigo,
+    );
+
+    if (!resultado.valido) {
+      throw new UnauthorizedException(resultado.message);
+    }
+
+    const cuenta = await this.cuentasService.buscarCuentaInterna(ideCuen);
+
+    if (!cuenta) {
+      throw new UnauthorizedException('Cuenta no encontrada');
+    }
+
+    return this.login({
+      ide_cuen: cuenta.ideCuen,
+      usuario_cuen: cuenta.usuarioCuen,
+      estado_cuen: cuenta.estadoCuen,
+      ide_empl: cuenta.ideEmpl,
+    });
   }
 }

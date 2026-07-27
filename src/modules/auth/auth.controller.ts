@@ -17,6 +17,10 @@ import { LogoutDto } from './dto/logout.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { ForgotPasswordDto } from './dto/forgot_password.dto';
 import { ResetPasswordDto } from './dto/reset_password.dto';
+import { CuentaMfaService } from './cuenta_mfa.service';
+import { GenerarMfaDto } from './dto/generar_mfa.dto';
+import { ActivarMfaDto } from './dto/activar_mfa.dto';
+import { VerificarMfaDto } from './dto/verificar_mfa.dto';
 
 interface ICredential {
   usuario: string;
@@ -27,6 +31,7 @@ interface ICredential {
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
+    private readonly cuentaMfaService: CuentaMfaService,
     private servicio: AccesosUsuariosService,
   ) {}
 
@@ -112,5 +117,23 @@ export class AuthController {
   @Post('reset-password')
   async resetPassword(@Body() body: ResetPasswordDto) {
     return this.authService.resetPassword(body.token, body.nuevaClave);
+  }
+
+  @Post('mfa/generar')
+  async generarMfa(@Body() body: GenerarMfaDto) {
+    return this.cuentaMfaService.generarConfiguracion(
+      body.ideCuen,
+      `usuario-${body.ideCuen}`,
+    );
+  }
+
+  @Post('mfa/activar')
+  async activarMfa(@Body() body: ActivarMfaDto) {
+    return this.cuentaMfaService.confirmarActivacion(body.ideCuen, body.codigo);
+  }
+
+  @Post('mfa/verificar-login')
+  async verificarMfaLogin(@Body() body: VerificarMfaDto) {
+    return this.authService.verificarMfaLogin(body.ideCuen, body.codigo);
   }
 }

@@ -3,7 +3,11 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { PasswordResetTokenEntity, RefreshTokenEntity } from '@entities';
+import {
+  CuentaMfaEntity,
+  PasswordResetTokenEntity,
+  RefreshTokenEntity,
+} from '@entities';
 
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
@@ -19,6 +23,8 @@ import { PasswordPolicyService } from './password_policy.service';
 import { HistorialClaveEntity } from '../../database/entities/historial_clave.entity';
 import { HistorialClaveService } from './historial_clave.service';
 import { HistorialClaveRepository } from './historial_clave.repository';
+import { CuentaMfaRepository } from './cuenta_mfa.repository';
+import { CuentaMfaService } from './cuenta_mfa.service';
 
 @Module({
   imports: [
@@ -26,6 +32,7 @@ import { HistorialClaveRepository } from './historial_clave.repository';
       RefreshTokenEntity,
       PasswordResetTokenEntity,
       HistorialClaveEntity,
+      CuentaMfaEntity,
     ]),
 
     JwtModule.register({
@@ -48,6 +55,8 @@ import { HistorialClaveRepository } from './historial_clave.repository';
     PasswordPolicyService,
     HistorialClaveRepository,
     HistorialClaveService,
+    CuentaMfaRepository,
+    CuentaMfaService,
   ],
 
   controllers: [AuthController],
