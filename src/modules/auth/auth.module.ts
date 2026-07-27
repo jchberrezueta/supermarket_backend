@@ -25,6 +25,7 @@ import { HistorialClaveService } from './historial_clave.service';
 import { HistorialClaveRepository } from './historial_clave.repository';
 import { CuentaMfaRepository } from './cuenta_mfa.repository';
 import { CuentaMfaService } from './cuenta_mfa.service';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { CuentaMfaService } from './cuenta_mfa.service';
     PassportModule,
     CuentasModule,
     accesosModule,
+    EmailModule,
   ],
 
   providers: [

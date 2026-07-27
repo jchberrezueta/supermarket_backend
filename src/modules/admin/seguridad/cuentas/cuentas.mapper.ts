@@ -30,6 +30,9 @@ export interface CuentaAuthRaw {
   intentos_fallidos: number;
   bloqueado_hasta?: Date | null;
   ultimo_login?: Date | null;
+
+  correo_empl?: string | null;
+  telefono_empl?: string | null;
 }
 export class CuentasMapper {
   static toRow(cuenta: CuentaEntity): CuentaRow {
@@ -71,6 +74,9 @@ export class CuentasMapper {
       intentos_fallidos: cuenta.intentosFallidosCuen,
       bloqueado_hasta: cuenta.fechaBloqueoCuen,
       ultimo_login: cuenta.ultimoLoginCuen,
+
+      correo_empl: cuenta.empleado?.emailEmpl ?? null,
+      telefono_empl: cuenta.empleado?.telefonoEmpl ?? null,
     };
   }
 

@@ -71,6 +71,22 @@ export class EmpleadoEntity {
   @Column({ name: 'fecha_termino_empl', type: 'timestamp', nullable: true })
   fechaTerminoEmpl?: Date | null;
 
+  @Column({
+    name: 'telefono_empl',
+    type: 'varchar',
+    length: 20,
+    nullable: true,
+  })
+  telefonoEmpl?: string | null;
+
+  @Column({
+    name: 'email_empl',
+    type: 'varchar',
+    length: 150,
+    nullable: true,
+  })
+  emailEmpl?: string | null;
+
   @Column({ name: 'usua_ingre', type: 'varchar', length: 25 })
   usuaIngre!: string;
 

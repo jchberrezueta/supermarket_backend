@@ -9,6 +9,7 @@ import { PasswordResetTokenService } from './password_reset_token.service';
 import { PasswordPolicyService } from './password_policy.service';
 import { HistorialClaveService } from './historial_clave.service';
 import { CuentaMfaService } from './cuenta_mfa.service';
+import { EmailService } from './email/email.service';
 
 type ValidateResult =
   | {
@@ -44,6 +45,7 @@ export class AuthService {
     private passwordPolicyService: PasswordPolicyService,
     private historialClaveService: HistorialClaveService,
     private cuentaMfaService: CuentaMfaService,
+    private emailService: EmailService,
   ) {}
 
   async validateUser(usuario: string, clave: string): Promise<ValidateResult> {
@@ -405,7 +407,19 @@ export class AuthService {
     - envío de correo
     - enlace frontend
   */
+    if (!cuenta.correo_empl) {
+      return {
+        success: true,
+        message:
+          'La cuenta existe pero no tiene correo registrado. Contacte al administrador.',
+      };
+    }
 
+    await this.emailService.enviarRecuperacionPassword(
+      cuenta.correo_empl,
+      cuenta.usuario_cuen,
+      token,
+    );
     return {
       success: true,
       message: 'Si la cuenta existe, recibirá instrucciones de recuperación',
