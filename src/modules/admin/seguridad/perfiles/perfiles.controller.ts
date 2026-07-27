@@ -11,8 +11,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { Roles } from 'src/modules/auth/roles.decorator';
-import { RolesGuard } from 'src/modules/auth/roles.guard';
+import { Roles } from 'src/modules/auth/roles/roles.decorator';
+import { RolesGuard } from 'src/modules/auth/roles/roles.guard';
 import { CreatePerfilDto } from './dto/create_perfil.dto';
 import { FilterPerfilDto } from './dto/filter_perfil.dto';
 import { UpdatePerfilDto } from './dto/update_perfil.dto';

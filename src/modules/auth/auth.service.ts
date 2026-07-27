@@ -2,13 +2,13 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { CuentasService } from '../admin/seguridad/cuentas/cuentas.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { RefreshTokenService } from './refresh_token.service';
+import { RefreshTokenService } from './refresh_token/refresh_token.service';
 import { randomUUID } from 'crypto';
 import { randomBytes } from 'crypto';
-import { PasswordResetTokenService } from './password_reset_token.service';
-import { PasswordPolicyService } from './password_policy.service';
-import { HistorialClaveService } from './historial_clave.service';
-import { CuentaMfaService } from './cuenta_mfa.service';
+import { PasswordResetTokenService } from './password_reset_token/password_reset_token.service';
+import { PasswordPolicyService } from './password_policy/password_policy.service';
+import { HistorialClaveService } from './historial_clave/historial_clave.service';
+import { CuentaMfaService } from './cuenta_mfa/cuenta_mfa.service';
 import { EmailService } from './email/email.service';
 
 type ValidateResult =

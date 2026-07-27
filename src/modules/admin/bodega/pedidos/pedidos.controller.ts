@@ -11,8 +11,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { Roles } from 'src/modules/auth/roles.decorator';
-import { RolesGuard } from 'src/modules/auth/roles.guard';
+import { Roles } from 'src/modules/auth/roles/roles.decorator';
+import { RolesGuard } from 'src/modules/auth/roles/roles.guard';
 import { CancelarPedidoDTO } from './dto/cancelar_pedido.dto';
 import { CerrarPedidoIncompletoDTO } from './dto/cerrar_pedido_incompleto.dto';
 import { CreatePedidoDTO } from './dto/create_pedido.dto';

@@ -17,7 +17,7 @@ import { LogoutDto } from './dto/logout.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { ForgotPasswordDto } from './dto/forgot_password.dto';
 import { ResetPasswordDto } from './dto/reset_password.dto';
-import { CuentaMfaService } from './cuenta_mfa.service';
+import { CuentaMfaService } from './cuenta_mfa/cuenta_mfa.service';
 import { GenerarMfaDto } from './dto/generar_mfa.dto';
 import { ActivarMfaDto } from './dto/activar_mfa.dto';
 import { VerificarMfaDto } from './dto/verificar_mfa.dto';

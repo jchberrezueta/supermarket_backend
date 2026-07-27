@@ -14,9 +14,9 @@ import { CuentasService } from './cuentas.service';
 import { CreateCuentaDto } from './dto/create_cuenta.dto';
 import { UpdateCuentaDto } from './dto/update_cuenta.dto';
 import { FiltroCuentaDto } from './dto/filter_cuenta.dto';
-import { Roles } from 'src/modules/auth/roles.decorator';
+import { Roles } from 'src/modules/auth/roles/roles.decorator';
 import { AuthGuard } from '@nestjs/passport';
-import { RolesGuard } from 'src/modules/auth/roles.guard';
+import { RolesGuard } from 'src/modules/auth/roles/roles.guard';
 
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 @Roles('padmin', 'pseguridad')

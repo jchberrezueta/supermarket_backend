@@ -9,8 +9,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { Roles } from 'src/modules/auth/roles.decorator';
-import { RolesGuard } from 'src/modules/auth/roles.guard';
+import { Roles } from 'src/modules/auth/roles/roles.decorator';
+import { RolesGuard } from 'src/modules/auth/roles/roles.guard';
 import { CreateAccesoUsuarioDto } from './dto/create_acceso.dto';
 import { FilterAccesoUsuarioDto } from './dto/filter_acceso.dto';
 import { AccesosUsuariosService } from './accesos.service';
