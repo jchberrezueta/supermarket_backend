@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { ApiResponseFactory, ComboMapper, IdUtil } from '@common/index';
 import { DataSource } from 'typeorm';
@@ -8,6 +8,12 @@ import { FiltroCuentaDto } from './dto/filter_cuenta.dto';
 import { UpdateCuentaDto } from './dto/update_cuenta.dto';
 import { CuentasMapper } from './cuentas.mapper';
 import { CuentasRepository, SidebarOptionRaw } from './cuentas.repository';
+import {
+  CuentaEntity,
+  HistorialClaveEntity,
+  PasswordResetTokenEntity,
+  RefreshTokenEntity,
+} from '@entities';
 
 export interface SidebarOption {
   id: number;
@@ -90,17 +96,39 @@ export class CuentasService {
     }
   }
 
-  async insertar(body: CreateCuentaDto) {
+  async insertar(body: CreateCuentaDto, usuarioResponsable: string) {
     try {
+      this.validarClaveAdministrativa(body.passwordCuen);
+
+      const usuarioNormalizado = body.usuarioCuen.trim().toLowerCase();
+
+      const cuentaExistente = await this.dataSource.transaction((manager) =>
+        this.cuentasRepository.buscarPorUsuario(usuarioNormalizado, manager),
+      );
+
+      if (cuentaExistente) {
+        throw new BadRequestException(
+          'El nombre de usuario ya está registrado',
+        );
+      }
+
       const hashedPassword = await this.encriptadorHash(body.passwordCuen);
 
       const cuenta = await this.dataSource.transaction((manager) =>
-        this.cuentasRepository.crear(body, hashedPassword, manager),
+        this.cuentasRepository.crear(
+          {
+            ...body,
+            usuarioCuen: usuarioNormalizado,
+          },
+          hashedPassword,
+          usuarioResponsable,
+          manager,
+        ),
       );
 
       return ApiResponseFactory.legacyWrite(
         1,
-        'Cuenta registrada correctamente',
+        'Cuenta registrada correctamente. El usuario deberá cambiar la contraseña en su primer acceso.',
         cuenta.ideCuen,
       );
     } catch (error) {
@@ -111,18 +139,13 @@ export class CuentasService {
     }
   }
 
-  async actualizar(body: UpdateCuentaDto) {
+  async actualizar(body: UpdateCuentaDto, usuarioResponsable: string) {
     const ideCuen = IdUtil.requireId(
       body.ideCuen,
       'El ID de la cuenta no es válido.',
     );
 
     try {
-      const passwordHash =
-        body.passwordCuen && body.passwordCuen.trim() !== ''
-          ? await this.encriptadorHash(body.passwordCuen)
-          : null;
-
       const cuenta = await this.dataSource.transaction(async (manager) => {
         const cuentaActual = await this.cuentasRepository.buscarPorId(
           ideCuen,
@@ -133,13 +156,53 @@ export class CuentasService {
           throw new Error('No se encontró la cuenta indicada.');
         }
 
+        const usuarioNormalizado = body.usuarioCuen.trim().toLowerCase();
+
+        const cuentaMismoUsuario =
+          await this.cuentasRepository.buscarPorUsuario(
+            usuarioNormalizado,
+            manager,
+          );
+
+        if (cuentaMismoUsuario && cuentaMismoUsuario.ideCuen !== ideCuen) {
+          throw new BadRequestException(
+            'El nombre de usuario ya pertenece a otra cuenta',
+          );
+        }
+
         return this.cuentasRepository.actualizar(
           cuentaActual,
-          body,
-          passwordHash,
+          {
+            ...body,
+            usuarioCuen: usuarioNormalizado,
+          },
+          usuarioResponsable,
           manager,
         );
       });
+
+      /*
+       * Si la cuenta dejó de estar activa,
+       * sus sesiones deben revocarse.
+       */
+      if (cuenta.estadoCuen !== 'activo') {
+        await this.dataSource.transaction(async (manager) => {
+          await manager
+            .getRepository(RefreshTokenEntity)
+            .createQueryBuilder()
+            .update(RefreshTokenEntity)
+            .set({
+              revocado: true,
+              usuaActua: usuarioResponsable,
+              fechaActua: () => 'CURRENT_TIMESTAMP',
+            })
+            .where('ide_cuen = :ideCuen', {
+              ideCuen,
+            })
+            .andWhere('revocado = false')
+            .execute();
+        });
+      }
 
       return ApiResponseFactory.legacyWrite(
         1,
@@ -193,6 +256,154 @@ export class CuentasService {
     await this.dataSource.transaction((manager) =>
       this.cuentasRepository.cambiarClave(idCuenta, passwordHash, manager),
     );
+  }
+
+  async restablecerClaveAdministrativamente(
+    ideCuenEntrada: number,
+    claveTemporal: string,
+    usuarioResponsable: string,
+  ) {
+    const ideCuen = IdUtil.requireId(
+      ideCuenEntrada,
+      'El ID de la cuenta no es válido.',
+    );
+
+    this.validarClaveAdministrativa(claveTemporal);
+
+    try {
+      const nuevoHash = await this.encriptadorHash(claveTemporal);
+
+      await this.dataSource.transaction(async (manager) => {
+        const cuentaRepository = manager.getRepository(CuentaEntity);
+
+        const cuenta = await cuentaRepository
+          .createQueryBuilder('cuenta')
+          .setLock('pessimistic_write')
+          .where('cuenta.ide_cuen = :ideCuen', {
+            ideCuen,
+          })
+          .getOne();
+
+        if (!cuenta) {
+          throw new Error('No se encontró la cuenta indicada.');
+        }
+
+        const coincideActual = await bcrypt.compare(
+          claveTemporal,
+          cuenta.passwordCuen,
+        );
+
+        if (coincideActual) {
+          throw new BadRequestException(
+            'La contraseña temporal debe ser diferente de la contraseña actual',
+          );
+        }
+
+        /*
+         * Conservamos la contraseña anterior
+         * antes de reemplazarla.
+         */
+        const historialRepository = manager.getRepository(HistorialClaveEntity);
+
+        const historial = historialRepository.create({
+          ideCuen: cuenta.ideCuen,
+          passwordHash: cuenta.passwordCuen,
+          usuaIngre: usuarioResponsable,
+        });
+
+        await historialRepository.save(historial);
+
+        cuenta.passwordCuen = nuevoHash;
+        cuenta.debeCambiarClave = true;
+        cuenta.intentosFallidosCuen = 0;
+        cuenta.fechaBloqueoCuen = null;
+        cuenta.usuaActua = usuarioResponsable;
+        cuenta.fechaActua = new Date();
+
+        await cuentaRepository.save(cuenta);
+
+        /*
+         * Los enlaces de recuperación
+         * anteriores quedan invalidados.
+         */
+        await manager
+          .getRepository(PasswordResetTokenEntity)
+          .createQueryBuilder()
+          .update(PasswordResetTokenEntity)
+          .set({
+            utilizado: true,
+            usuaActua: usuarioResponsable,
+            fechaActua: () => 'CURRENT_TIMESTAMP',
+          })
+          .where('ide_cuen = :ideCuen', {
+            ideCuen,
+          })
+          .andWhere('utilizado = false')
+          .execute();
+
+        /*
+         * Todas las sesiones activas
+         * quedan revocadas.
+         */
+        await manager
+          .getRepository(RefreshTokenEntity)
+          .createQueryBuilder()
+          .update(RefreshTokenEntity)
+          .set({
+            revocado: true,
+            usuaActua: usuarioResponsable,
+            fechaActua: () => 'CURRENT_TIMESTAMP',
+          })
+          .where('ide_cuen = :ideCuen', {
+            ideCuen,
+          })
+          .andWhere('revocado = false')
+          .execute();
+      });
+
+      return ApiResponseFactory.legacyWrite(
+        1,
+        'Contraseña restablecida. El usuario deberá cambiarla en su siguiente acceso.',
+        ideCuen,
+      );
+    } catch (error) {
+      return ApiResponseFactory.legacyWrite(
+        0,
+        error?.message || 'No se pudo restablecer la contraseña.',
+      );
+    }
+  }
+
+  private validarClaveAdministrativa(clave: string): void {
+    const errores: string[] = [];
+
+    if (!clave || clave.length < 8) {
+      errores.push('La contraseña debe tener al menos 8 caracteres');
+    }
+
+    if (clave.length > 100) {
+      errores.push('La contraseña no puede superar 100 caracteres');
+    }
+
+    if (!/[A-Z]/.test(clave)) {
+      errores.push('Debe contener una letra mayúscula');
+    }
+
+    if (!/[a-z]/.test(clave)) {
+      errores.push('Debe contener una letra minúscula');
+    }
+
+    if (!/[0-9]/.test(clave)) {
+      errores.push('Debe contener un número');
+    }
+
+    if (!/[^A-Za-z0-9]/.test(clave)) {
+      errores.push('Debe contener un carácter especial');
+    }
+
+    if (errores.length > 0) {
+      throw new BadRequestException(errores);
+    }
   }
 
   /**

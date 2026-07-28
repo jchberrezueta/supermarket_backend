@@ -2,16 +2,16 @@ import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { ApiResponseFactory, ComboMapper, IdUtil } from '@common/index';
 import { DataSource } from 'typeorm';
-import { CreateAccesoUsuarioDto } from './dto/create_acceso.dto';
 import { FilterAccesoUsuarioDto } from './dto/filter_acceso.dto';
 import { AccesosMapper } from './accesos.mapper';
-import { AccesosRepository } from './accesos.repository';
+import { AccesosRepository, RegistrarAccesoData } from './accesos.repository';
 
 @Injectable()
 export class AccesosUsuariosService {
   constructor(
     @InjectDataSource()
     private readonly dataSource: DataSource,
+
     private readonly accesosRepository: AccesosRepository,
   ) {}
 
@@ -50,28 +50,73 @@ export class AccesosUsuariosService {
     );
   }
 
-  async insertarAccesoUsuario(data: CreateAccesoUsuarioDto) {
+  /**
+   * Uso interno del sistema de autenticación.
+   *
+   * No debe exponerse mediante un endpoint público
+   * porque el historial de seguridad no puede ser
+   * creado manualmente por un usuario.
+   */
+  async registrarEventoAutenticacion(data: RegistrarAccesoData): Promise<void> {
     try {
-      const acceso = await this.dataSource.transaction((manager) =>
+      await this.dataSource.transaction((manager) =>
         this.accesosRepository.crear(data, manager),
       );
-
-      return ApiResponseFactory.legacyWrite(
-        1,
-        'Acceso de usuario registrado correctamente',
-        acceso.ideAcce,
-      );
     } catch (error) {
-      return ApiResponseFactory.legacyWrite(
-        0,
-        error?.message || 'No se pudo registrar el acceso de usuario.',
+      /*
+       * Un problema al registrar auditoría no debe
+       * provocar que el endpoint revele información
+       * adicional sobre la autenticación.
+       */
+      console.error(
+        'No fue posible registrar el evento de autenticación',
+        error,
       );
     }
   }
 
-  /**
-   * JOINS
-   */
+  async registrarAccesoExitoso(data: {
+    ideCuen: number;
+    usuario: string;
+    navegador?: string | null;
+    ip?: string | null;
+    latitud?: number | null;
+    longitud?: number | null;
+  }): Promise<void> {
+    await this.registrarEventoAutenticacion({
+      ideCuen: data.ideCuen,
+      usuarioIntentado: data.usuario,
+      resultadoAcce: 'exitoso',
+      motivoAcce: null,
+      navegadorAcce: data.navegador || 'desconocido',
+      numIntFallAcce: 0,
+      ipAcce: data.ip ?? null,
+      latitudAcce: data.latitud ?? null,
+      longitudAcce: data.longitud ?? null,
+    });
+  }
+
+  async registrarAccesoFallido(data: {
+    ideCuen?: number | null;
+    usuario?: string | null;
+    motivo: string;
+    intentos: number;
+    navegador?: string | null;
+    ip?: string | null;
+  }): Promise<void> {
+    await this.registrarEventoAutenticacion({
+      ideCuen: data.ideCuen ?? null,
+      usuarioIntentado: data.usuario ?? null,
+      resultadoAcce: 'fallido',
+      motivoAcce: data.motivo,
+      navegadorAcce: data.navegador || 'desconocido',
+      numIntFallAcce: Math.max(0, data.intentos),
+      ipAcce: data.ip ?? null,
+      latitudAcce: null,
+      longitudAcce: null,
+    });
+  }
+
   async listarAccesos() {
     return this.listar();
   }
@@ -80,9 +125,6 @@ export class AccesosUsuariosService {
     return this.filtrar(queryParams);
   }
 
-  /**
-   * COMBOS
-   */
   async listarComboIps() {
     const accesos = await this.dataSource.transaction((manager) =>
       this.accesosRepository.listar(manager),
@@ -109,11 +151,7 @@ export class AccesosUsuariosService {
     );
 
     const navegadoresUnicos = Array.from(
-      new Set(
-        accesos
-          .map((acceso) => acceso.navegadorAcce)
-          .filter((navegador) => !!navegador),
-      ),
+      new Set(accesos.map((acceso) => acceso.navegadorAcce).filter(Boolean)),
     ).sort((a, b) => a.localeCompare(b));
 
     return ComboMapper.fromEntities(

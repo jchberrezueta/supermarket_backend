@@ -11,6 +11,10 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import {
+  PermissionGuard,
+  RequirePermission,
+} from 'src/modules/auth/authorization';
 import { Roles } from 'src/modules/auth/roles/roles.decorator';
 import { RolesGuard } from 'src/modules/auth/roles/roles.guard';
 import { CreatePerfilDto } from './dto/create_perfil.dto';
@@ -18,78 +22,112 @@ import { FilterPerfilDto } from './dto/filter_perfil.dto';
 import { UpdatePerfilDto } from './dto/update_perfil.dto';
 import { PerfilesService } from './perfiles.service';
 
-@UseGuards(AuthGuard('jwt'), RolesGuard)
+const RUTA_PERFILES = '/admin/seguridad/perfiles';
+
+@UseGuards(AuthGuard('jwt'), RolesGuard, PermissionGuard)
 @Roles('padmin', 'pseguridad')
 @Controller('perfiles')
 export class PerfilesController {
   constructor(private readonly perfilesService: PerfilesService) {}
 
+  @RequirePermission(RUTA_PERFILES, 'listar')
   @Get()
   async listar() {
     return this.perfilesService.listar();
   }
 
+  @RequirePermission(RUTA_PERFILES, 'listar')
   @Get('buscar/:id')
-  async buscar(@Param('id', ParseIntPipe) id: number) {
+  async buscar(
+    @Param('id', ParseIntPipe)
+    id: number,
+  ) {
     return this.perfilesService.buscar(id);
   }
 
+  @RequirePermission(RUTA_PERFILES, 'listar')
   @Get('filtrar')
-  async filtrar(@Query() queryParams: FilterPerfilDto) {
+  async filtrar(
+    @Query()
+    queryParams: FilterPerfilDto,
+  ) {
     return this.perfilesService.filtrar(queryParams);
   }
 
+  @RequirePermission(RUTA_PERFILES, 'insertar')
   @Post('insertar')
-  async insertar(@Body() body: CreatePerfilDto) {
+  async insertar(
+    @Body()
+    body: CreatePerfilDto,
+  ) {
     return this.perfilesService.insertar(body);
   }
 
+  @RequirePermission(RUTA_PERFILES, 'modificar')
   @Put('actualizar/:id')
   async actualizar(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() body: UpdatePerfilDto,
+    @Param('id', ParseIntPipe)
+    id: number,
+
+    @Body()
+    body: UpdatePerfilDto,
   ) {
     body.idePerf = id;
 
     return this.perfilesService.actualizar(body);
   }
 
+  @RequirePermission(RUTA_PERFILES, 'eliminar')
   @Delete('eliminar/:id')
-  async eliminar(@Param('id', ParseIntPipe) id: number) {
+  async eliminar(
+    @Param('id', ParseIntPipe)
+    id: number,
+  ) {
     return this.perfilesService.eliminar(id);
   }
 
   /**
    * JOINS
    */
+
+  @RequirePermission(RUTA_PERFILES, 'listar')
   @Get('listar/perfiles')
   async listarPerfiles() {
     return this.perfilesService.listarPerfiles();
   }
 
+  @RequirePermission(RUTA_PERFILES, 'listar')
   @Get('filtrar/perfiles')
-  async filtrarPerfiles(@Query() queryParams: FilterPerfilDto) {
+  async filtrarPerfiles(
+    @Query()
+    queryParams: FilterPerfilDto,
+  ) {
     return this.perfilesService.filtrarPerfiles(queryParams);
   }
 
   /**
    * COMBOS
    */
+
+  @RequirePermission(RUTA_PERFILES, 'listar')
   @Get('listar/combo/perfiles')
   async listarComboPerfiles() {
     return this.perfilesService.listarComboPerfiles();
   }
 
+  @RequirePermission(RUTA_PERFILES, 'listar')
   @Get('listar/combo/nombres')
   async listarComboNombres() {
     return this.perfilesService.listarComboNombres();
   }
 
+  @RequirePermission(RUTA_PERFILES, 'listar')
   @Get('listar/combo/descripciones')
   async listarComboDescripcion() {
     return this.perfilesService.listarComboDescripcion();
   }
 
+  @RequirePermission(RUTA_PERFILES, 'listar')
   @Get('listar/combo/roles')
   async listarComboRoles() {
     return this.perfilesService.listarComboRoles();

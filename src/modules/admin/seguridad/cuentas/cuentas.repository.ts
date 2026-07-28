@@ -145,6 +145,7 @@ export class CuentasRepository {
   async crear(
     dto: CreateCuentaDto,
     passwordHash: string,
+    usuarioResponsable: string,
     manager?: EntityManager,
   ): Promise<CuentaEntity> {
     const repository = this.getCuentaRepository(manager);
@@ -155,11 +156,17 @@ export class CuentasRepository {
       usuarioCuen: dto.usuarioCuen.trim().toLowerCase(),
       passwordCuen: passwordHash,
       estadoCuen: dto.estadoCuen as CuentaEntity['estadoCuen'],
-      debeCambiarClave: dto.debeCambiarClave ?? false,
+
+      /*
+       * La clave establecida por administración
+       * siempre es temporal.
+       */
+      debeCambiarClave: true,
       intentosFallidosCuen: 0,
       fechaBloqueoCuen: null,
       ultimoLoginCuen: null,
-      usuaIngre: 'admin',
+
+      usuaIngre: usuarioResponsable,
       usuaActua: null,
       fechaActua: null,
     });
@@ -170,21 +177,25 @@ export class CuentasRepository {
   async actualizar(
     cuenta: CuentaEntity,
     dto: UpdateCuentaDto,
-    passwordHash: string | null,
+    usuarioResponsable: string,
     manager?: EntityManager,
   ): Promise<CuentaEntity> {
     cuenta.ideEmpl = dto.ideEmpl;
     cuenta.idePerf = dto.idePerf;
-    cuenta.usuarioCuen = dto.usuarioCuen;
+    cuenta.usuarioCuen = dto.usuarioCuen.trim().toLowerCase();
     cuenta.estadoCuen = dto.estadoCuen as CuentaEntity['estadoCuen'];
-    cuenta.debeCambiarClave =
-      dto.debeCambiarClave ?? cuenta.debeCambiarClave ?? false;
 
-    if (passwordHash) {
-      cuenta.passwordCuen = passwordHash;
+    /*
+     * Si un administrador inactiva o bloquea
+     * una cuenta, también se eliminan los
+     * bloqueos temporales pendientes.
+     */
+    if (cuenta.estadoCuen !== 'activo') {
+      cuenta.fechaBloqueoCuen = null;
+      cuenta.intentosFallidosCuen = 0;
     }
 
-    cuenta.usuaActua = 'admin';
+    cuenta.usuaActua = usuarioResponsable;
     cuenta.fechaActua = new Date();
 
     return this.getCuentaRepository(manager).save(cuenta);

@@ -48,7 +48,7 @@ export class PerfilEntity {
   fechaActua?: Date | null;
 
   @ManyToOne(() => RolEntity, (rol) => rol.perfiles, {
-    onDelete: 'CASCADE',
+    onDelete: 'RESTRICT',
   })
   @JoinColumn({ name: 'ide_rol' })
   rol?: RolEntity;

@@ -1,14 +1,6 @@
 import { EnumEstadosCuenta } from '@models';
 import { Transform } from 'class-transformer';
-import {
-  IsBoolean,
-  IsEnum,
-  IsInt,
-  IsOptional,
-  IsString,
-  Length,
-  Min,
-} from 'class-validator';
+import { IsEnum, IsInt, IsString, Length, Min } from 'class-validator';
 
 function toRequiredInt(value: unknown): number | unknown {
   if (value === null || value === undefined || value === '') {
@@ -17,69 +9,31 @@ function toRequiredInt(value: unknown): number | unknown {
 
   const numberValue = Number(value);
 
-  if (Number.isInteger(numberValue)) {
-    return numberValue;
-  }
-
-  return value;
-}
-
-function optionalBoolean(value: unknown): boolean | undefined | unknown {
-  if (value === null || value === undefined || value === '') {
-    return undefined;
-  }
-
-  if (typeof value === 'boolean') {
-    return value;
-  }
-
-  if (typeof value === 'string') {
-    const text = value.trim().toLowerCase();
-
-    if (['true', '1', 'si', 'sí'].includes(text)) {
-      return true;
-    }
-
-    if (['false', '0', 'no'].includes(text)) {
-      return false;
-    }
-  }
-
-  return value;
+  return Number.isInteger(numberValue) ? numberValue : value;
 }
 
 export class CreateCuentaDto {
   @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
-  @Min(0)
+  @Min(1)
   ideEmpl!: number;
 
   @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
-  @Min(0)
+  @Min(1)
   idePerf!: number;
 
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
+  )
   @IsString()
   @Length(1, 25)
-  @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== ''
-      ? value.trim().toLowerCase()
-      : null,
-  )
   usuarioCuen!: string;
 
   @IsString()
-  @Length(1, 250)
-  @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
-  )
+  @Length(8, 100)
   passwordCuen!: string;
 
   @IsEnum(EnumEstadosCuenta)
   estadoCuen!: EnumEstadosCuenta;
-
-  @IsOptional()
-  @Transform(({ value }) => optionalBoolean(value))
-  @IsBoolean()
-  debeCambiarClave?: boolean;
 }

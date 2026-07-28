@@ -2,8 +2,20 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AccesoUsuarioEntity, CuentaEntity } from '@entities';
 import { EntityManager, Repository } from 'typeorm';
-import { CreateAccesoUsuarioDto } from './dto/create_acceso.dto';
 import { FilterAccesoUsuarioDto } from './dto/filter_acceso.dto';
+
+export interface RegistrarAccesoData {
+  ideCuen: number | null;
+  usuarioIntentado: string | null;
+  resultadoAcce: 'exitoso' | 'fallido';
+  motivoAcce: string | null;
+  navegadorAcce: string;
+  numIntFallAcce: number;
+  ipAcce: string | null;
+  latitudAcce?: number | null;
+  longitudAcce?: number | null;
+  fechaAcce?: Date;
+}
 
 @Injectable()
 export class AccesosRepository {
@@ -107,35 +119,31 @@ export class AccesosRepository {
   }
 
   async crear(
-    dto: CreateAccesoUsuarioDto,
+    data: RegistrarAccesoData,
     manager?: EntityManager,
   ): Promise<AccesoUsuarioEntity> {
-    const cuenta = await this.getCuentaRepository(manager).findOne({
-      where: {
-        ideCuen: dto.ideCuen,
-      },
-    });
+    const repository = this.getAccesoRepository(manager);
 
-    const acceso = this.getAccesoRepository(manager).create({
-      ideCuen: cuenta?.ideCuen ?? null,
-      usuarioIntentado: cuenta?.usuarioCuen ?? null,
-      resultadoAcce: 'exitoso',
-      motivoAcce: null,
-      navegadorAcce: dto.navegadorAcce?.trim() || 'desconocido',
-      fechaAcce: dto.fechaAcce ? new Date(dto.fechaAcce) : new Date(),
-      numIntFallAcce: dto.numIntFallAcce ?? 0,
-      ipAcce: dto.ipAcce?.trim() || null,
+    const acceso = repository.create({
+      ideCuen: data.ideCuen,
+      usuarioIntentado: data.usuarioIntentado?.trim().toLowerCase() || null,
+      resultadoAcce: data.resultadoAcce,
+      motivoAcce: data.motivoAcce?.trim() || null,
+      navegadorAcce: data.navegadorAcce?.trim() || 'desconocido',
+      fechaAcce: data.fechaAcce ?? new Date(),
+      numIntFallAcce: Math.max(0, data.numIntFallAcce),
+      ipAcce: data.ipAcce?.trim() || null,
       latitudAcce:
-        dto.latitudAcce !== null && dto.latitudAcce !== undefined
-          ? String(dto.latitudAcce)
+        data.latitudAcce !== null && data.latitudAcce !== undefined
+          ? String(data.latitudAcce)
           : null,
       longitudAcce:
-        dto.longitudAcce !== null && dto.longitudAcce !== undefined
-          ? String(dto.longitudAcce)
+        data.longitudAcce !== null && data.longitudAcce !== undefined
+          ? String(data.longitudAcce)
           : null,
     });
 
-    return this.getAccesoRepository(manager).save(acceso);
+    return repository.save(acceso);
   }
 
   async listarCuentas(manager?: EntityManager): Promise<CuentaEntity[]> {

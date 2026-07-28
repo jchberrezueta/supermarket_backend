@@ -1,18 +1,48 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Check,
+  Column,
+  Entity,
+  Index,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { PerfilOpcionesEntity } from './perfil_opciones.entity';
 
 @Entity({ name: 'opciones' })
+@Index('opciones_ruta_opci_unique', ['rutaOpci'], {
+  unique: true,
+})
+@Check('opciones_activo_opci_check', `"activo_opci" IN ('si', 'no')`)
+@Check('ck_opciones_nivel_no_negativo', `"nivel_opci" >= 0`)
+@Check(
+  'ck_opciones_padre_distinto',
+  `"padre_opci" IS NULL OR "padre_opci" <> "ide_opci"`,
+)
 export class OpcionesEntity {
-  @PrimaryGeneratedColumn({ name: 'ide_opci' })
+  @PrimaryGeneratedColumn({
+    name: 'ide_opci',
+  })
   ideOpci!: number;
 
-  @Column({ name: 'nombre_opci', type: 'varchar', length: 100 })
+  @Column({
+    name: 'nombre_opci',
+    type: 'varchar',
+    length: 100,
+  })
   nombreOpci!: string;
 
-  @Column({ name: 'ruta_opci', type: 'varchar', length: 500 })
+  @Column({
+    name: 'ruta_opci',
+    type: 'varchar',
+    length: 500,
+  })
   rutaOpci!: string;
 
-  @Column({ name: 'activo_opci', type: 'varchar', length: 2 })
+  @Column({
+    name: 'activo_opci',
+    type: 'varchar',
+    length: 2,
+  })
   activoOpci!: 'si' | 'no';
 
   @Column({
@@ -26,11 +56,14 @@ export class OpcionesEntity {
   @Column({
     name: 'visible_opci',
     type: 'boolean',
-    default: true,
   })
   visibleOpci!: boolean;
 
-  @Column({ name: 'usua_ingre', type: 'varchar', length: 25 })
+  @Column({
+    name: 'usua_ingre',
+    type: 'varchar',
+    length: 25,
+  })
   usuaIngre!: string;
 
   @Column({
@@ -40,19 +73,40 @@ export class OpcionesEntity {
   })
   fechaIngre!: Date;
 
-  @Column({ name: 'usua_actua', type: 'varchar', length: 25, nullable: true })
+  @Column({
+    name: 'usua_actua',
+    type: 'varchar',
+    length: 25,
+    nullable: true,
+  })
   usuaActua?: string | null;
 
-  @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
+  @Column({
+    name: 'fecha_actua',
+    type: 'timestamp',
+    nullable: true,
+  })
   fechaActua?: Date | null;
 
-  @Column({ name: 'nivel_opci', type: 'int' })
+  @Column({
+    name: 'nivel_opci',
+    type: 'int',
+  })
   nivelOpci!: number;
 
-  @Column({ name: 'padre_opci', type: 'int', nullable: true })
+  @Column({
+    name: 'padre_opci',
+    type: 'int',
+    nullable: true,
+  })
   padreOpci?: number | null;
 
-  @Column({ name: 'icono_opci', type: 'varchar', length: 50, nullable: true })
+  @Column({
+    name: 'icono_opci',
+    type: 'varchar',
+    length: 50,
+    nullable: true,
+  })
   iconoOpci?: string | null;
 
   @OneToMany(() => PerfilOpcionesEntity, (perfilOpcion) => perfilOpcion.opcion)

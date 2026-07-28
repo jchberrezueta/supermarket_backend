@@ -14,7 +14,6 @@ import { HistorialClaveService } from './historial_clave/historial_clave.service
 import { CuentaMfaService } from './cuenta_mfa/cuenta_mfa.service';
 import { EmailService } from './email/email.service';
 import { AccesosUsuariosService } from '../admin/seguridad/accesos/accesos.service';
-import { formatDate } from '@helpers/utilities';
 import { GeolocationService } from './services/geolocation.service';
 
 import { InjectDataSource } from '@nestjs/typeorm';
@@ -71,12 +70,30 @@ export class AuthService {
     private readonly dataSource: DataSource,
   ) {}
 
-  async validateUser(usuario: string, clave: string): Promise<ValidateResult> {
+  async validateUser(
+    usuario: string,
+    clave: string,
+    navegador?: string,
+    ip?: string,
+  ): Promise<ValidateResult> {
     const usuarioNormalizado = usuario.trim().toLowerCase();
+
+    const navegadorNormalizado = navegador?.trim() || 'desconocido';
+
+    const ipNormalizada = this.normalizarIp(ip);
 
     const user = await this.cuentasService.buscarUsuario(usuarioNormalizado);
 
     if (!user) {
+      await this.accesosService.registrarAccesoFallido({
+        ideCuen: null,
+        usuario: usuarioNormalizado,
+        motivo: 'credenciales_invalidas',
+        intentos: 1,
+        navegador: navegadorNormalizado,
+        ip: ipNormalizada,
+      });
+
       return {
         success: false,
         reason: 'INVALID_CREDENTIALS',
@@ -84,6 +101,15 @@ export class AuthService {
     }
 
     if (user.estado_cuen === 'inactivo') {
+      await this.accesosService.registrarAccesoFallido({
+        ideCuen: user.ide_cuen,
+        usuario: user.usuario_cuen,
+        motivo: 'cuenta_inactiva',
+        intentos: user.intentos_fallidos,
+        navegador: navegadorNormalizado,
+        ip: ipNormalizada,
+      });
+
       return {
         success: false,
         reason: 'INACTIVE',
@@ -91,6 +117,15 @@ export class AuthService {
     }
 
     if (user.estado_cuen === 'bloqueado') {
+      await this.accesosService.registrarAccesoFallido({
+        ideCuen: user.ide_cuen,
+        usuario: user.usuario_cuen,
+        motivo: 'cuenta_bloqueada',
+        intentos: user.intentos_fallidos,
+        navegador: navegadorNormalizado,
+        ip: ipNormalizada,
+      });
+
       return {
         success: false,
         reason: 'BLOCKED',
@@ -101,6 +136,15 @@ export class AuthService {
     const ahora = new Date();
 
     if (user.bloqueado_hasta && user.bloqueado_hasta > ahora) {
+      await this.accesosService.registrarAccesoFallido({
+        ideCuen: user.ide_cuen,
+        usuario: user.usuario_cuen,
+        motivo: 'bloqueo_temporal',
+        intentos: user.intentos_fallidos,
+        navegador: navegadorNormalizado,
+        ip: ipNormalizada,
+      });
+
       return {
         success: false,
         reason: 'BLOCKED',
@@ -131,12 +175,30 @@ export class AuthService {
 
         await this.cuentasService.bloquearCuenta(user.ide_cuen, fechaBloqueo);
 
+        await this.accesosService.registrarAccesoFallido({
+          ideCuen: user.ide_cuen,
+          usuario: user.usuario_cuen,
+          motivo: 'max_intentos',
+          intentos,
+          navegador: navegadorNormalizado,
+          ip: ipNormalizada,
+        });
+
         return {
           success: false,
           reason: 'BLOCKED',
           blockedUntil: fechaBloqueo,
         };
       }
+
+      await this.accesosService.registrarAccesoFallido({
+        ideCuen: user.ide_cuen,
+        usuario: user.usuario_cuen,
+        motivo: 'credenciales_invalidas',
+        intentos,
+        navegador: navegadorNormalizado,
+        ip: ipNormalizada,
+      });
 
       return {
         success: false,
@@ -215,16 +277,14 @@ export class AuthService {
       ipNormalizada ?? undefined,
     );
 
-    await this.accesosService.insertarAccesoUsuario({
+    await this.accesosService.registrarAccesoExitoso({
       ideCuen: user.ide_cuen,
-      navegadorAcce: navegadorNormalizado,
-      fechaAcce: formatDate(new Date()),
-      numIntFallAcce: 0,
-      ipAcce: ipNormalizada ?? undefined,
-      latitudAcce: geo?.latitud ?? null,
-      longitudAcce: geo?.longitud ?? null,
+      usuario: user.usuario_cuen,
+      navegador: navegadorNormalizado,
+      ip: ipNormalizada,
+      latitud: geo?.latitud ?? null,
+      longitud: geo?.longitud ?? null,
     });
-
     return {
       access_token: tokens.accessToken,
       refresh_token: tokens.refreshToken,
@@ -992,10 +1052,28 @@ export class AuthService {
 
         await this.cuentasService.bloquearCuenta(ideCuen, fechaBloqueo);
 
+        await this.accesosService.registrarAccesoFallido({
+          ideCuen,
+          usuario: cuenta.usuarioCuen,
+          motivo: 'max_intentos_mfa',
+          intentos,
+          navegador: navegador?.trim() || 'desconocido',
+          ip: this.normalizarIp(ip),
+        });
+
         throw new UnauthorizedException(
           `Cuenta bloqueada hasta ${fechaBloqueo.toISOString()}`,
         );
       }
+
+      await this.accesosService.registrarAccesoFallido({
+        ideCuen,
+        usuario: cuenta.usuarioCuen,
+        motivo: 'codigo_mfa_invalido',
+        intentos,
+        navegador: navegador?.trim() || 'desconocido',
+        ip: this.normalizarIp(ip),
+      });
 
       throw new UnauthorizedException(
         resultado.message || 'El código MFA no es válido',

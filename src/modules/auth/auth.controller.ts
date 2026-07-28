@@ -8,7 +8,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { AccesosUsuariosService } from '../admin/seguridad/accesos/accesos.service';
 import { ChangePasswordDto } from './dto/change_password.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { LogoutDto } from './dto/logout.dto';
@@ -28,16 +27,15 @@ interface ICredential {
 
 @Controller('auth')
 export class AuthController {
-  constructor(
-    private readonly authService: AuthService,
-    private servicio: AccesosUsuariosService,
-  ) {}
+  constructor(private readonly authService: AuthService) {}
 
   @Post('login')
   async login(@Body() body: ICredential, @Req() req: Request, @Ip() ip) {
     const result = await this.authService.validateUser(
       body.usuario,
       body.clave,
+      req.headers['user-agent'] || '',
+      ip,
     );
 
     if (result.success === false) {

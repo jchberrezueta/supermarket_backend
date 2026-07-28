@@ -1,14 +1,6 @@
 import { EnumEstadosCuenta } from '@models';
 import { Transform } from 'class-transformer';
-import {
-  IsBoolean,
-  IsEnum,
-  IsInt,
-  IsOptional,
-  IsString,
-  Length,
-  Min,
-} from 'class-validator';
+import { IsEnum, IsInt, IsString, Length, Min } from 'class-validator';
 
 function toRequiredInt(value: unknown): number | unknown {
   if (value === null || value === undefined || value === '') {
@@ -17,80 +9,32 @@ function toRequiredInt(value: unknown): number | unknown {
 
   const numberValue = Number(value);
 
-  if (Number.isInteger(numberValue)) {
-    return numberValue;
-  }
-
-  return value;
-}
-
-function optionalBoolean(value: unknown): boolean | undefined | unknown {
-  if (value === null || value === undefined || value === '') {
-    return undefined;
-  }
-
-  if (typeof value === 'boolean') {
-    return value;
-  }
-
-  if (typeof value === 'string') {
-    const text = value.trim().toLowerCase();
-
-    if (['true', '1', 'si', 'sí'].includes(text)) {
-      return true;
-    }
-
-    if (['false', '0', 'no'].includes(text)) {
-      return false;
-    }
-  }
-
-  return value;
+  return Number.isInteger(numberValue) ? numberValue : value;
 }
 
 export class UpdateCuentaDto {
   @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
-  @Min(0)
+  @Min(1)
   ideCuen!: number;
 
   @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
-  @Min(0)
+  @Min(1)
   ideEmpl!: number;
 
   @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
-  @Min(0)
+  @Min(1)
   idePerf!: number;
 
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
+  )
   @IsString()
   @Length(1, 25)
-  @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== ''
-      ? value.trim().toLowerCase()
-      : null,
-  )
   usuarioCuen!: string;
-
-  /**
-   * En actualización la contraseña es opcional:
-   * - si no viene o viene vacía, se conserva la clave actual
-   * - si viene con valor, el service la encripta
-   */
-  @IsOptional()
-  @IsString()
-  @Length(1, 250)
-  @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
-  )
-  passwordCuen?: string;
 
   @IsEnum(EnumEstadosCuenta)
   estadoCuen!: EnumEstadosCuenta;
-
-  @IsOptional()
-  @Transform(({ value }) => optionalBoolean(value))
-  @IsBoolean()
-  debeCambiarClave?: boolean;
 }

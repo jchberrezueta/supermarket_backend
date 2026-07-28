@@ -29,3 +29,4 @@ export * from './venta.entity';
 export * from './refresh_token.entity';
 export * from './password_reset_token.entity';
 export * from './cuenta_mfa.entity';
+export * from './historial_clave.entity';
