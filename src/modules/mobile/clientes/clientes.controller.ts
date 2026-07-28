@@ -19,7 +19,7 @@ import { MobileClientesService } from './clientes.service';
  *
  * Requiere JWT de cliente.
  */
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt-mobile'))
 @Controller('mobile/clientes')
 export class MobileClientesController {
   constructor(private readonly clientesService: MobileClientesService) {}

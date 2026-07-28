@@ -71,6 +71,13 @@ export class CuentasService {
   async eliminar(id: number) {
     const ideCuen = IdUtil.requireId(id, 'El ID de la cuenta no es válido.');
 
+    if (ideCuen === 0) {
+      return ApiResponseFactory.legacyWrite(
+        0,
+        'La cuenta administradora principal no puede eliminarse.',
+      );
+    }
+
     try {
       const affected = await this.dataSource.transaction((manager) =>
         this.cuentasRepository.eliminar(ideCuen, manager),
@@ -144,6 +151,13 @@ export class CuentasService {
       body.ideCuen,
       'El ID de la cuenta no es válido.',
     );
+
+    if (ideCuen === 0) {
+      return ApiResponseFactory.legacyWrite(
+        0,
+        'La cuenta administradora principal no puede modificarse desde este módulo.',
+      );
+    }
 
     try {
       const cuenta = await this.dataSource.transaction(async (manager) => {
@@ -267,6 +281,13 @@ export class CuentasService {
       ideCuenEntrada,
       'El ID de la cuenta no es válido.',
     );
+
+    if (ideCuen === 0) {
+      return ApiResponseFactory.legacyWrite(
+        0,
+        'La contraseña de la cuenta administradora principal solo puede cambiarse desde su propia sesión.',
+      );
+    }
 
     this.validarClaveAdministrativa(claveTemporal);
 

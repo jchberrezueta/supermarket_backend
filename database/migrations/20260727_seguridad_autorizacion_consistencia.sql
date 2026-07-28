@@ -71,6 +71,18 @@ BEGIN
         RAISE EXCEPTION
             'Existen opciones configuradas como su propio padre.';
     END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM public.opciones AS hija
+        LEFT JOIN public.opciones AS padre
+            ON padre.ide_opci = hija.padre_opci
+        WHERE hija.padre_opci IS NOT NULL
+        AND padre.ide_opci IS NULL
+    ) THEN
+        RAISE EXCEPTION
+            'Existen opciones con padres inexistentes.';
+    END IF;
 END;
 $$;
 
@@ -126,6 +138,15 @@ ALTER TABLE public.opciones
         padre_opci IS NULL
         OR padre_opci <> ide_opci
     );
+
+ALTER TABLE public.opciones
+    DROP CONSTRAINT IF EXISTS fk_opciones_padre;
+
+ALTER TABLE public.opciones
+    ADD CONSTRAINT fk_opciones_padre
+    FOREIGN KEY (padre_opci)
+    REFERENCES public.opciones (ide_opci)
+    ON DELETE RESTRICT;
 
 
 -- ============================================================

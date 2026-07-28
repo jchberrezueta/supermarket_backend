@@ -15,7 +15,7 @@ import { CreateMetodoPagoDto, UpdateMetodoPagoDto } from './dto';
 import { MetodosPagoService } from './metodos-pago.service';
 
 @Controller('mobile/metodos-pago')
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt-mobile'))
 export class MetodosPagoController {
   constructor(private readonly metodosPagoService: MetodosPagoService) {}
 

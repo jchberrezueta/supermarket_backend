@@ -308,6 +308,7 @@ export class AuthService {
     userAgent?: string | null,
   ) {
     const accessPayload = {
+      tokenType: 'admin',
       sub: user.ide_cuen,
       username: user.usuario_cuen,
       state: user.estado_cuen,
@@ -839,11 +840,18 @@ export class AuthService {
       ipNormalizada,
     );
 
-    await this.emailService.enviarRecuperacionPassword(
-      cuenta.correo_empl,
-      cuenta.usuario_cuen,
-      token,
-    );
+    try {
+      await this.emailService.enviarRecuperacionPassword(
+        cuenta.correo_empl,
+        cuenta.usuario_cuen,
+        token,
+      );
+    } catch (error) {
+      console.error(
+        'No fue posible enviar el correo de recuperación',
+        error instanceof Error ? error.message : error,
+      );
+    }
 
     return respuesta;
   }

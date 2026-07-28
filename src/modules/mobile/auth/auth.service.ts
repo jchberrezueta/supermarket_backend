@@ -141,6 +141,7 @@ export class MobileAuthService {
     }
 
     const payload = {
+      tokenType: 'customer',
       sub: cuenta.ideCuenClie,
       ide_cuen_clie: cuenta.ideCuenClie,
       ide_clie: cliente.ideClie,

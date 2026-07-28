@@ -8,6 +8,7 @@ import {
   Post,
   Put,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
@@ -59,8 +60,11 @@ export class OpcionesController {
   async insertar(
     @Body()
     body: CreateOpcionDto,
+
+    @Req()
+    req: any,
   ) {
-    return this.opcionesService.insertar(body);
+    return this.opcionesService.insertar(body, req.user.username);
   }
 
   @RequirePermission(RUTA_OPCIONES, 'modificar')
@@ -71,10 +75,13 @@ export class OpcionesController {
 
     @Body()
     body: UpdateOpcionDto,
+
+    @Req()
+    req: any,
   ) {
     body.ideOpci = id;
 
-    return this.opcionesService.actualizar(body);
+    return this.opcionesService.actualizar(body, req.user.username);
   }
 
   @RequirePermission(RUTA_OPCIONES, 'eliminar')

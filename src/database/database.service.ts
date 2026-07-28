@@ -8,7 +8,6 @@ export class DatabaseService implements OnModuleInit {
 
   async onModuleInit() {
     // Acceder a la información de la conexión
-    console.log(this.datasource.options);
     // Verificar si está conectado
     if (!this.datasource.isInitialized) {
       await this.datasource.initialize();

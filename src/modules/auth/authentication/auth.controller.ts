@@ -19,18 +19,15 @@ import { ActivarMfaDto } from '../mfa/dto/activar_mfa.dto';
 import { VerificarMfaDto } from '../mfa/dto/verificar_mfa.dto';
 import { ChangeRequiredPasswordDto } from './dto/change_required_password.dto';
 import { DesactivarMfaDto } from '../mfa/dto/desactivar_mfa.dto';
-
-interface ICredential {
-  usuario: string;
-  clave: string;
-}
+import { Request } from 'express';
+import { LoginDto } from './dto/login.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('login')
-  async login(@Body() body: ICredential, @Req() req: Request, @Ip() ip) {
+  async login(@Body() body: LoginDto, @Req() req: Request, @Ip() ip: string) {
     const result = await this.authService.validateUser(
       body.usuario,
       body.clave,

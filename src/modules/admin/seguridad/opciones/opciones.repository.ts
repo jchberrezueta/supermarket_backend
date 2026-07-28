@@ -63,20 +63,23 @@ export class OpcionesRepository {
 
   async crear(
     dto: CreateOpcionDto,
+    usuarioResponsable: string,
     manager?: EntityManager,
   ): Promise<OpcionesEntity> {
     const repository = this.getRepository(manager);
 
     const opcion = repository.create({
-      nombreOpci: dto.nombreOpci,
-      rutaOpci: dto.rutaOpci,
+      nombreOpci: dto.nombreOpci.trim(),
+      rutaOpci: dto.rutaOpci.trim(),
       activoOpci: dto.activoOpci as OpcionesEntity['activoOpci'],
-      descripcionOpci: dto.descripcionOpci,
+      descripcionOpci: dto.descripcionOpci?.trim() || null,
       nivelOpci: dto.nivelOpci,
       padreOpci: dto.padreOpci ?? null,
-      iconoOpci: dto.iconoOpci ?? null,
+      iconoOpci: dto.iconoOpci?.trim() || null,
       visibleOpci: dto.visibleOpci,
-      usuaIngre: 'admin',
+      usuaIngre: usuarioResponsable,
+      usuaActua: null,
+      fechaActua: null,
     });
 
     return repository.save(opcion);
@@ -85,17 +88,27 @@ export class OpcionesRepository {
   async actualizar(
     opcion: OpcionesEntity,
     dto: UpdateOpcionDto,
+    usuarioResponsable: string,
     manager?: EntityManager,
   ): Promise<OpcionesEntity> {
-    opcion.nombreOpci = dto.nombreOpci;
-    opcion.rutaOpci = dto.rutaOpci;
+    opcion.nombreOpci = dto.nombreOpci.trim();
+
+    opcion.rutaOpci = dto.rutaOpci.trim();
+
     opcion.activoOpci = dto.activoOpci as OpcionesEntity['activoOpci'];
-    opcion.descripcionOpci = dto.descripcionOpci;
+
+    opcion.descripcionOpci = dto.descripcionOpci?.trim() || null;
+
     opcion.nivelOpci = dto.nivelOpci;
+
     opcion.padreOpci = dto.padreOpci ?? null;
-    opcion.iconoOpci = dto.iconoOpci ?? null;
+
+    opcion.iconoOpci = dto.iconoOpci?.trim() || null;
+
     opcion.visibleOpci = dto.visibleOpci;
-    opcion.usuaActua = 'admin';
+
+    opcion.usuaActua = usuarioResponsable;
+
     opcion.fechaActua = new Date();
 
     return this.getRepository(manager).save(opcion);

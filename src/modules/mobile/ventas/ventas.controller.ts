@@ -19,7 +19,7 @@ import { MobileVentasService } from './ventas.service';
  *
  * Todas las rutas requieren JWT de cliente.
  */
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt-mobile'))
 @Controller('mobile/ventas')
 export class MobileVentasController {
   constructor(private readonly ventasService: MobileVentasService) {}

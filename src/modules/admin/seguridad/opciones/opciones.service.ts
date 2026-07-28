@@ -51,10 +51,10 @@ export class OpcionesService {
     );
   }
 
-  async insertar(body: CreateOpcionDto) {
+  async insertar(body: CreateOpcionDto, usuarioResponsable: string) {
     try {
       const opcion = await this.dataSource.transaction((manager) =>
-        this.opcionesRepository.crear(body, manager),
+        this.opcionesRepository.crear(body, usuarioResponsable, manager),
       );
 
       return ApiResponseFactory.legacyWrite(
@@ -70,7 +70,7 @@ export class OpcionesService {
     }
   }
 
-  async actualizar(body: UpdateOpcionDto) {
+  async actualizar(body: UpdateOpcionDto, usuarioResponsable: string) {
     const ideOpci = IdUtil.requireId(
       body.ideOpci,
       'El ID de la opción no es válido.',
@@ -87,7 +87,12 @@ export class OpcionesService {
           throw new Error('No se encontró la opción indicada.');
         }
 
-        return this.opcionesRepository.actualizar(opcionActual, body, manager);
+        return this.opcionesRepository.actualizar(
+          opcionActual,
+          body,
+          usuarioResponsable,
+          manager,
+        );
       });
 
       return ApiResponseFactory.legacyWrite(

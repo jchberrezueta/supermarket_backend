@@ -74,6 +74,12 @@ export class PerfilesService {
   async actualizar(body: UpdatePerfilDto, usuarioResponsable: string) {
     const idePerf = this.validarIdePerfil(body.idePerf);
 
+    if (idePerf === 0) {
+      return ApiResponseFactory.legacyWrite(
+        0,
+        'El perfil administrador principal no puede modificarse.',
+      );
+    }
     try {
       const perfil = await this.dataSource.transaction(async (manager) => {
         const perfilActual = await this.perfilesRepository.buscarPorId(
@@ -226,7 +232,13 @@ export class PerfilesService {
                 );
               }
 
-              if (!permisosFinales.has(idePadre)) {
+              const permisoPadre = permisosFinales.get(idePadre);
+
+              if (permisoPadre) {
+                permisoPadre.listar = 'si';
+
+                permisosFinales.set(idePadre, permisoPadre);
+              } else {
                 permisosFinales.set(idePadre, {
                   ideOpci: idePadre,
                   listar: 'si',

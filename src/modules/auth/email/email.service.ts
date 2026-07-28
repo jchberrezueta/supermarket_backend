@@ -1,9 +1,14 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { MailerService } from '@nestjs-modules/mailer';
 
 @Injectable()
 export class EmailService {
-  constructor(private readonly mailerService: MailerService) {}
+  constructor(
+    private readonly mailerService: MailerService,
+
+    private readonly configService: ConfigService,
+  ) {}
 
   async enviarRecuperacionPassword(
     correo: string,
@@ -11,22 +16,30 @@ export class EmailService {
     token: string,
   ): Promise<void> {
     const frontendUrl = (
-      process.env.FRONTEND_URL || 'http://localhost:4200'
+      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:4200'
     ).replace(/\/+$/, '');
 
     const url =
       `${frontendUrl}/reset-password` + `?token=${encodeURIComponent(token)}`;
 
     const usuarioSeguro = this.escapeHtml(usuario);
+
     const urlSegura = this.escapeHtml(url);
 
+    const remitente =
+      this.configService.get<string>('MAIL_FROM') ||
+      this.configService.get<string>('MAIL_USER');
+
     await this.mailerService.sendMail({
+      from: remitente,
       to: correo,
       subject: 'Recuperación de contraseña - SuperMarket',
       html: `
         <h2>Recuperación de contraseña</h2>
 
-        <p>Hola <strong>${usuarioSeguro}</strong>.</p>
+        <p>
+          Hola <strong>${usuarioSeguro}</strong>.
+        </p>
 
         <p>
           Recibimos una solicitud para restablecer
@@ -40,8 +53,9 @@ export class EmailService {
         </p>
 
         <p>
-          Este enlace será válido durante 15 minutos
-          y solo podrá utilizarse una vez.
+          Este enlace será válido durante
+          15 minutos y solo podrá utilizarse
+          una vez.
         </p>
 
         <p>
