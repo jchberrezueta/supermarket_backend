@@ -1,12 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import { ApiResponseFactory, ComboMapper, IdUtil } from '@common/index';
+import { ApiResponseFactory, ComboMapper } from '@common/index';
 import { DataSource } from 'typeorm';
 import { CreatePerfilDto } from './dto/create_perfil.dto';
 import { FilterPerfilDto } from './dto/filter_perfil.dto';
 import { UpdatePerfilDto } from './dto/update_perfil.dto';
 import { PerfilesMapper } from './perfiles.mapper';
-import { PerfilesRepository } from './perfiles.repository';
+import { PerfilPermisoData, PerfilesRepository } from './perfiles.repository';
+import { GuardarPermisosPerfilDto } from './dto/guardar_permisos_perfil.dto';
 
 @Injectable()
 export class PerfilesService {
@@ -28,7 +29,7 @@ export class PerfilesService {
   }
 
   async buscar(id: number) {
-    const idePerf = IdUtil.requireId(id, 'El ID del perfil no es válido.');
+    const idePerf = this.validarIdePerfil(id);
 
     const perfil = await this.dataSource.transaction((manager) =>
       this.perfilesRepository.buscarPorId(idePerf, manager),
@@ -51,10 +52,10 @@ export class PerfilesService {
     );
   }
 
-  async insertar(body: CreatePerfilDto) {
+  async insertar(body: CreatePerfilDto, usuarioResponsable: string) {
     try {
       const perfil = await this.dataSource.transaction((manager) =>
-        this.perfilesRepository.crear(body, manager),
+        this.perfilesRepository.crear(body, usuarioResponsable, manager),
       );
 
       return ApiResponseFactory.legacyWrite(
@@ -70,11 +71,8 @@ export class PerfilesService {
     }
   }
 
-  async actualizar(body: UpdatePerfilDto) {
-    const idePerf = IdUtil.requireId(
-      body.idePerf,
-      'El ID del perfil no es válido.',
-    );
+  async actualizar(body: UpdatePerfilDto, usuarioResponsable: string) {
+    const idePerf = this.validarIdePerfil(body.idePerf);
 
     try {
       const perfil = await this.dataSource.transaction(async (manager) => {
@@ -87,7 +85,12 @@ export class PerfilesService {
           throw new Error('No se encontró el perfil indicado.');
         }
 
-        return this.perfilesRepository.actualizar(perfilActual, body, manager);
+        return this.perfilesRepository.actualizar(
+          perfilActual,
+          body,
+          usuarioResponsable,
+          manager,
+        );
       });
 
       return ApiResponseFactory.legacyWrite(
@@ -104,7 +107,14 @@ export class PerfilesService {
   }
 
   async eliminar(id: number) {
-    const idePerf = IdUtil.requireId(id, 'El ID del perfil no es válido.');
+    const idePerf = this.validarIdePerfil(id);
+
+    if (idePerf === 0) {
+      return ApiResponseFactory.legacyWrite(
+        0,
+        'El perfil administrador principal no puede eliminarse.',
+      );
+    }
 
     try {
       const affected = await this.dataSource.transaction((manager) =>
@@ -129,6 +139,183 @@ export class PerfilesService {
           'No se pudo eliminar el perfil. Puede estar relacionado con cuentas o accesos.',
       );
     }
+  }
+
+  async guardarPermisos(
+    id: number,
+    body: GuardarPermisosPerfilDto,
+    usuarioResponsable: string,
+  ) {
+    const idePerf = this.validarIdePerfil(id);
+
+    try {
+      const total = await this.dataSource.transaction(async (manager) => {
+        const perfil = await this.perfilesRepository.buscarPorIdConBloqueo(
+          idePerf,
+          manager,
+        );
+
+        if (!perfil) {
+          throw new BadRequestException('No se encontró el perfil indicado.');
+        }
+
+        const opciones =
+          await this.perfilesRepository.listarTodasOpciones(manager);
+
+        const opcionesPorId = new Map(
+          opciones.map((opcion) => [opcion.ideOpci, opcion]),
+        );
+
+        const permisosFinales = new Map<number, PerfilPermisoData>();
+
+        /*
+         * El administrador principal siempre
+         * conserva acceso completo.
+         */
+        if (idePerf === 0 || perfil.nombrePerf === 'padmin') {
+          for (const opcion of opciones) {
+            permisosFinales.set(opcion.ideOpci, {
+              ideOpci: opcion.ideOpci,
+              listar: 'si',
+              insertar: 'si',
+              modificar: 'si',
+              eliminar: 'si',
+            });
+          }
+        } else {
+          for (const permiso of body.permisos) {
+            const opcion = opcionesPorId.get(permiso.ideOpci);
+
+            if (!opcion) {
+              throw new BadRequestException(
+                `La opción ${permiso.ideOpci} no existe.`,
+              );
+            }
+
+            permisosFinales.set(permiso.ideOpci, {
+              ideOpci: permiso.ideOpci,
+              listar: permiso.listar,
+              insertar: permiso.insertar,
+              modificar: permiso.modificar,
+              eliminar: permiso.eliminar,
+            });
+
+            /*
+             * Si una pantalla depende de una
+             * opción padre, el padre también
+             * debe formar parte del menú.
+             */
+            let idePadre = opcion.padreOpci ?? null;
+
+            const visitados = new Set<number>();
+
+            while (idePadre !== null) {
+              if (visitados.has(idePadre)) {
+                throw new BadRequestException(
+                  'Se detectó un ciclo en la jerarquía de opciones.',
+                );
+              }
+
+              visitados.add(idePadre);
+
+              const opcionPadre = opcionesPorId.get(idePadre);
+
+              if (!opcionPadre) {
+                throw new BadRequestException(
+                  `La opción padre ${idePadre} no existe.`,
+                );
+              }
+
+              if (!permisosFinales.has(idePadre)) {
+                permisosFinales.set(idePadre, {
+                  ideOpci: idePadre,
+                  listar: 'si',
+                  insertar: 'no',
+                  modificar: 'no',
+                  eliminar: 'no',
+                });
+              }
+
+              idePadre = opcionPadre.padreOpci ?? null;
+            }
+          }
+        }
+
+        await this.perfilesRepository.eliminarPermisosPorPerfil(
+          idePerf,
+          manager,
+        );
+
+        const guardados = await this.perfilesRepository.guardarPermisos(
+          idePerf,
+          Array.from(permisosFinales.values()),
+          usuarioResponsable,
+          manager,
+        );
+
+        return guardados.length;
+      });
+
+      return ApiResponseFactory.legacyWrite(
+        1,
+        'Permisos del perfil actualizados correctamente',
+        total,
+      );
+    } catch (error) {
+      return ApiResponseFactory.legacyWrite(
+        0,
+        error?.message || 'No se pudieron actualizar los permisos del perfil.',
+      );
+    }
+  }
+
+  async listarPermisos(id: number) {
+    const idePerf = this.validarIdePerfil(id);
+
+    const resultado = await this.dataSource.transaction(async (manager) => {
+      const perfil = await this.perfilesRepository.buscarPorId(
+        idePerf,
+        manager,
+      );
+
+      if (!perfil) {
+        throw new BadRequestException('No se encontró el perfil indicado.');
+      }
+
+      const permisos = await this.perfilesRepository.listarOpcionesConPermisos(
+        idePerf,
+        manager,
+      );
+
+      return {
+        perfil: {
+          ide_perf: perfil.idePerf,
+          nombre_perf: perfil.nombrePerf,
+          descripcion_perf: perfil.descripcionPerf ?? null,
+        },
+        permisos,
+      };
+    });
+
+    return {
+      success: true,
+      data: resultado,
+      response: 'Permisos del perfil obtenidos correctamente',
+    };
+  }
+
+  private validarIdePerfil(valor: number): number {
+    const idePerf = Number(valor);
+
+    /*
+     * El perfil administrador existente
+     * utiliza legítimamente el ID 0.
+     */
+    if (!Number.isInteger(idePerf) || idePerf < 0) {
+      throw new BadRequestException('El ID del perfil no es válido.');
+    }
+
+    return idePerf;
   }
 
   /**

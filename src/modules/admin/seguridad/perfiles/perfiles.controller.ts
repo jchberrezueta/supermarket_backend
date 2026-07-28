@@ -8,6 +8,7 @@ import {
   Post,
   Put,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
@@ -21,6 +22,7 @@ import { CreatePerfilDto } from './dto/create_perfil.dto';
 import { FilterPerfilDto } from './dto/filter_perfil.dto';
 import { UpdatePerfilDto } from './dto/update_perfil.dto';
 import { PerfilesService } from './perfiles.service';
+import { GuardarPermisosPerfilDto } from './dto/guardar_permisos_perfil.dto';
 
 const RUTA_PERFILES = '/admin/seguridad/perfiles';
 
@@ -59,8 +61,11 @@ export class PerfilesController {
   async insertar(
     @Body()
     body: CreatePerfilDto,
+
+    @Req()
+    req: any,
   ) {
-    return this.perfilesService.insertar(body);
+    return this.perfilesService.insertar(body, req.user.username);
   }
 
   @RequirePermission(RUTA_PERFILES, 'modificar')
@@ -71,10 +76,37 @@ export class PerfilesController {
 
     @Body()
     body: UpdatePerfilDto,
+
+    @Req()
+    req: any,
   ) {
     body.idePerf = id;
 
-    return this.perfilesService.actualizar(body);
+    return this.perfilesService.actualizar(body, req.user.username);
+  }
+
+  @RequirePermission(RUTA_PERFILES, 'listar')
+  @Get(':id/permisos')
+  async listarPermisos(
+    @Param('id', ParseIntPipe)
+    id: number,
+  ) {
+    return this.perfilesService.listarPermisos(id);
+  }
+
+  @RequirePermission(RUTA_PERFILES, 'modificar')
+  @Put(':id/permisos')
+  async guardarPermisos(
+    @Param('id', ParseIntPipe)
+    id: number,
+
+    @Body()
+    body: GuardarPermisosPerfilDto,
+
+    @Req()
+    req: any,
+  ) {
+    return this.perfilesService.guardarPermisos(id, body, req.user.username);
   }
 
   @RequirePermission(RUTA_PERFILES, 'eliminar')

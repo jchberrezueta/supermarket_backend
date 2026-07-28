@@ -1,18 +1,56 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { PerfilEntity, RolEntity } from '@entities';
+import {
+  OpcionesEntity,
+  PerfilEntity,
+  PerfilOpcionesEntity,
+  RolEntity,
+} from '@entities';
 import { EntityManager, Repository } from 'typeorm';
 import { CreatePerfilDto } from './dto/create_perfil.dto';
 import { FilterPerfilDto } from './dto/filter_perfil.dto';
 import { UpdatePerfilDto } from './dto/update_perfil.dto';
+
+export interface PerfilPermisoData {
+  ideOpci: number;
+  listar: 'si' | 'no';
+  insertar: 'si' | 'no';
+  modificar: 'si' | 'no';
+  eliminar: 'si' | 'no';
+}
+
+export interface OpcionPermisoPerfilRow {
+  ide_perf_opci: number | null;
+  ide_opci: number;
+  nombre_opci: string;
+  ruta_opci: string;
+  descripcion_opci: string | null;
+  activo_opci: 'si' | 'no';
+  visible_opci: boolean;
+  nivel_opci: number;
+  padre_opci: number | null;
+  icono_opci: string | null;
+  asignado: boolean;
+  listar: 'si' | 'no';
+  insertar: 'si' | 'no';
+  modificar: 'si' | 'no';
+  eliminar: 'si' | 'no';
+}
 
 @Injectable()
 export class PerfilesRepository {
   constructor(
     @InjectRepository(PerfilEntity)
     private readonly perfilRepository: Repository<PerfilEntity>,
+
     @InjectRepository(RolEntity)
     private readonly rolRepository: Repository<RolEntity>,
+
+    @InjectRepository(OpcionesEntity)
+    private readonly opcionesRepository: Repository<OpcionesEntity>,
+
+    @InjectRepository(PerfilOpcionesEntity)
+    private readonly perfilOpcionesRepository: Repository<PerfilOpcionesEntity>,
   ) {}
 
   async listar(manager?: EntityManager): Promise<PerfilEntity[]> {
@@ -38,6 +76,20 @@ export class PerfilesRepository {
         rol: true,
       },
     });
+  }
+
+  async buscarPorIdConBloqueo(
+    idePerf: number,
+    manager: EntityManager,
+  ): Promise<PerfilEntity | null> {
+    return manager
+      .getRepository(PerfilEntity)
+      .createQueryBuilder('perfil')
+      .setLock('pessimistic_write')
+      .where('perfil.idePerf = :idePerf', {
+        idePerf,
+      })
+      .getOne();
   }
 
   async filtrar(
@@ -81,15 +133,18 @@ export class PerfilesRepository {
 
   async crear(
     dto: CreatePerfilDto,
+    usuarioResponsable: string,
     manager?: EntityManager,
   ): Promise<PerfilEntity> {
     const repository = this.getPerfilRepository(manager);
 
     const perfil = repository.create({
       ideRol: dto.ideRol,
-      nombrePerf: dto.nombrePerf,
-      descripcionPerf: dto.descripcionPerf,
-      usuaIngre: 'admin',
+      nombrePerf: dto.nombrePerf.trim().toLowerCase(),
+      descripcionPerf: dto.descripcionPerf?.trim() || null,
+      usuaIngre: usuarioResponsable,
+      usuaActua: null,
+      fechaActua: null,
     });
 
     return repository.save(perfil);
@@ -98,12 +153,13 @@ export class PerfilesRepository {
   async actualizar(
     perfil: PerfilEntity,
     dto: UpdatePerfilDto,
+    usuarioResponsable: string,
     manager?: EntityManager,
   ): Promise<PerfilEntity> {
     perfil.ideRol = dto.ideRol;
-    perfil.nombrePerf = dto.nombrePerf;
-    perfil.descripcionPerf = dto.descripcionPerf;
-    perfil.usuaActua = 'admin';
+    perfil.nombrePerf = dto.nombrePerf.trim().toLowerCase();
+    perfil.descripcionPerf = dto.descripcionPerf?.trim() || null;
+    perfil.usuaActua = usuarioResponsable;
     perfil.fechaActua = new Date();
 
     return this.getPerfilRepository(manager).save(perfil);
@@ -125,6 +181,120 @@ export class PerfilesRepository {
     });
   }
 
+  async listarTodasOpciones(
+    manager?: EntityManager,
+  ): Promise<OpcionesEntity[]> {
+    return this.getOpcionesRepository(manager).find({
+      order: {
+        nivelOpci: 'ASC',
+        ideOpci: 'ASC',
+      },
+    });
+  }
+
+  async listarOpcionesConPermisos(
+    idePerf: number,
+    manager?: EntityManager,
+  ): Promise<OpcionPermisoPerfilRow[]> {
+    return this.getOpcionesRepository(manager)
+      .createQueryBuilder('opcion')
+      .leftJoin(
+        PerfilOpcionesEntity,
+        'permiso',
+        `
+          permiso.idePerf = :idePerf
+          AND permiso.ideOpci = opcion.ideOpci
+        `,
+        {
+          idePerf,
+        },
+      )
+      .select([
+        'permiso.idePerfOpci AS ide_perf_opci',
+        'opcion.ideOpci AS ide_opci',
+        'opcion.nombreOpci AS nombre_opci',
+        'opcion.rutaOpci AS ruta_opci',
+        'opcion.descripcionOpci AS descripcion_opci',
+        'opcion.activoOpci AS activo_opci',
+        'opcion.visibleOpci AS visible_opci',
+        'opcion.nivelOpci AS nivel_opci',
+        'opcion.padreOpci AS padre_opci',
+        'opcion.iconoOpci AS icono_opci',
+        `
+          CASE
+            WHEN permiso.idePerfOpci IS NULL
+              THEN false
+            ELSE true
+          END AS asignado
+        `,
+        `
+          COALESCE(
+            permiso.listar,
+            'no'
+          ) AS listar
+        `,
+        `
+          COALESCE(
+            permiso.insertar,
+            'no'
+          ) AS insertar
+        `,
+        `
+          COALESCE(
+            permiso.modificar,
+            'no'
+          ) AS modificar
+        `,
+        `
+          COALESCE(
+            permiso.eliminar,
+            'no'
+          ) AS eliminar
+        `,
+      ])
+      .orderBy('opcion.nivelOpci', 'ASC')
+      .addOrderBy('opcion.ideOpci', 'ASC')
+      .getRawMany<OpcionPermisoPerfilRow>();
+  }
+
+  async eliminarPermisosPorPerfil(
+    idePerf: number,
+    manager: EntityManager,
+  ): Promise<void> {
+    await manager.getRepository(PerfilOpcionesEntity).delete({
+      idePerf,
+    });
+  }
+
+  async guardarPermisos(
+    idePerf: number,
+    permisos: PerfilPermisoData[],
+    usuarioResponsable: string,
+    manager: EntityManager,
+  ): Promise<PerfilOpcionesEntity[]> {
+    if (permisos.length === 0) {
+      return [];
+    }
+
+    const repository = manager.getRepository(PerfilOpcionesEntity);
+
+    const registros = permisos.map((permiso) =>
+      repository.create({
+        idePerf,
+        ideOpci: permiso.ideOpci,
+        listar: permiso.listar,
+        insertar: permiso.insertar,
+        modificar: permiso.modificar,
+        eliminar: permiso.eliminar,
+        usuaIngre: usuarioResponsable,
+        usuaActua: null,
+        fechaActua: null,
+      }),
+    );
+
+    return repository.save(registros);
+  }
+
   private getPerfilRepository(
     manager?: EntityManager,
   ): Repository<PerfilEntity> {
@@ -141,5 +311,15 @@ export class PerfilesRepository {
     }
 
     return this.rolRepository;
+  }
+
+  private getOpcionesRepository(
+    manager?: EntityManager,
+  ): Repository<OpcionesEntity> {
+    if (manager) {
+      return manager.getRepository(OpcionesEntity);
+    }
+
+    return this.opcionesRepository;
   }
 }

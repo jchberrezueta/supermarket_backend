@@ -47,6 +47,38 @@ export class PermissionGuard implements CanActivate {
 
     const accion = permisoRequerido.accion;
 
+    const cuenta = await this.dataSource
+      .getRepository(CuentaEntity)
+      .createQueryBuilder('cuenta')
+      .innerJoinAndSelect('cuenta.perfil', 'perfil')
+      .where('cuenta.ideCuen = :ideCuen', {
+        ideCuen,
+      })
+      .getOne();
+
+    if (!cuenta) {
+      throw new UnauthorizedException('La cuenta no está disponible.');
+    }
+
+    if (
+      cuenta.estadoCuen !== 'activo' ||
+      cuenta.debeCambiarClave ||
+      (cuenta.fechaBloqueoCuen && cuenta.fechaBloqueoCuen > new Date())
+    ) {
+      throw new ForbiddenException(
+        'La cuenta no está habilitada para realizar esta operación.',
+      );
+    }
+
+    /*
+     * El administrador principal tiene acceso
+     * total, incluso a opciones nuevas que aún
+     * no se hayan sincronizado.
+     */
+    if (cuenta.perfil?.nombrePerf === 'padmin') {
+      return true;
+    }
+
     const resultado = await this.dataSource
       .getRepository(PerfilOpcionesEntity)
       .createQueryBuilder('permiso')
@@ -56,18 +88,6 @@ export class PermissionGuard implements CanActivate {
       .where('cuenta.ideCuen = :ideCuen', {
         ideCuen,
       })
-      .andWhere('cuenta.estadoCuen = :estadoCuenta', {
-        estadoCuenta: 'activo',
-      })
-      .andWhere('cuenta.debeCambiarClave = false')
-      .andWhere(
-        `
-            (
-              cuenta.fechaBloqueoCuen IS NULL
-              OR cuenta.fechaBloqueoCuen <= CURRENT_TIMESTAMP
-            )
-          `,
-      )
       .andWhere('opcion.rutaOpci = :ruta', {
         ruta,
       })
