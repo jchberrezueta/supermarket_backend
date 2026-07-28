@@ -110,6 +110,18 @@ export class OpcionesController {
   }
 
   @RequirePermission(RUTA_OPCIONES, 'listar')
+  @Get('listar/combo/niveles')
+  async listarComboNiveles() {
+    return this.opcionesService.listarComboNiveles();
+  }
+
+  @RequirePermission(RUTA_OPCIONES, 'listar')
+  @Get('listar/combo/padres')
+  async listarComboPadres() {
+    return this.opcionesService.listarComboPadres();
+  }
+
+  @RequirePermission(RUTA_OPCIONES, 'listar')
   @Get('listar/combo/estados')
   async listarComboEstados() {
     return this.opcionesService.listarComboEstados();

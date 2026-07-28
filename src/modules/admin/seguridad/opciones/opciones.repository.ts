@@ -52,6 +52,18 @@ export class OpcionesRepository {
       });
     }
 
+    if (filtros.nivelOpci !== undefined && filtros.nivelOpci !== null) {
+      qb.andWhere('opcion.nivelOpci = :nivelOpci', {
+        nivelOpci: filtros.nivelOpci,
+      });
+    }
+
+    if (filtros.padreOpci !== undefined && filtros.padreOpci !== null) {
+      qb.andWhere('opcion.padreOpci = :padreOpci', {
+        padreOpci: filtros.padreOpci,
+      });
+    }
+
     if (filtros.activoOpci) {
       qb.andWhere('opcion.activoOpci = :activoOpci', {
         activoOpci: filtros.activoOpci,

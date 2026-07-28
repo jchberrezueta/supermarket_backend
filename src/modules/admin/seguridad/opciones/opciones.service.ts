@@ -163,6 +163,48 @@ export class OpcionesService {
     );
   }
 
+  async listarComboNiveles() {
+    const opciones = await this.dataSource.transaction((manager) =>
+      this.opcionesRepository.listar(manager),
+    );
+
+    return ComboMapper.fromEntities(
+      opciones,
+      (opcion) => opcion.nivelOpci + '',
+      (opcion) => opcion.ideOpci,
+    );
+  }
+
+  async listarComboPadres() {
+    const opciones = await this.dataSource.transaction((manager) =>
+      this.opcionesRepository.listar(manager),
+    );
+
+    return ComboMapper.fromEntities(
+      opciones,
+      (opcion) => opcion.padreOpci + '',
+      (opcion) => opcion.ideOpci,
+    );
+  }
+
+  /*async listarComboPais() {
+    const marcas = await this.dataSource.transaction((manager) =>
+      this.marcasRepository.listar(manager),
+    );
+
+    const paisesUnicos = Array.from(
+      new Set(
+        marcas.map((marca) => marca.paisOrigenMarc).filter((pais) => !!pais),
+      ),
+    ).sort((a, b) => a.localeCompare(b));
+
+    return ComboMapper.fromEntities(
+      paisesUnicos,
+      (pais) => pais,
+      (pais) => pais,
+    );
+  }*/
+
   async listarComboEstados() {
     return ComboMapper.fromValues(['si', 'no']);
   }
