@@ -1002,6 +1002,15 @@ export class AuthService {
     });
   }
 
+  async obtenerEstadoMfa(ideCuen: number) {
+    const configuracion = await this.cuentaMfaService.buscarPorCuenta(ideCuen);
+
+    return {
+      success: true,
+      habilitado: Boolean(configuracion?.habilitado),
+    };
+  }
+
   async verificarMfaLogin(
     mfaToken: string,
     codigo: string,

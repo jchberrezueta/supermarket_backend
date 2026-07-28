@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Get,
   Body,
   UnauthorizedException,
   Req,
@@ -176,5 +177,11 @@ export class AuthController {
       req.headers['user-agent'] || '',
       ip,
     );
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get('mfa/estado')
+  async estadoMfa(@Req() req: any) {
+    return this.authService.obtenerEstadoMfa(Number(req.user.sub));
   }
 }
