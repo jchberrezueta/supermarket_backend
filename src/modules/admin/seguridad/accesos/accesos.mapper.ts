@@ -15,6 +15,7 @@ export interface AccesoUsuarioRow {
   ip_acce: string | null;
   latitud_acce: number | null;
   longitud_acce: number | null;
+  lat_long_acce?: string | null;
 }
 
 export class AccesosMapper {
@@ -42,6 +43,14 @@ export class AccesosMapper {
         acceso.longitudAcce !== null && acceso.longitudAcce !== undefined
           ? MoneyUtil.toNumber(acceso.longitudAcce)
           : null,
+      lat_long_acce:
+        (acceso.latitudAcce !== null && acceso.latitudAcce !== undefined
+          ? MoneyUtil.toNumber(acceso.latitudAcce) + ''
+          : null) +
+        ' ' +
+        (acceso.longitudAcce !== null && acceso.longitudAcce !== undefined
+          ? MoneyUtil.toNumber(acceso.longitudAcce) + ''
+          : null),
     };
   }
 

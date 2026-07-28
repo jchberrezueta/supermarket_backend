@@ -60,6 +60,12 @@ export class FilterAccesoUsuarioDto {
 
   @IsOptional()
   @Transform(({ value }) => optionalTrimmedString(value))
+  @IsString()
+  @MaxLength(50)
+  motivoAcce?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => optionalTrimmedString(value))
   @IsIn(['exitoso', 'fallido'])
   resultadoAcce?: 'exitoso' | 'fallido';
 

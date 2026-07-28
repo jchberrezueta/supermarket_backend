@@ -18,6 +18,8 @@ export interface EmpleadoRow {
   apellido_materno_empl?: string | null;
   nombre_completo?: string | null;
   fecha_termino_empl?: Date | null;
+  telefono_empl?: string | null;
+  email_empl?: string | null;
   usua_ingre?: string;
   fecha_ingre?: Date;
   usua_actua?: string;
@@ -35,7 +37,8 @@ export interface EmpleadoRolRow {
   fecha_inicio_empl: Date;
   fecha_termino_empl?: Date | null;
   telefono_empl?: string | null;
-  titulo_empl: string;
+  titulo_empl: string | null;
+  email_empl?: string | null;
   rmu_empl: number;
   estado_empl: string;
 }
@@ -61,6 +64,8 @@ export class EmpleadosMapper {
       fecha_termino_empl: empleado.fechaTerminoEmpl
         ? empleado.fechaTerminoEmpl
         : null,
+      telefono_empl: empleado.telefonoEmpl,
+      email_empl: empleado.emailEmpl,
       usua_ingre: empleado.usuaIngre,
       fecha_ingre: empleado.fechaIngre,
       usua_actua: empleado.usuaActua,
@@ -85,7 +90,8 @@ export class EmpleadosMapper {
       fecha_termino_empl: empleado.fechaTerminoEmpl
         ? empleado.fechaTerminoEmpl
         : null,
-      telefono_empl: null,
+      telefono_empl: empleado.telefonoEmpl,
+      email_empl: empleado.emailEmpl,
       titulo_empl: empleado.tituloEmpl,
       rmu_empl: MoneyUtil.toNumber(empleado.rmuEmpl),
       estado_empl: empleado.estadoEmpl,

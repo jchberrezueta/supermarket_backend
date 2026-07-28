@@ -76,6 +76,12 @@ export class accesosController {
   }
 
   @RequirePermission(RUTA_ACCESOS, 'listar')
+  @Get('listar/combo/motivo')
+  async listarComboMotivos() {
+    return this.servicio.listarComboMotivos();
+  }
+
+  @RequirePermission(RUTA_ACCESOS, 'listar')
   @Get('listar/combo/cuentas')
   async listarComboCuentas() {
     return this.servicio.listarComboCuentas();

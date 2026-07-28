@@ -161,6 +161,22 @@ export class AccesosUsuariosService {
     );
   }
 
+  async listarComboMotivos() {
+    const accesos = await this.dataSource.transaction((manager) =>
+      this.accesosRepository.listar(manager),
+    );
+
+    const motivosUnicos = Array.from(
+      new Set(accesos.map((acceso) => acceso.motivoAcce).filter(Boolean)),
+    ).sort((a, b) => a.localeCompare(b));
+
+    return ComboMapper.fromEntities(
+      motivosUnicos,
+      (motivo) => motivo,
+      (motivo) => motivo,
+    );
+  }
+
   async listarComboCuentas() {
     const cuentas = await this.dataSource.transaction((manager) =>
       this.accesosRepository.listarCuentas(manager),

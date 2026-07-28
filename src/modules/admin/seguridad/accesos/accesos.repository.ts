@@ -97,6 +97,12 @@ export class AccesosRepository {
       });
     }
 
+    if (filtros.motivoAcce) {
+      qb.andWhere('LOWER(acceso.motivoAcce) LIKE LOWER(:motivoAcce)', {
+        motivoAcce: `%${filtros.motivoAcce}%`,
+      });
+    }
+
     if (filtros.resultadoAcce) {
       qb.andWhere('acceso.resultadoAcce = :resultadoAcce', {
         resultadoAcce: filtros.resultadoAcce,
