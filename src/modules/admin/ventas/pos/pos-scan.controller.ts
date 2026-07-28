@@ -1,7 +1,7 @@
 import { Body, Controller, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { Roles } from 'src/modules/auth/roles/roles.decorator';
-import { RolesGuard } from 'src/modules/auth/roles/roles.guard';
+import { Roles } from 'src/modules/auth/authorization/roles/roles.decorator';
+import { RolesGuard } from 'src/modules/auth/authorization/roles/roles.guard';
 import { EnviarCodigoScanDto } from './dto/enviar_codigo_scan.dto';
 import { PosScanGateway } from './pos-scan.gateway';
 import { PosScanService } from './pos-scan.service';

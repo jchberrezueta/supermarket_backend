@@ -16,8 +16,8 @@ import {
   PermissionGuard,
   RequirePermission,
 } from 'src/modules/auth/authorization';
-import { Roles } from 'src/modules/auth/roles/roles.decorator';
-import { RolesGuard } from 'src/modules/auth/roles/roles.guard';
+import { Roles } from 'src/modules/auth/authorization/roles/roles.decorator';
+import { RolesGuard } from 'src/modules/auth/authorization/roles/roles.guard';
 import { CuentasService } from './cuentas.service';
 import { CreateCuentaDto } from './dto/create_cuenta.dto';
 import { FiltroCuentaDto } from './dto/filter_cuenta.dto';

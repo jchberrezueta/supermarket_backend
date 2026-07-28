@@ -9,16 +9,16 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ChangePasswordDto } from './dto/change_password.dto';
-import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { RefreshTokenDto } from '../sessions/dto/refresh-token.dto';
 import { LogoutDto } from './dto/logout.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { ForgotPasswordDto } from './dto/forgot_password.dto';
 import { ResetPasswordDto } from './dto/reset_password.dto';
-import { GenerarMfaDto } from './dto/generar_mfa.dto';
-import { ActivarMfaDto } from './dto/activar_mfa.dto';
-import { VerificarMfaDto } from './dto/verificar_mfa.dto';
+import { GenerarMfaDto } from '../mfa/dto/generar_mfa.dto';
+import { ActivarMfaDto } from '../mfa/dto/activar_mfa.dto';
+import { VerificarMfaDto } from '../mfa/dto/verificar_mfa.dto';
 import { ChangeRequiredPasswordDto } from './dto/change_required_password.dto';
-import { DesactivarMfaDto } from './dto/desactivar_mfa.dto';
+import { DesactivarMfaDto } from '../mfa/dto/desactivar_mfa.dto';
 
 interface ICredential {
   usuario: string;

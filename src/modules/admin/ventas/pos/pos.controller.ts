@@ -9,8 +9,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { Roles } from 'src/modules/auth/roles/roles.decorator';
-import { RolesGuard } from 'src/modules/auth/roles/roles.guard';
+import { Roles } from 'src/modules/auth/authorization/roles/roles.decorator';
+import { RolesGuard } from 'src/modules/auth/authorization/roles/roles.guard';
 import { ConfirmarVentaPosDto } from './dto/confirmar_venta_pos.dto';
 import { PosService } from './pos.service';
 

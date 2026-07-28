@@ -16,8 +16,8 @@ import {
   PermissionGuard,
   RequirePermission,
 } from 'src/modules/auth/authorization';
-import { Roles } from 'src/modules/auth/roles/roles.decorator';
-import { RolesGuard } from 'src/modules/auth/roles/roles.guard';
+import { Roles } from 'src/modules/auth/authorization/roles/roles.decorator';
+import { RolesGuard } from 'src/modules/auth/authorization/roles/roles.guard';
 import { CreatePerfilDto } from './dto/create_perfil.dto';
 import { FilterPerfilDto } from './dto/filter_perfil.dto';
 import { UpdatePerfilDto } from './dto/update_perfil.dto';

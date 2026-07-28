@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { HistorialClaveEntity } from '../../../database/entities/historial_clave.entity';
+import { HistorialClaveEntity } from '../../../../database/entities/historial_clave.entity';
 
 @Injectable()
 export class HistorialClaveRepository {

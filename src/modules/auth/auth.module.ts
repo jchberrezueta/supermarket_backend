@@ -9,25 +9,25 @@ import {
   RefreshTokenEntity,
 } from '@entities';
 
-import { AuthService } from './auth.service';
-import { JwtStrategy } from './jwt.strategy';
-import { AuthController } from './auth.controller';
+import { AuthService } from './authentication/auth.service';
+import { JwtStrategy } from './strategies/jwt.strategy';
+import { AuthController } from './authentication/auth.controller';
 
 import { CuentasModule } from '../admin/seguridad/cuentas/cuentas.module';
 import { accesosModule } from '../admin/seguridad/accesos/accesos.module';
-import { RefreshTokenRepository } from './refresh_token/refresh_token.repository';
-import { RefreshTokenService } from './refresh_token/refresh_token.service';
-import { PasswordResetTokenRepository } from './password_reset_token/password_reset_token.repository';
-import { PasswordResetTokenService } from './password_reset_token/password_reset_token.service';
-import { PasswordPolicyService } from './password_policy/password_policy.service';
+import { RefreshTokenRepository } from './sessions/refresh_token.repository';
+import { RefreshTokenService } from './sessions/refresh_token.service';
+import { PasswordResetTokenRepository } from './password/password_reset_token.repository';
+import { PasswordResetTokenService } from './password/password_reset_token.service';
+import { PasswordPolicyService } from './password/password_policy.service';
 import { HistorialClaveEntity } from '../../database/entities/historial_clave.entity';
-import { HistorialClaveService } from './historial_clave/historial_clave.service';
-import { HistorialClaveRepository } from './historial_clave/historial_clave.repository';
-import { CuentaMfaRepository } from './cuenta_mfa/cuenta_mfa.repository';
-import { CuentaMfaService } from './cuenta_mfa/cuenta_mfa.service';
+import { HistorialClaveService } from './password/historial-clave/historial_clave.service';
+import { HistorialClaveRepository } from './password/historial-clave/historial_clave.repository';
+import { CuentaMfaRepository } from './mfa/cuenta_mfa.repository';
+import { CuentaMfaService } from './mfa/cuenta_mfa.service';
 import { EmailModule } from './email/email.module';
 import { GeolocationService } from './services/geolocation.service';
-import { MfaCryptoService } from './cuenta_mfa/cuenta_mfa_crypto.service';
+import { MfaCryptoService } from './mfa/cuenta_mfa_crypto.service';
 
 @Module({
   imports: [

@@ -3,18 +3,18 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { CuentasService } from '../admin/seguridad/cuentas/cuentas.service';
+import { CuentasService } from '../../admin/seguridad/cuentas/cuentas.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { RefreshTokenService } from './refresh_token/refresh_token.service';
+import { RefreshTokenService } from '../sessions/refresh_token.service';
 import { randomUUID } from 'crypto';
-import { PasswordResetTokenService } from './password_reset_token/password_reset_token.service';
-import { PasswordPolicyService } from './password_policy/password_policy.service';
-import { HistorialClaveService } from './historial_clave/historial_clave.service';
-import { CuentaMfaService } from './cuenta_mfa/cuenta_mfa.service';
-import { EmailService } from './email/email.service';
-import { AccesosUsuariosService } from '../admin/seguridad/accesos/accesos.service';
-import { GeolocationService } from './services/geolocation.service';
+import { PasswordResetTokenService } from '../password/password_reset_token.service';
+import { PasswordPolicyService } from '../password/password_policy.service';
+import { HistorialClaveService } from '../password/historial-clave/historial_clave.service';
+import { CuentaMfaService } from '../mfa/cuenta_mfa.service';
+import { EmailService } from '../email/email.service';
+import { AccesosUsuariosService } from '../../admin/seguridad/accesos/accesos.service';
+import { GeolocationService } from '../services/geolocation.service';
 
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
@@ -23,7 +23,7 @@ import {
   PasswordResetTokenEntity,
   RefreshTokenEntity,
 } from '@entities';
-import { HistorialClaveEntity } from '../../database/entities/historial_clave.entity';
+import { HistorialClaveEntity } from '@entities';
 import { ConfigService } from '@nestjs/config';
 
 type ValidateResult =

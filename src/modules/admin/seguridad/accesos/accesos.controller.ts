@@ -11,8 +11,8 @@ import {
   PermissionGuard,
   RequirePermission,
 } from 'src/modules/auth/authorization';
-import { Roles } from 'src/modules/auth/roles/roles.decorator';
-import { RolesGuard } from 'src/modules/auth/roles/roles.guard';
+import { Roles } from 'src/modules/auth/authorization/roles/roles.decorator';
+import { RolesGuard } from 'src/modules/auth/authorization/roles/roles.guard';
 import { FilterAccesoUsuarioDto } from './dto/filter_acceso.dto';
 import { AccesosUsuariosService } from './accesos.service';
 
