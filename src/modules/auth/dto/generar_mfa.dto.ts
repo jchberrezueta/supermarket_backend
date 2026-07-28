@@ -1,6 +1,7 @@
-import { IsNumber } from 'class-validator';
+import { IsString, Length } from 'class-validator';
 
 export class GenerarMfaDto {
-  @IsNumber()
-  ideCuen!: number;
+  @IsString()
+  @Length(8, 250)
+  claveActual!: string;
 }

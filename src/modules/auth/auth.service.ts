@@ -1,10 +1,13 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { CuentasService } from '../admin/seguridad/cuentas/cuentas.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { RefreshTokenService } from './refresh_token/refresh_token.service';
 import { randomUUID } from 'crypto';
-import { randomBytes } from 'crypto';
 import { PasswordResetTokenService } from './password_reset_token/password_reset_token.service';
 import { PasswordPolicyService } from './password_policy/password_policy.service';
 import { HistorialClaveService } from './historial_clave/historial_clave.service';
@@ -14,6 +17,16 @@ import { AccesosUsuariosService } from '../admin/seguridad/accesos/accesos.servi
 import { formatDate } from '@helpers/utilities';
 import { GeolocationService } from './services/geolocation.service';
 
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
+import {
+  CuentaEntity,
+  PasswordResetTokenEntity,
+  RefreshTokenEntity,
+} from '@entities';
+import { HistorialClaveEntity } from '../../database/entities/historial_clave.entity';
+import { ConfigService } from '@nestjs/config';
+
 type ValidateResult =
   | {
       success: true;
@@ -22,12 +35,12 @@ type ValidateResult =
   | {
       success: true;
       requiresMfa: true;
-      userId: number;
+      mfaToken: string;
     }
   | {
       success: true;
       requiresPasswordChange: true;
-      userId: number;
+      changeToken: string;
       usuario: string;
     }
   | {
@@ -35,6 +48,7 @@ type ValidateResult =
       reason: 'INVALID_CREDENTIALS' | 'INACTIVE' | 'BLOCKED';
       blockedUntil?: Date | null;
     };
+
 @Injectable()
 export class AuthService {
   private readonly MAX_INTENTOS = 5;
@@ -51,10 +65,16 @@ export class AuthService {
     private emailService: EmailService,
     private readonly accesosService: AccesosUsuariosService,
     private readonly geolocationService: GeolocationService,
+    private readonly configService: ConfigService,
+
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
   ) {}
 
   async validateUser(usuario: string, clave: string): Promise<ValidateResult> {
-    const user = await this.cuentasService.buscarUsuario(usuario);
+    const usuarioNormalizado = usuario.trim().toLowerCase();
+
+    const user = await this.cuentasService.buscarUsuario(usuarioNormalizado);
 
     if (!user) {
       return {
@@ -71,21 +91,26 @@ export class AuthService {
     }
 
     if (user.estado_cuen === 'bloqueado') {
-      const ahora = new Date();
+      return {
+        success: false,
+        reason: 'BLOCKED',
+        blockedUntil: null,
+      };
+    }
 
-      if (user.bloqueado_hasta && user.bloqueado_hasta > ahora) {
-        return {
-          success: false,
-          reason: 'BLOCKED',
-          blockedUntil: user.bloqueado_hasta,
-        };
-      }
+    const ahora = new Date();
 
+    if (user.bloqueado_hasta && user.bloqueado_hasta > ahora) {
+      return {
+        success: false,
+        reason: 'BLOCKED',
+        blockedUntil: user.bloqueado_hasta,
+      };
+    }
+
+    if (user.bloqueado_hasta && user.bloqueado_hasta <= ahora) {
       await this.cuentasService.desbloquearCuenta(user.ide_cuen);
 
-      // Actualizamos el objeto en memoria
-      // para continuar con datos coherentes
-      user.estado_cuen = 'activo';
       user.intentos_fallidos = 0;
       user.bloqueado_hasta = null;
     }
@@ -103,6 +128,7 @@ export class AuthService {
         fechaBloqueo.setMinutes(
           fechaBloqueo.getMinutes() + this.MINUTOS_BLOQUEO,
         );
+
         await this.cuentasService.bloquearCuenta(user.ide_cuen, fechaBloqueo);
 
         return {
@@ -119,10 +145,15 @@ export class AuthService {
     }
 
     if (user.debe_cambiar_clave) {
+      const changeToken = this.generarTokenCambioObligatorio(
+        user.ide_cuen,
+        user.usuario_cuen,
+      );
+
       return {
         success: true,
         requiresPasswordChange: true,
-        userId: user.ide_cuen,
+        changeToken,
         usuario: user.usuario_cuen,
       };
     }
@@ -133,7 +164,7 @@ export class AuthService {
       return {
         success: true,
         requiresMfa: true,
-        userId: user.ide_cuen,
+        mfaToken: this.generarTokenMfaLogin(user.ide_cuen, user.usuario_cuen),
       };
     }
 
@@ -141,7 +172,10 @@ export class AuthService {
 
     await this.cuentasService.actualizarUltimoLogin(user.ide_cuen);
 
-    const dataUser = { ...user };
+    const dataUser = {
+      ...user,
+    };
+
     delete dataUser.password_cuen;
 
     return {
@@ -151,30 +185,42 @@ export class AuthService {
   }
 
   async login(user: any, navegador?: string, ip?: string) {
-    const info = await this.cuentasService.getPerfilPermisos(user.ide_cuen);
+    const info = await this.cuentasService.getPerfilPermisos(
+      String(user.ide_cuen),
+    );
 
     if (!info.length) {
-      throw new Error('La cuenta no tiene permisos configurados');
+      throw new UnauthorizedException(
+        'La cuenta no tiene permisos configurados',
+      );
     }
 
     const rutasSidebar = await this.cuentasService.getSidebarRutas(
-      user.ide_cuen,
+      String(user.ide_cuen),
     );
 
-    const tokens = await this.generarTokens(user, info, rutasSidebar);
+    const ipNormalizada = this.normalizarIp(ip);
 
-    if (ip?.startsWith('::ffff:')) {
-      ip = ip.substring(7);
-    }
+    const navegadorNormalizado = navegador?.trim() || 'desconocido';
 
-    const geo = await this.geolocationService.buscar(ip);
+    const tokens = await this.generarTokens(
+      user,
+      info,
+      rutasSidebar,
+      ipNormalizada,
+      navegadorNormalizado,
+    );
+
+    const geo = await this.geolocationService.buscar(
+      ipNormalizada ?? undefined,
+    );
 
     await this.accesosService.insertarAccesoUsuario({
       ideCuen: user.ide_cuen,
-      navegadorAcce: navegador ?? '',
+      navegadorAcce: navegadorNormalizado,
       fechaAcce: formatDate(new Date()),
       numIntFallAcce: 0,
-      ipAcce: ip ?? '',
+      ipAcce: ipNormalizada ?? undefined,
       latitudAcce: geo?.latitud ?? null,
       longitudAcce: geo?.longitud ?? null,
     });
@@ -194,23 +240,29 @@ export class AuthService {
     };
   }
 
-  private async generarTokens(user: any, permisos: any[], rutasSidebar: any) {
+  private async generarTokens(
+    user: any,
+    permisos: any[],
+    rutasSidebar: any,
+    ip?: string | null,
+    userAgent?: string | null,
+  ) {
     const accessPayload = {
       sub: user.ide_cuen,
       username: user.usuario_cuen,
       state: user.estado_cuen,
       perfil: permisos[0].nombre_perf,
       ideEmpl: user.ide_empl,
-      permisos: permisos.map((p) => ({
-        ruta: p.ruta_opci,
-        listar: p.listar === 'si',
-        insertar: p.insertar === 'si',
-        modificar: p.modificar === 'si',
-        eliminar: p.eliminar === 'si',
-        activo: p.activo_opci === 'si',
-        nombre: p.nombre_opci,
-        nivel: p.nivel_opci,
-        padre: p.padre_opci,
+      permisos: permisos.map((permiso) => ({
+        ruta: permiso.ruta_opci,
+        listar: permiso.listar === 'si',
+        insertar: permiso.insertar === 'si',
+        modificar: permiso.modificar === 'si',
+        eliminar: permiso.eliminar === 'si',
+        activo: permiso.activo_opci === 'si',
+        nombre: permiso.nombre_opci,
+        nivel: permiso.nivel_opci,
+        padre: permiso.padre_opci,
       })),
     };
 
@@ -219,17 +271,26 @@ export class AuthService {
     const refreshPayload = {
       sub: user.ide_cuen,
       jti,
+      purpose: 'refresh',
     };
 
     const accessToken = this.jwtService.sign(accessPayload, {
-      expiresIn: '1h',
+      expiresIn: '15m',
     });
 
     const refreshToken = this.jwtService.sign(refreshPayload, {
+      secret: this.obtenerRefreshSecret(),
       expiresIn: '7d',
     });
 
-    await this.refreshTokenService.guardar(user.ide_cuen, jti, refreshToken);
+    await this.refreshTokenService.guardar(
+      user.ide_cuen,
+      jti,
+      refreshToken,
+      ip,
+      userAgent,
+      null,
+    );
 
     return {
       accessToken,
@@ -239,102 +300,368 @@ export class AuthService {
     };
   }
 
-  async cambiarClave(ideCuen: number, claveActual: string, claveNueva: string) {
+  private generarTokenMfaLogin(ideCuen: number, usuario: string): string {
+    return this.jwtService.sign(
+      {
+        sub: ideCuen,
+        username: usuario,
+        purpose: 'mfa_login',
+      },
+      {
+        secret: this.obtenerMfaChallengeSecret(),
+        expiresIn: '5m',
+      },
+    );
+  }
+
+  private obtenerMfaChallengeSecret(): string {
+    const secret = this.configService.get<string>('MFA_CHALLENGE_SECRET');
+
+    if (!secret) {
+      throw new Error('MFA_CHALLENGE_SECRET es obligatorio');
+    }
+
+    return secret;
+  }
+
+  private generarTokenCambioObligatorio(
+    ideCuen: number,
+    usuario: string,
+  ): string {
+    return this.jwtService.sign(
+      {
+        sub: ideCuen,
+        username: usuario,
+        purpose: 'password_change',
+      },
+      {
+        expiresIn: '5m',
+      },
+    );
+  }
+
+  async generarMfa(ideCuen: number, usuario: string, claveActual: string) {
     const cuenta = await this.cuentasService.buscarCuentaInterna(ideCuen);
 
-    if (!cuenta) {
-      return {
-        success: false,
-        message: 'Cuenta no encontrada',
-      };
+    if (!cuenta || cuenta.estadoCuen !== 'activo') {
+      throw new UnauthorizedException('La cuenta no está disponible');
     }
 
-    const validaClave = await bcrypt.compare(claveActual, cuenta.passwordCuen);
+    const claveValida = await bcrypt.compare(claveActual, cuenta.passwordCuen);
 
-    if (!validaClave) {
-      return {
-        success: false,
-        message: 'La clave actual es incorrecta',
-      };
+    if (!claveValida) {
+      throw new UnauthorizedException('La contraseña actual es incorrecta');
     }
 
-    const politica = this.passwordPolicyService.validar(claveNueva);
+    return this.cuentaMfaService.generarConfiguracion(ideCuen, usuario);
+  }
 
-    if (!politica.valido) {
-      return {
-        success: false,
-        message: politica.errores,
-      };
-    }
-
-    const repetida = await this.historialClaveService.fueUsadaAnteriormente(
+  async activarMfa(ideCuen: number, usuario: string, codigo: string) {
+    const resultado = await this.cuentaMfaService.confirmarActivacion(
       ideCuen,
-      claveNueva,
+      codigo,
+      usuario,
     );
-
-    if (repetida) {
-      return {
-        success: false,
-        message: 'No puede reutilizar una de sus últimas 5 contraseñas',
-      };
-    }
-
-    // Guardamos la clave actual antes de reemplazarla
-    await this.historialClaveService.guardar(ideCuen, cuenta.passwordCuen);
-
-    const nuevoHash = await this.cuentasService.encriptadorHash(claveNueva);
-
-    await this.cuentasService.cambiarClave(ideCuen, nuevoHash);
 
     await this.refreshTokenService.revocarTodos(ideCuen);
 
-    return {
-      success: true,
-      message: 'Clave actualizada correctamente',
-    };
+    return resultado;
   }
 
-  async refresh(refreshToken: string) {
-    // 1. Verificar JWT
+  async desactivarMfa(ideCuen: number, claveActual: string, codigo: string) {
+    const cuenta = await this.cuentasService.buscarCuentaInterna(ideCuen);
+
+    if (!cuenta || cuenta.estadoCuen !== 'activo') {
+      throw new UnauthorizedException('La cuenta no está disponible');
+    }
+
+    const claveValida = await bcrypt.compare(claveActual, cuenta.passwordCuen);
+
+    if (!claveValida) {
+      throw new UnauthorizedException('La contraseña actual es incorrecta');
+    }
+
+    const resultado = await this.cuentaMfaService.desactivar(ideCuen, codigo);
+
+    await this.refreshTokenService.revocarTodos(ideCuen);
+
+    return resultado;
+  }
+
+  async cambiarClave(ideCuen: number, claveActual: string, claveNueva: string) {
+    return this.actualizarClaveTransaccional({
+      ideCuen,
+      claveActual,
+      claveNueva,
+      cambioObligatorio: false,
+    });
+  }
+
+  async cambiarClaveObligatoria(changeToken: string, claveNueva: string) {
     let payload: any;
 
     try {
-      payload = this.jwtService.verify(refreshToken);
+      payload = this.jwtService.verify(changeToken?.trim());
     } catch {
+      throw new UnauthorizedException(
+        'La autorización para cambiar la contraseña es inválida o expiró',
+      );
+    }
+
+    if (
+      payload?.purpose !== 'password_change' ||
+      !Number.isInteger(Number(payload?.sub))
+    ) {
+      throw new UnauthorizedException(
+        'La autorización para cambiar la contraseña no es válida',
+      );
+    }
+
+    return this.actualizarClaveTransaccional({
+      ideCuen: Number(payload.sub),
+      claveNueva,
+      cambioObligatorio: true,
+    });
+  }
+
+  private async actualizarClaveTransaccional(params: {
+    ideCuen: number;
+    claveNueva: string;
+    claveActual?: string;
+    cambioObligatorio: boolean;
+  }) {
+    const politica = this.passwordPolicyService.validar(params.claveNueva);
+
+    if (!politica.valido) {
+      throw new BadRequestException(politica.errores);
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+      const cuentaRepository = manager.getRepository(CuentaEntity);
+
+      const cuenta = await cuentaRepository
+        .createQueryBuilder('cuenta')
+        .setLock('pessimistic_write')
+        .where('cuenta.ide_cuen = :ideCuen', {
+          ideCuen: params.ideCuen,
+        })
+        .getOne();
+
+      if (!cuenta) {
+        throw new UnauthorizedException('La cuenta no está disponible');
+      }
+
+      if (cuenta.estadoCuen !== 'activo') {
+        throw new UnauthorizedException('La cuenta no está activa');
+      }
+
+      if (params.cambioObligatorio && !cuenta.debeCambiarClave) {
+        throw new UnauthorizedException(
+          'La autorización de cambio obligatorio ya no es válida',
+        );
+      }
+
+      /*
+       * En el cambio normal se debe confirmar
+       * la contraseña actual.
+       *
+       * En el cambio obligatorio, la contraseña ya fue
+       * comprobada antes de emitir el token temporal.
+       */
+      if (!params.cambioObligatorio) {
+        const claveActualValida = await bcrypt.compare(
+          params.claveActual ?? '',
+          cuenta.passwordCuen,
+        );
+
+        if (!claveActualValida) {
+          throw new UnauthorizedException('La contraseña actual es incorrecta');
+        }
+      }
+
+      /*
+       * La nueva contraseña tampoco puede ser
+       * igual a la contraseña actual.
+       */
+      const coincideConActual = await bcrypt.compare(
+        params.claveNueva,
+        cuenta.passwordCuen,
+      );
+
+      if (coincideConActual) {
+        throw new BadRequestException(
+          'La nueva contraseña debe ser diferente de la contraseña actual',
+        );
+      }
+
+      const historialRepository = manager.getRepository(HistorialClaveEntity);
+
+      const ultimasClaves = await historialRepository.find({
+        where: {
+          ideCuen: cuenta.ideCuen,
+        },
+        order: {
+          fechaIngre: 'DESC',
+        },
+        take: 5,
+      });
+
+      for (const claveAnterior of ultimasClaves) {
+        const fueUtilizada = await bcrypt.compare(
+          params.claveNueva,
+          claveAnterior.passwordHash,
+        );
+
+        if (fueUtilizada) {
+          throw new BadRequestException(
+            'No puede reutilizar una de sus últimas 5 contraseñas',
+          );
+        }
+      }
+
+      /*
+       * Se conserva la contraseña actual antes
+       * de reemplazarla.
+       */
+      const historial = historialRepository.create({
+        ideCuen: cuenta.ideCuen,
+        passwordHash: cuenta.passwordCuen,
+        usuaIngre: cuenta.usuarioCuen,
+      });
+
+      await historialRepository.save(historial);
+
+      const nuevoHash = await this.cuentasService.encriptadorHash(
+        params.claveNueva,
+      );
+
+      cuenta.passwordCuen = nuevoHash;
+      cuenta.debeCambiarClave = false;
+      cuenta.intentosFallidosCuen = 0;
+      cuenta.fechaBloqueoCuen = null;
+      cuenta.usuaActua = cuenta.usuarioCuen;
+      cuenta.fechaActua = new Date();
+
+      await cuentaRepository.save(cuenta);
+
+      /*
+       * Cualquier enlace de recuperación pendiente
+       * queda invalidado.
+       */
+      await manager
+        .getRepository(PasswordResetTokenEntity)
+        .createQueryBuilder()
+        .update(PasswordResetTokenEntity)
+        .set({
+          utilizado: true,
+          usuaActua: cuenta.usuarioCuen,
+          fechaActua: () => 'CURRENT_TIMESTAMP',
+        })
+        .where('ide_cuen = :ideCuen', {
+          ideCuen: cuenta.ideCuen,
+        })
+        .andWhere('utilizado = false')
+        .execute();
+
+      /*
+       * Todas las sesiones anteriores se revocan.
+       */
+      await manager
+        .getRepository(RefreshTokenEntity)
+        .createQueryBuilder()
+        .update(RefreshTokenEntity)
+        .set({
+          revocado: true,
+          usuaActua: cuenta.usuarioCuen,
+          fechaActua: () => 'CURRENT_TIMESTAMP',
+        })
+        .where('ide_cuen = :ideCuen', {
+          ideCuen: cuenta.ideCuen,
+        })
+        .andWhere('revocado = false')
+        .execute();
+
+      return {
+        success: true,
+        message:
+          'Contraseña actualizada correctamente. Inicie sesión nuevamente.',
+      };
+    });
+  }
+
+  async refresh(refreshToken: string, navegador?: string, ip?: string) {
+    const tokenLimpio = refreshToken?.trim();
+
+    if (!tokenLimpio) {
       throw new UnauthorizedException('Refresh token inválido');
     }
 
-    // 2. Buscar registro
+    let payload: any;
+
+    try {
+      payload = this.jwtService.verify(tokenLimpio, {
+        secret: this.obtenerRefreshSecret(),
+      });
+    } catch {
+      throw new UnauthorizedException('Refresh token inválido o expirado');
+    }
+
+    if (
+      payload?.purpose !== 'refresh' ||
+      !payload?.jti ||
+      !Number.isInteger(Number(payload?.sub))
+    ) {
+      throw new UnauthorizedException('Refresh token inválido');
+    }
+
+    const ideCuen = Number(payload.sub);
+
     const registro = await this.refreshTokenService.buscarPorJti(payload.jti);
 
-    if (!registro) {
+    if (!registro || registro.ideCuen !== ideCuen) {
       throw new UnauthorizedException('Refresh token revocado');
     }
 
-    // 3. Comparar hash
-    const valido = await bcrypt.compare(refreshToken, registro.tokenHash);
+    const coincide = await bcrypt.compare(tokenLimpio, registro.tokenHash);
 
-    if (!valido) {
+    if (!coincide) {
+      await this.refreshTokenService.revocar(registro.ideReft);
+
       throw new UnauthorizedException('Refresh token inválido');
     }
 
-    // 4. Verificar expiración
-    if (registro.fechaExpiracion < new Date()) {
+    if (registro.fechaExpiracion <= new Date()) {
       await this.refreshTokenService.revocar(registro.ideReft);
 
       throw new UnauthorizedException('Refresh token expirado');
     }
 
-    // ===== AQUÍ EMPIEZA EL PASO 16 =====
+    const cuenta = await this.cuentasService.buscarCuentaInterna(ideCuen);
 
-    await this.refreshTokenService.revocar(registro.ideReft);
+    if (!cuenta || cuenta.estadoCuen !== 'activo') {
+      await this.refreshTokenService.revocarTodos(ideCuen);
 
-    const info = await this.cuentasService.getPerfilPermisos(
-      registro.ideCuen.toString(),
-    );
+      throw new UnauthorizedException('La cuenta no está activa');
+    }
+
+    if (cuenta.debeCambiarClave) {
+      await this.refreshTokenService.revocarTodos(ideCuen);
+
+      throw new UnauthorizedException('La cuenta debe cambiar su contraseña');
+    }
+
+    const ahora = new Date();
+
+    if (cuenta.fechaBloqueoCuen && cuenta.fechaBloqueoCuen > ahora) {
+      await this.refreshTokenService.revocarTodos(ideCuen);
+
+      throw new UnauthorizedException('La cuenta está bloqueada temporalmente');
+    }
+
+    const info = await this.cuentasService.getPerfilPermisos(String(ideCuen));
 
     if (!info.length) {
-      await this.refreshTokenService.revocar(registro.ideReft);
+      await this.refreshTokenService.revocarTodos(ideCuen);
 
       throw new UnauthorizedException(
         'La cuenta no tiene permisos configurados',
@@ -342,17 +669,29 @@ export class AuthService {
     }
 
     const rutasSidebar = await this.cuentasService.getSidebarRutas(
-      registro.ideCuen.toString(),
+      String(ideCuen),
     );
 
+    /*
+     * Rotación: el token presentado deja
+     * de ser válido antes de emitir el nuevo.
+     */
+    await this.refreshTokenService.revocar(registro.ideReft);
+
     const user = {
-      ide_cuen: info[0].ide_cuen,
-      usuario_cuen: info[0].usuario_cuen,
-      estado_cuen: info[0].estado_cuen,
-      ide_empl: info[0].ide_empl,
+      ide_cuen: cuenta.ideCuen,
+      usuario_cuen: cuenta.usuarioCuen,
+      estado_cuen: cuenta.estadoCuen,
+      ide_empl: cuenta.ideEmpl,
     };
 
-    const tokens = await this.generarTokens(user, info, rutasSidebar);
+    const tokens = await this.generarTokens(
+      user,
+      info,
+      rutasSidebar,
+      this.normalizarIp(ip),
+      navegador?.trim() || 'desconocido',
+    );
 
     return {
       access_token: tokens.accessToken,
@@ -361,11 +700,27 @@ export class AuthService {
   }
 
   async logout(refreshToken: string) {
+    const tokenLimpio = refreshToken?.trim();
+
+    if (!tokenLimpio) {
+      return {
+        success: true,
+      };
+    }
+
     let payload: any;
 
     try {
-      payload = this.jwtService.verify(refreshToken);
+      payload = this.jwtService.verify(tokenLimpio, {
+        secret: this.obtenerRefreshSecret(),
+      });
     } catch {
+      return {
+        success: true,
+      };
+    }
+
+    if (payload?.purpose !== 'refresh' || !payload?.jti) {
       return {
         success: true,
       };
@@ -373,13 +728,9 @@ export class AuthService {
 
     const registro = await this.refreshTokenService.buscarPorJti(payload.jti);
 
-    if (!registro) {
-      return {
-        success: true,
-      };
+    if (registro) {
+      await this.refreshTokenService.revocar(registro.ideReft);
     }
-
-    await this.refreshTokenService.revocar(registro.ideReft);
 
     return {
       success: true,
@@ -394,73 +745,54 @@ export class AuthService {
     };
   }
 
-  async solicitarRecuperacion(usuario: string) {
-    const cuenta = await this.cuentasService.buscarUsuario(usuario);
+  async solicitarRecuperacion(usuario: string, ipSolicitud?: string | null) {
+    const respuesta = {
+      success: true,
+      message: 'Si la cuenta existe, recibirá instrucciones de recuperación',
+    };
+
+    const usuarioNormalizado = usuario.trim().toLowerCase();
+
+    const cuenta = await this.cuentasService.buscarUsuario(usuarioNormalizado);
 
     /*
-    Por seguridad no revelamos si existe o no.
-    En sistemas reales siempre se responde igual.
-  */
-
-    if (!cuenta) {
-      return {
-        success: true,
-        message: 'Si la cuenta existe, recibirá instrucciones de recuperación',
-      };
+     * Se devuelve siempre la misma respuesta para no revelar
+     * si el usuario existe o si tiene correo registrado.
+     */
+    if (!cuenta?.correo_empl) {
+      return respuesta;
     }
 
-    const token = randomBytes(32).toString('hex');
+    let ipNormalizada = ipSolicitud?.trim() || null;
 
-    const expiracion = new Date();
+    if (ipNormalizada?.startsWith('::ffff:')) {
+      ipNormalizada = ipNormalizada.substring(7);
+    }
 
-    expiracion.setMinutes(expiracion.getMinutes() + 15);
+    const fechaExpiracion = new Date();
 
-    //await this.refreshTokenService;
+    fechaExpiracion.setMinutes(fechaExpiracion.getMinutes() + 15);
 
-    await this.passwordResetTokenService.guardar(
+    const token = await this.passwordResetTokenService.generar(
       cuenta.ide_cuen,
-      token,
-      expiracion,
+      fechaExpiracion,
+      ipNormalizada,
     );
-
-    /*
-    Aquí posteriormente irá:
-    - envío de correo
-    - enlace frontend
-  */
-    if (!cuenta.correo_empl) {
-      return {
-        success: true,
-        message:
-          'La cuenta existe pero no tiene correo registrado. Contacte al administrador.',
-      };
-    }
 
     await this.emailService.enviarRecuperacionPassword(
       cuenta.correo_empl,
       cuenta.usuario_cuen,
       token,
     );
-    return {
-      success: true,
-      message: 'Si la cuenta existe, recibirá instrucciones de recuperación',
 
-      // temporal para pruebas
-      token,
-    };
+    return respuesta;
   }
 
   async resetPassword(token: string, nuevaClave: string) {
-    const registro = await this.passwordResetTokenService.validar(token);
+    const tokenLimpio = token?.trim();
 
-    if (!registro) {
+    if (!tokenLimpio) {
       throw new UnauthorizedException('Token inválido o expirado');
-    }
-
-    if (registro.fechaExpiracion < new Date()) {
-      await this.passwordResetTokenService.usar(registro.idePrt);
-
-      throw new UnauthorizedException('Token expirado');
     }
 
     const politica = this.passwordPolicyService.validar(nuevaClave);
@@ -472,64 +804,202 @@ export class AuthService {
       };
     }
 
-    const cuenta = await this.cuentasService.buscarCuentaInterna(
-      registro.ideCuen,
-    );
-
-    if (!cuenta) {
-      throw new UnauthorizedException('Cuenta no encontrada');
-    }
-
-    const repetida = await this.historialClaveService.fueUsadaAnteriormente(
-      registro.ideCuen,
-      nuevaClave,
-    );
-
-    if (repetida) {
-      throw new UnauthorizedException(
-        'No puede reutilizar una contraseña anterior',
-      );
-    }
-
-    // Guardar contraseña antigua antes de reemplazarla
-    await this.historialClaveService.guardar(
-      registro.ideCuen,
-      cuenta.passwordCuen,
-    );
+    const tokenHash = this.passwordResetTokenService.calcularHash(tokenLimpio);
 
     const nuevoHash = await this.cuentasService.encriptadorHash(nuevaClave);
 
-    await this.cuentasService.cambiarClave(registro.ideCuen, nuevoHash);
+    return this.dataSource.transaction(async (manager) => {
+      const tokenRepository = manager.getRepository(PasswordResetTokenEntity);
 
-    await this.refreshTokenService.revocarTodos(registro.ideCuen);
+      const tokenRegistro = await tokenRepository
+        .createQueryBuilder('token')
+        .setLock('pessimistic_write')
+        .where('token.token_hash = :tokenHash', {
+          tokenHash,
+        })
+        .andWhere('token.utilizado = false')
+        .getOne();
 
-    await this.passwordResetTokenService.usar(registro.idePrt);
+      if (!tokenRegistro || tokenRegistro.fechaExpiracion <= new Date()) {
+        throw new UnauthorizedException('Token inválido o expirado');
+      }
 
-    return {
-      success: true,
-      message: 'Contraseña actualizada correctamente',
-    };
+      const cuentaRepository = manager.getRepository(CuentaEntity);
+
+      const cuenta = await cuentaRepository
+        .createQueryBuilder('cuenta')
+        .setLock('pessimistic_write')
+        .where('cuenta.ide_cuen = :ideCuen', {
+          ideCuen: tokenRegistro.ideCuen,
+        })
+        .getOne();
+
+      if (!cuenta) {
+        throw new UnauthorizedException('Token inválido o expirado');
+      }
+
+      const coincideActual = await bcrypt.compare(
+        nuevaClave,
+        cuenta.passwordCuen,
+      );
+
+      if (coincideActual) {
+        throw new UnauthorizedException(
+          'No puede reutilizar su contraseña actual',
+        );
+      }
+
+      const historialRepository = manager.getRepository(HistorialClaveEntity);
+
+      const anteriores = await historialRepository.find({
+        where: {
+          ideCuen: cuenta.ideCuen,
+        },
+        order: {
+          fechaIngre: 'DESC',
+        },
+        take: 5,
+      });
+
+      for (const anterior of anteriores) {
+        const coincide = await bcrypt.compare(
+          nuevaClave,
+          anterior.passwordHash,
+        );
+
+        if (coincide) {
+          throw new UnauthorizedException(
+            'No puede reutilizar una de sus últimas 5 contraseñas',
+          );
+        }
+      }
+
+      const historial = historialRepository.create({
+        ideCuen: cuenta.ideCuen,
+        passwordHash: cuenta.passwordCuen,
+        usuaIngre: 'sistema',
+      });
+
+      await historialRepository.save(historial);
+
+      cuenta.passwordCuen = nuevoHash;
+      cuenta.debeCambiarClave = false;
+      cuenta.intentosFallidosCuen = 0;
+      cuenta.fechaBloqueoCuen = null;
+      cuenta.usuaActua = 'sistema';
+      cuenta.fechaActua = new Date();
+
+      await cuentaRepository.save(cuenta);
+
+      /*
+       * El token utilizado y cualquier otro token activo
+       * de la cuenta quedan invalidados.
+       */
+      await tokenRepository
+        .createQueryBuilder()
+        .update(PasswordResetTokenEntity)
+        .set({
+          utilizado: true,
+          usuaActua: 'sistema',
+          fechaActua: () => 'CURRENT_TIMESTAMP',
+        })
+        .where('ide_cuen = :ideCuen', {
+          ideCuen: cuenta.ideCuen,
+        })
+        .andWhere('utilizado = false')
+        .execute();
+
+      /*
+       * Revocar todas las sesiones existentes.
+       */
+      await manager
+        .getRepository(RefreshTokenEntity)
+        .createQueryBuilder()
+        .update(RefreshTokenEntity)
+        .set({
+          revocado: true,
+          usuaActua: 'sistema',
+          fechaActua: () => 'CURRENT_TIMESTAMP',
+        })
+        .where('ide_cuen = :ideCuen', {
+          ideCuen: cuenta.ideCuen,
+        })
+        .andWhere('revocado = false')
+        .execute();
+
+      return {
+        success: true,
+        message: 'Contraseña actualizada correctamente',
+      };
+    });
   }
 
   async verificarMfaLogin(
-    ideCuen: number,
+    mfaToken: string,
     codigo: string,
     navegador?: string,
     ip?: string,
   ) {
+    let payload: any;
+
+    try {
+      payload = this.jwtService.verify(mfaToken.trim(), {
+        secret: this.obtenerMfaChallengeSecret(),
+      });
+    } catch {
+      throw new UnauthorizedException('El desafío MFA es inválido o expiró');
+    }
+
+    if (
+      payload?.purpose !== 'mfa_login' ||
+      !Number.isInteger(Number(payload?.sub))
+    ) {
+      throw new UnauthorizedException('El desafío MFA no es válido');
+    }
+
+    const ideCuen = Number(payload.sub);
+
+    const cuenta = await this.cuentasService.buscarCuentaInterna(ideCuen);
+
+    if (!cuenta || cuenta.estadoCuen !== 'activo') {
+      throw new UnauthorizedException('La cuenta no está disponible');
+    }
+
+    const ahora = new Date();
+
+    if (cuenta.fechaBloqueoCuen && cuenta.fechaBloqueoCuen > ahora) {
+      throw new UnauthorizedException(
+        `Cuenta bloqueada hasta ${cuenta.fechaBloqueoCuen.toISOString()}`,
+      );
+    }
+
     const resultado = await this.cuentaMfaService.verificarLogin(
       ideCuen,
       codigo,
     );
 
     if (!resultado.valido) {
-      throw new UnauthorizedException(resultado.message);
-    }
+      await this.cuentasService.incrementarIntentos(ideCuen);
 
-    const cuenta = await this.cuentasService.buscarCuentaInterna(ideCuen);
+      const intentos = cuenta.intentosFallidosCuen + 1;
 
-    if (!cuenta) {
-      throw new UnauthorizedException('Cuenta no encontrada');
+      if (intentos >= this.MAX_INTENTOS) {
+        const fechaBloqueo = new Date();
+
+        fechaBloqueo.setMinutes(
+          fechaBloqueo.getMinutes() + this.MINUTOS_BLOQUEO,
+        );
+
+        await this.cuentasService.bloquearCuenta(ideCuen, fechaBloqueo);
+
+        throw new UnauthorizedException(
+          `Cuenta bloqueada hasta ${fechaBloqueo.toISOString()}`,
+        );
+      }
+
+      throw new UnauthorizedException(
+        resultado.message || 'El código MFA no es válido',
+      );
     }
 
     await this.cuentasService.reiniciarIntentos(ideCuen);
@@ -546,5 +1016,29 @@ export class AuthService {
       navegador,
       ip,
     );
+  }
+
+  private obtenerRefreshSecret(): string {
+    const secret = this.configService.get<string>('JWT_REFRESH_SECRET')?.trim();
+
+    if (!secret) {
+      throw new Error('JWT_REFRESH_SECRET es obligatorio');
+    }
+
+    return secret;
+  }
+
+  private normalizarIp(ip?: string | null): string | null {
+    const valor = ip?.trim();
+
+    if (!valor) {
+      return null;
+    }
+
+    if (valor.startsWith('::ffff:')) {
+      return valor.substring(7);
+    }
+
+    return valor;
   }
 }

@@ -1,10 +1,11 @@
 import { Transform } from 'class-transformer';
 import {
   IsDateString,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
-  Length,
+  MaxLength,
   Min,
 } from 'class-validator';
 
@@ -15,43 +16,52 @@ function optionalInt(value: unknown): number | undefined | unknown {
 
   const numberValue = Number(value);
 
-  if (Number.isInteger(numberValue)) {
-    return numberValue;
+  return Number.isInteger(numberValue) ? numberValue : value;
+}
+
+function optionalTrimmedString(value: unknown): string | undefined | unknown {
+  if (value === null || value === undefined) {
+    return undefined;
   }
 
-  return value;
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const result = value.trim();
+
+  return result === '' ? undefined : result;
 }
 
 export class FilterAccesoUsuarioDto {
   @IsOptional()
   @Transform(({ value }) => optionalInt(value))
   @IsInt()
-  @Min(0)
+  @Min(1)
   ideCuen?: number;
 
   @IsOptional()
+  @Transform(({ value }) => optionalTrimmedString(value))
   @IsString()
-  @Length(1, 15)
-  @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
-  )
+  @MaxLength(45)
   ipAcce?: string;
 
   @IsOptional()
+  @Transform(({ value }) => optionalTrimmedString(value))
   @IsString()
-  @Length(1, 250)
-  @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
-  )
+  @MaxLength(25)
   usuarioCuen?: string;
 
   @IsOptional()
+  @Transform(({ value }) => optionalTrimmedString(value))
   @IsString()
-  @Length(1, 250)
-  @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
-  )
+  @MaxLength(250)
   navegadorAcce?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => optionalTrimmedString(value))
+  @IsIn(['exitoso', 'fallido'])
+  resultadoAcce?: 'exitoso' | 'fallido';
 
   @IsOptional()
   @IsDateString()

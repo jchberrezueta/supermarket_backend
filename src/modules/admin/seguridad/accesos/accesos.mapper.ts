@@ -3,28 +3,37 @@ import { AccesoUsuarioEntity } from '@entities';
 
 export interface AccesoUsuarioRow {
   ide_acce: number;
-  ide_cuen: number;
-  usuario_cuen?: string | null;
-  estado_cuen?: string | null;
+  ide_cuen: number | null;
+  usuario_intentado: string | null;
+  usuario_cuen: string | null;
+  estado_cuen: string | null;
+  resultado_acce: string;
+  motivo_acce: string | null;
   navegador_acce: string;
   fecha_acce: Date;
   num_int_fall_acce: number;
-  ip_acce: string;
-  latitud_acce?: number | null;
-  longitud_acce?: number | null;
+  ip_acce: string | null;
+  latitud_acce: number | null;
+  longitud_acce: number | null;
 }
 
 export class AccesosMapper {
   static toRow(acceso: AccesoUsuarioEntity): AccesoUsuarioRow {
+    const usuario =
+      acceso.usuarioIntentado ?? acceso.cuenta?.usuarioCuen ?? null;
+
     return {
       ide_acce: acceso.ideAcce,
       ide_cuen: acceso.ideCuen,
-      usuario_cuen: acceso.cuenta?.usuarioCuen ?? null,
+      usuario_intentado: acceso.usuarioIntentado ?? null,
+      usuario_cuen: usuario,
       estado_cuen: acceso.cuenta?.estadoCuen ?? null,
+      resultado_acce: acceso.resultadoAcce,
+      motivo_acce: acceso.motivoAcce ?? null,
       navegador_acce: acceso.navegadorAcce,
       fecha_acce: acceso.fechaAcce,
       num_int_fall_acce: acceso.numIntFallAcce,
-      ip_acce: acceso.ipAcce,
+      ip_acce: acceso.ipAcce ?? null,
       latitud_acce:
         acceso.latitudAcce !== null && acceso.latitudAcce !== undefined
           ? MoneyUtil.toNumber(acceso.latitudAcce)
@@ -38,25 +47,5 @@ export class AccesosMapper {
 
   static toRows(accesos: AccesoUsuarioEntity[]): AccesoUsuarioRow[] {
     return accesos.map((acceso) => this.toRow(acceso));
-  }
-
-  private static formatDateTime(value?: Date | string): string {
-    if (!value) {
-      return '';
-    }
-
-    const date = value instanceof Date ? value : new Date(value);
-
-    if (Number.isNaN(date.getTime())) {
-      return String(value);
-    }
-
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    const hour = String(date.getHours()).padStart(2, '0');
-    const minute = String(date.getMinutes()).padStart(2, '0');
-
-    return `${day}/${month}/${year} ${hour}:${minute}`;
   }
 }

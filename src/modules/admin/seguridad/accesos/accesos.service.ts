@@ -89,7 +89,11 @@ export class AccesosUsuariosService {
     );
 
     const ipsUnicas = Array.from(
-      new Set(accesos.map((acceso) => acceso.ipAcce).filter((ip) => !!ip)),
+      new Set(
+        accesos
+          .map((acceso) => acceso.ipAcce)
+          .filter((ip): ip is string => Boolean(ip)),
+      ),
     ).sort((a, b) => a.localeCompare(b));
 
     return ComboMapper.fromEntities(

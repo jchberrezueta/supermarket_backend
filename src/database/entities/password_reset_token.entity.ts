@@ -1,6 +1,7 @@
 import {
   Column,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
@@ -8,8 +9,11 @@ import {
 import { CuentaEntity } from './cuenta.entity';
 
 @Entity({ name: 'password_reset_token' })
+@Index('uq_password_reset_token_hash', ['tokenHash'], { unique: true })
 export class PasswordResetTokenEntity {
-  @PrimaryGeneratedColumn({ name: 'ide_prt' })
+  @PrimaryGeneratedColumn({
+    name: 'ide_prt',
+  })
   idePrt!: number;
 
   @Column({
@@ -21,7 +25,7 @@ export class PasswordResetTokenEntity {
   @Column({
     name: 'token_hash',
     type: 'varchar',
-    length: 255,
+    length: 64,
   })
   tokenHash!: string;
 
@@ -34,9 +38,16 @@ export class PasswordResetTokenEntity {
   @Column({
     name: 'utilizado',
     type: 'boolean',
-    default: false,
   })
   utilizado!: boolean;
+
+  @Column({
+    name: 'ip_solicitud',
+    type: 'varchar',
+    length: 45,
+    nullable: true,
+  })
+  ipSolicitud?: string | null;
 
   @Column({
     name: 'usua_ingre',
@@ -58,14 +69,14 @@ export class PasswordResetTokenEntity {
     length: 25,
     nullable: true,
   })
-  usuaActua?: string;
+  usuaActua?: string | null;
 
   @Column({
     name: 'fecha_actua',
     type: 'timestamp',
     nullable: true,
   })
-  fechaActua?: Date;
+  fechaActua?: Date | null;
 
   @ManyToOne(() => CuentaEntity, (cuenta) => cuenta.passwordResetTokens, {
     onDelete: 'CASCADE',

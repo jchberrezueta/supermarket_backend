@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { TOTP } from 'otplib';
 import * as QRCode from 'qrcode';
 import { CuentaMfaRepository } from './cuenta_mfa.repository';
+import { MfaCryptoService } from './cuenta_mfa_crypto.service';
 
 @Injectable()
 export class CuentaMfaService {
@@ -10,97 +11,119 @@ export class CuentaMfaService {
     period: 30,
   });
 
-  constructor(private readonly repository: CuentaMfaRepository) {}
+  constructor(
+    private readonly repository: CuentaMfaRepository,
+    private readonly cryptoService: MfaCryptoService,
+  ) {}
 
   async generarConfiguracion(ideCuen: number, usuario: string) {
+    const configuracionActual = await this.repository.buscarPorCuenta(ideCuen);
+
+    if (configuracionActual?.habilitado) {
+      throw new BadRequestException('MFA ya está activado para esta cuenta');
+    }
+
     const secreto = await this.totp.generateSecret();
 
     const otpauth = this.totp.toURI({
       secret: secreto,
-      issuer: 'Sistema SIG',
+      issuer: 'SuperMarket SIG',
       label: usuario,
     });
 
     const qr = await QRCode.toDataURL(otpauth);
 
-    await this.repository.crear(ideCuen, secreto);
+    const secretoCifrado = this.cryptoService.cifrar(secreto);
+
+    await this.repository.guardarConfiguracion(
+      ideCuen,
+      secretoCifrado,
+      usuario,
+    );
 
     return {
+      success: true,
+      message: 'Configuración MFA generada. Confirme un código para activarla.',
       qr,
       secreto,
     };
-  }
-
-  async validarCodigo(secreto: string, codigo: string) {
-    const resultado = await this.totp.verify(codigo, {
-      secret: secreto,
-    });
-
-    return resultado;
-  }
-
-  async activar(ideMfa: number) {
-    return this.repository.activar(ideMfa);
   }
 
   async buscarPorCuenta(ideCuen: number) {
     return this.repository.buscarPorCuenta(ideCuen);
   }
 
-  async actualizarUltimoUso(ideMfa: number) {
-    return this.repository.actualizarUltimoUso(ideMfa);
-  }
-
-  async confirmarActivacion(ideCuen: number, codigo: string) {
+  async confirmarActivacion(
+    ideCuen: number,
+    codigo: string,
+    usuarioResponsable: string,
+  ) {
     const mfa = await this.repository.buscarPorCuenta(ideCuen);
 
     if (!mfa) {
-      return {
-        success: false,
-        message: 'No existe configuración MFA',
-      };
+      throw new BadRequestException(
+        'Primero debe generar la configuración MFA',
+      );
     }
 
-    const valido = await this.validarCodigo(mfa.secretoMfa, codigo);
+    if (mfa.habilitado) {
+      throw new BadRequestException('MFA ya está activado');
+    }
+
+    const secreto = this.cryptoService.descifrar(mfa.secretoMfa);
+
+    const valido = await this.validarCodigo(secreto, codigo);
 
     if (!valido) {
-      return {
-        success: false,
-        message: 'Código MFA incorrecto',
-      };
+      throw new BadRequestException('El código MFA no es válido');
     }
 
-    await this.repository.activar(mfa.ideMfa);
+    await this.repository.activar(mfa.ideMfa, usuarioResponsable);
 
     return {
       success: true,
-      message: 'MFA activado correctamente',
+      message: 'MFA activado correctamente. Inicie sesión nuevamente.',
     };
   }
 
-  async verificarLogin(ideCuen: number, codigo: string) {
+  async verificarLogin(
+    ideCuen: number,
+    codigo: string,
+  ): Promise<{
+    valido: boolean;
+    message?: string;
+  }> {
     const mfa = await this.repository.buscarPorCuenta(ideCuen);
 
-    if (!mfa) {
+    if (!mfa || !mfa.habilitado) {
       return {
         valido: false,
-        message: 'MFA no configurado',
+        message: 'MFA no está habilitado para esta cuenta',
       };
     }
 
-    if (!mfa.habilitado) {
+    /*
+     * Evita aceptar nuevamente un código utilizado
+     * durante el mismo periodo de 30 segundos.
+     */
+    if (
+      mfa.fechaUltimoUso &&
+      this.perteneceAlPeriodoActual(mfa.fechaUltimoUso)
+    ) {
       return {
         valido: false,
-        message: 'MFA no está activo',
+        message: 'El código MFA ya fue utilizado',
       };
     }
 
-    const valido = await this.validarCodigo(mfa.secretoMfa, codigo);
+    const secreto = this.cryptoService.descifrar(mfa.secretoMfa);
+
+    const valido = await this.validarCodigo(secreto, codigo);
 
     if (!valido) {
       return {
         valido: false,
-        message: 'Código MFA incorrecto',
+        message: 'El código MFA no es válido',
       };
     }
 
@@ -109,5 +132,48 @@ export class CuentaMfaService {
     return {
       valido: true,
     };
+  }
+
+  async desactivar(ideCuen: number, codigo: string) {
+    const mfa = await this.repository.buscarPorCuenta(ideCuen);
+
+    if (!mfa || !mfa.habilitado) {
+      throw new BadRequestException('MFA no está activado');
+    }
+
+    const secreto = this.cryptoService.descifrar(mfa.secretoMfa);
+
+    const valido = await this.validarCodigo(secreto, codigo);
+
+    if (!valido) {
+      throw new BadRequestException('El código MFA no es válido');
+    }
+
+    await this.repository.eliminarConfiguracion(ideCuen);
+
+    return {
+      success: true,
+      message: 'MFA desactivado correctamente. Inicie sesión nuevamente.',
+    };
+  }
+
+  private async validarCodigo(
+    secreto: string,
+    codigo: string,
+  ): Promise<boolean> {
+    const resultado = await this.totp.verify(codigo.trim(), {
+      secret: secreto,
+    });
+
+    return resultado.valid;
+  }
+
+  private perteneceAlPeriodoActual(fecha: Date): boolean {
+    const periodoMilisegundos = 30_000;
+
+    return (
+      Math.floor(fecha.getTime() / periodoMilisegundos) ===
+      Math.floor(Date.now() / periodoMilisegundos)
+    );
   }
 }

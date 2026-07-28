@@ -7,15 +7,50 @@ import {
 } from 'typeorm';
 import { CuentaEntity } from './cuenta.entity';
 
+export type ResultadoAcceso = 'exitoso' | 'fallido';
+
 @Entity({ name: 'acceso_usuario' })
 export class AccesoUsuarioEntity {
-  @PrimaryGeneratedColumn({ name: 'ide_acce' })
+  @PrimaryGeneratedColumn({
+    name: 'ide_acce',
+  })
   ideAcce!: number;
 
-  @Column({ name: 'ide_cuen', type: 'int' })
-  ideCuen!: number;
+  @Column({
+    name: 'ide_cuen',
+    type: 'int',
+    nullable: true,
+  })
+  ideCuen!: number | null;
 
-  @Column({ name: 'navegador_acce', type: 'varchar', length: 250 })
+  @Column({
+    name: 'usuario_intentado',
+    type: 'varchar',
+    length: 25,
+    nullable: true,
+  })
+  usuarioIntentado?: string | null;
+
+  @Column({
+    name: 'resultado_acce',
+    type: 'varchar',
+    length: 15,
+  })
+  resultadoAcce!: ResultadoAcceso;
+
+  @Column({
+    name: 'motivo_acce',
+    type: 'varchar',
+    length: 50,
+    nullable: true,
+  })
+  motivoAcce?: string | null;
+
+  @Column({
+    name: 'navegador_acce',
+    type: 'varchar',
+    length: 250,
+  })
   navegadorAcce!: string;
 
   @Column({
@@ -25,11 +60,19 @@ export class AccesoUsuarioEntity {
   })
   fechaAcce!: Date;
 
-  @Column({ name: 'num_int_fall_acce', type: 'int' })
+  @Column({
+    name: 'num_int_fall_acce',
+    type: 'int',
+  })
   numIntFallAcce!: number;
 
-  @Column({ name: 'ip_acce', type: 'varchar', length: 15 })
-  ipAcce!: string;
+  @Column({
+    name: 'ip_acce',
+    type: 'varchar',
+    length: 45,
+    nullable: true,
+  })
+  ipAcce?: string | null;
 
   @Column({
     name: 'latitud_acce',
@@ -50,10 +93,13 @@ export class AccesoUsuarioEntity {
   longitudAcce?: string | null;
 
   @ManyToOne(() => CuentaEntity, (cuenta) => cuenta.accesos, {
-    onDelete: 'CASCADE',
+    nullable: true,
+    onDelete: 'SET NULL',
   })
-  @JoinColumn({ name: 'ide_cuen' })
-  cuenta?: CuentaEntity;
+  @JoinColumn({
+    name: 'ide_cuen',
+  })
+  cuenta?: CuentaEntity | null;
 }
 
 export { AccesoUsuarioEntity as AccesoUsuario };

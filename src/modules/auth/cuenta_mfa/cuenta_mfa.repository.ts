@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { CuentaMfaEntity } from '@entities';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class CuentaMfaRepository {
@@ -18,17 +18,39 @@ export class CuentaMfaRepository {
     });
   }
 
-  async crear(ideCuen: number, secretoMfa: string): Promise<CuentaMfaEntity> {
+  async guardarConfiguracion(
+    ideCuen: number,
+    secretoMfa: string,
+    usuarioResponsable: string,
+  ): Promise<CuentaMfaEntity> {
+    const existente = await this.buscarPorCuenta(ideCuen);
+
+    if (existente) {
+      existente.secretoMfa = secretoMfa;
+      existente.habilitado = false;
+      existente.fechaActivacion = null;
+      existente.fechaUltimoUso = null;
+      existente.usuaActua = usuarioResponsable;
+      existente.fechaActua = new Date();
+
+      return this.repository.save(existente);
+    }
+
     const registro = this.repository.create({
       ideCuen,
       secretoMfa,
       habilitado: false,
+      fechaActivacion: null,
+      fechaUltimoUso: null,
+      usuaIngre: usuarioResponsable,
+      usuaActua: null,
+      fechaActua: null,
     });
 
     return this.repository.save(registro);
   }
 
-  async activar(ideMfa: number): Promise<void> {
+  async activar(ideMfa: number, usuarioResponsable: string): Promise<void> {
     await this.repository.update(
       {
         ideMfa,
@@ -36,17 +58,9 @@ export class CuentaMfaRepository {
       {
         habilitado: true,
         fechaActivacion: new Date(),
-      },
-    );
-  }
-
-  async desactivar(ideCuen: number): Promise<void> {
-    await this.repository.update(
-      {
-        ideCuen,
-      },
-      {
-        habilitado: false,
+        fechaUltimoUso: null,
+        usuaActua: usuarioResponsable,
+        fechaActua: new Date(),
       },
     );
   }
@@ -58,6 +72,8 @@ export class CuentaMfaRepository {
       },
       {
         fechaUltimoUso: new Date(),
+        usuaActua: 'sistema',
+        fechaActua: new Date(),
       },
     );
   }

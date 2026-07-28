@@ -6,6 +6,7 @@ import {
   IsOptional,
   IsString,
   Length,
+  MaxLength,
   Min,
 } from 'class-validator';
 
@@ -16,11 +17,7 @@ function toRequiredInt(value: unknown): number | unknown {
 
   const numberValue = Number(value);
 
-  if (Number.isInteger(numberValue)) {
-    return numberValue;
-  }
-
-  return value;
+  return Number.isInteger(numberValue) ? numberValue : value;
 }
 
 function optionalInt(value: unknown): number | undefined | unknown {
@@ -30,11 +27,7 @@ function optionalInt(value: unknown): number | undefined | unknown {
 
   const numberValue = Number(value);
 
-  if (Number.isInteger(numberValue)) {
-    return numberValue;
-  }
-
-  return value;
+  return Number.isInteger(numberValue) ? numberValue : value;
 }
 
 function optionalNumberOrNull(value: unknown): number | null | unknown {
@@ -44,24 +37,32 @@ function optionalNumberOrNull(value: unknown): number | null | unknown {
 
   const numberValue = Number(value);
 
-  if (Number.isFinite(numberValue)) {
-    return numberValue;
+  return Number.isFinite(numberValue) ? numberValue : value;
+}
+
+function optionalTrimmedString(value: unknown): string | undefined | unknown {
+  if (value === null || value === undefined) {
+    return undefined;
   }
 
-  return value;
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const result = value.trim();
+
+  return result === '' ? undefined : result;
 }
 
 export class CreateAccesoUsuarioDto {
   @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
-  @Min(0)
+  @Min(1)
   ideCuen!: number;
 
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()
   @Length(1, 250)
-  @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
-  )
   navegadorAcce!: string;
 
   @IsOptional()
@@ -75,11 +76,9 @@ export class CreateAccesoUsuarioDto {
   numIntFallAcce?: number;
 
   @IsOptional()
+  @Transform(({ value }) => optionalTrimmedString(value))
   @IsString()
-  @Length(1, 15)
-  @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined,
-  )
+  @MaxLength(45)
   ipAcce?: string;
 
   @IsOptional()

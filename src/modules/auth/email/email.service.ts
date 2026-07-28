@@ -9,42 +9,55 @@ export class EmailService {
     correo: string,
     usuario: string,
     token: string,
-  ) {
-    const url = `http://localhost:4200/reset-password?token=${token}`;
+  ): Promise<void> {
+    const frontendUrl = (
+      process.env.FRONTEND_URL || 'http://localhost:4200'
+    ).replace(/\/+$/, '');
+
+    const url =
+      `${frontendUrl}/reset-password` + `?token=${encodeURIComponent(token)}`;
+
+    const usuarioSeguro = this.escapeHtml(usuario);
+    const urlSegura = this.escapeHtml(url);
 
     await this.mailerService.sendMail({
       to: correo,
-
-      subject: 'Recuperación de contraseña - Sistema SIG',
-
+      subject: 'Recuperación de contraseña - SuperMarket',
       html: `
         <h2>Recuperación de contraseña</h2>
 
+        <p>Hola <strong>${usuarioSeguro}</strong>.</p>
+
         <p>
-          Hola <b>${usuario}</b>.
+          Recibimos una solicitud para restablecer
+          la contraseña de tu cuenta.
         </p>
 
         <p>
-          Hemos recibido una solicitud para cambiar tu contraseña.
+          <a href="${urlSegura}">
+            Restablecer contraseña
+          </a>
         </p>
 
         <p>
-          Ingresa al siguiente enlace:
-        </p>
-
-        <a href="${url}">
-          Restablecer contraseña
-        </a>
-
-        <p>
-          Este enlace tiene tiempo limitado.
+          Este enlace será válido durante 15 minutos
+          y solo podrá utilizarse una vez.
         </p>
 
         <p>
           Si no realizaste esta solicitud,
-          puedes ignorar este correo.
+          puedes ignorar este mensaje.
         </p>
       `,
     });
+  }
+
+  private escapeHtml(value: string): string {
+    return value
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
   }
 }

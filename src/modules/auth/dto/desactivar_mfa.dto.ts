@@ -1,9 +1,9 @@
 import { IsString, Length, Matches } from 'class-validator';
 
-export class VerificarMfaDto {
+export class DesactivarMfaDto {
   @IsString()
-  @Length(20, 2000)
-  mfaToken!: string;
+  @Length(8, 250)
+  claveActual!: string;
 
   @IsString()
   @Matches(/^\d{6}$/)

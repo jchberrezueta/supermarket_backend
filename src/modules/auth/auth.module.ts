@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
-
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import {
   CuentaMfaEntity,
   PasswordResetTokenEntity,
@@ -27,6 +27,7 @@ import { CuentaMfaRepository } from './cuenta_mfa/cuenta_mfa.repository';
 import { CuentaMfaService } from './cuenta_mfa/cuenta_mfa.service';
 import { EmailModule } from './email/email.module';
 import { GeolocationService } from './services/geolocation.service';
+import { MfaCryptoService } from './cuenta_mfa/cuenta_mfa_crypto.service';
 
 @Module({
   imports: [
@@ -37,9 +38,23 @@ import { GeolocationService } from './services/geolocation.service';
       CuentaMfaEntity,
     ]),
 
-    JwtModule.register({
-      secret: process.env.JWT_SECRET || 'haki',
-      signOptions: { expiresIn: '1h' },
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const jwtSecret = configService.get<string>('JWT_SECRET');
+
+        if (!jwtSecret) {
+          throw new Error('JWT_SECRET es obligatorio');
+        }
+
+        return {
+          secret: jwtSecret,
+          signOptions: {
+            expiresIn: '15m',
+          },
+        };
+      },
     }),
 
     PassportModule,
@@ -60,6 +75,7 @@ import { GeolocationService } from './services/geolocation.service';
     HistorialClaveService,
     CuentaMfaRepository,
     CuentaMfaService,
+    MfaCryptoService,
     GeolocationService,
   ],
 

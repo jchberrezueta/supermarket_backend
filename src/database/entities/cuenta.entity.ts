@@ -5,6 +5,7 @@ import {
   JoinColumn,
   ManyToOne,
   OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { AccesoUsuarioEntity } from './acceso_usuario.entity';
@@ -23,37 +24,54 @@ export class CuentaEntity {
   @PrimaryGeneratedColumn({ name: 'ide_cuen' })
   ideCuen!: number;
 
-  @Column({ name: 'ide_empl', type: 'int' })
+  @Column({
+    name: 'ide_empl',
+    type: 'int',
+  })
   ideEmpl!: number;
 
-  @Column({ name: 'ide_perf', type: 'int' })
+  @Column({
+    name: 'ide_perf',
+    type: 'int',
+  })
   idePerf!: number;
 
-  @Column({ name: 'usuario_cuen', type: 'varchar', length: 25 })
+  @Column({
+    name: 'usuario_cuen',
+    type: 'varchar',
+    length: 25,
+  })
   usuarioCuen!: string;
 
-  @Column({ name: 'password_cuen', type: 'varchar', length: 250 })
+  @Column({
+    name: 'password_cuen',
+    type: 'varchar',
+    length: 250,
+  })
   passwordCuen!: string;
 
-  @Column({ name: 'estado_cuen', type: 'varchar', length: 25 })
+  @Column({
+    name: 'estado_cuen',
+    type: 'varchar',
+    length: 25,
+  })
   estadoCuen!: EstadoCuenta;
 
   @Column({
     name: 'debe_cambiar_clave',
     type: 'boolean',
-    default: false,
   })
   debeCambiarClave!: boolean;
 
   @Column({
     name: 'intentos_fallidos_cuen',
     type: 'int',
-    default: 0,
   })
   intentosFallidosCuen!: number;
 
   @Column({
     name: 'bloqueo_hasta_cuen',
+    type: 'timestamp',
     nullable: true,
   })
   fechaBloqueoCuen?: Date | null;
@@ -66,20 +84,10 @@ export class CuentaEntity {
   ultimoLoginCuen?: Date | null;
 
   @Column({
-    name: 'reset_token',
-    nullable: true,
-    length: 255,
+    name: 'usua_ingre',
+    type: 'varchar',
+    length: 25,
   })
-  resetToken?: string | null;
-
-  @Column({
-    name: 'reset_expira',
-    type: 'timestamp',
-    nullable: true,
-  })
-  resetExpira?: Date | null;
-
-  @Column({ name: 'usua_ingre', type: 'varchar', length: 25 })
   usuaIngre!: string;
 
   @Column({
@@ -89,20 +97,29 @@ export class CuentaEntity {
   })
   fechaIngre!: Date;
 
-  @Column({ name: 'usua_actua', type: 'varchar', length: 25, nullable: true })
+  @Column({
+    name: 'usua_actua',
+    type: 'varchar',
+    length: 25,
+    nullable: true,
+  })
   usuaActua?: string | null;
 
-  @Column({ name: 'fecha_actua', type: 'timestamp', nullable: true })
+  @Column({
+    name: 'fecha_actua',
+    type: 'timestamp',
+    nullable: true,
+  })
   fechaActua?: Date | null;
 
   @ManyToOne(() => EmpleadoEntity, (empleado) => empleado.cuentas, {
-    onDelete: 'CASCADE',
+    onDelete: 'RESTRICT',
   })
   @JoinColumn({ name: 'ide_empl' })
   empleado?: EmpleadoEntity;
 
   @ManyToOne(() => PerfilEntity, (perfil) => perfil.cuentas, {
-    onDelete: 'CASCADE',
+    onDelete: 'RESTRICT',
   })
   @JoinColumn({ name: 'ide_perf' })
   perfil?: PerfilEntity;
@@ -110,17 +127,23 @@ export class CuentaEntity {
   @OneToMany(() => AccesoUsuarioEntity, (acceso) => acceso.cuenta)
   accesos?: AccesoUsuarioEntity[];
 
-  @OneToMany(() => PasswordResetTokenEntity, (reset) => reset.cuenta)
+  @OneToMany(
+    () => PasswordResetTokenEntity,
+    (passwordResetToken) => passwordResetToken.cuenta,
+  )
   passwordResetTokens?: PasswordResetTokenEntity[];
 
   @OneToMany(() => RefreshTokenEntity, (refreshToken) => refreshToken.cuenta)
   refreshTokens?: RefreshTokenEntity[];
 
-  @OneToMany(() => HistorialClaveEntity, (historial) => historial.cuenta)
+  @OneToMany(
+    () => HistorialClaveEntity,
+    (historialClave) => historialClave.cuenta,
+  )
   historialClaves?: HistorialClaveEntity[];
 
-  @OneToMany(() => CuentaMfaEntity, (mfa) => mfa.cuenta)
-  mfa?: CuentaMfaEntity[];
+  @OneToOne(() => CuentaMfaEntity, (mfa) => mfa.cuenta)
+  mfa?: CuentaMfaEntity | null;
 }
 
 export { CuentaEntity as Cuenta };

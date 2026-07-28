@@ -1,6 +1,7 @@
 import {
   Column,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
@@ -8,6 +9,7 @@ import {
 import { CuentaEntity } from './cuenta.entity';
 
 @Entity({ name: 'historial_clave' })
+@Index('idx_historial_clave_cuenta_fecha', ['ideCuen', 'fechaIngre'])
 export class HistorialClaveEntity {
   @PrimaryGeneratedColumn({
     name: 'ide_hclav',

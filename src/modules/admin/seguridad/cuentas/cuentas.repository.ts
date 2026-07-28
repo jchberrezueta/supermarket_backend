@@ -142,7 +142,6 @@ export class CuentasRepository {
 
     return qb.getMany();
   }
-
   async crear(
     dto: CreateCuentaDto,
     passwordHash: string,
@@ -153,11 +152,16 @@ export class CuentasRepository {
     const cuenta = repository.create({
       ideEmpl: dto.ideEmpl,
       idePerf: dto.idePerf,
-      usuarioCuen: dto.usuarioCuen,
+      usuarioCuen: dto.usuarioCuen.trim().toLowerCase(),
       passwordCuen: passwordHash,
       estadoCuen: dto.estadoCuen as CuentaEntity['estadoCuen'],
       debeCambiarClave: dto.debeCambiarClave ?? false,
+      intentosFallidosCuen: 0,
+      fechaBloqueoCuen: null,
+      ultimoLoginCuen: null,
       usuaIngre: 'admin',
+      usuaActua: null,
+      fechaActua: null,
     });
 
     return repository.save(cuenta);
@@ -324,9 +328,12 @@ export class CuentasRepository {
     manager?: EntityManager,
   ): Promise<void> {
     await this.getCuentaRepository(manager).update(
-      { ideCuen },
+      {
+        ideCuen,
+      },
       {
         intentosFallidosCuen: 0,
+        fechaBloqueoCuen: null,
         fechaActua: new Date(),
         usuaActua: 'sistema',
       },
@@ -339,9 +346,10 @@ export class CuentasRepository {
     manager?: EntityManager,
   ): Promise<void> {
     await this.getCuentaRepository(manager).update(
-      { ideCuen },
       {
-        estadoCuen: 'bloqueado',
+        ideCuen,
+      },
+      {
         fechaBloqueoCuen: fechaBloqueo,
         fechaActua: new Date(),
         usuaActua: 'sistema',
@@ -354,9 +362,10 @@ export class CuentasRepository {
     manager?: EntityManager,
   ): Promise<void> {
     await this.getCuentaRepository(manager).update(
-      { ideCuen },
       {
-        estadoCuen: 'activo',
+        ideCuen,
+      },
+      {
         intentosFallidosCuen: 0,
         fechaBloqueoCuen: null,
         fechaActua: new Date(),

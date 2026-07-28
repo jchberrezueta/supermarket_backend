@@ -1,9 +1,9 @@
 import { IsString, Length } from 'class-validator';
 
-export class ChangePasswordDto {
+export class ChangeRequiredPasswordDto {
   @IsString()
-  @Length(8, 250)
-  claveActual!: string;
+  @Length(20, 2000)
+  changeToken!: string;
 
   @IsString()
   @Length(8, 250)

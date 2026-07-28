@@ -10,6 +10,7 @@ export class AccesosRepository {
   constructor(
     @InjectRepository(AccesoUsuarioEntity)
     private readonly accesoRepository: Repository<AccesoUsuarioEntity>,
+
     @InjectRepository(CuentaEntity)
     private readonly cuentaRepository: Repository<CuentaEntity>,
   ) {}
@@ -55,6 +56,7 @@ export class AccesosRepository {
         ideCuen: filtros.ideCuen,
       });
     }
+
     if (filtros.ipAcce) {
       qb.andWhere('acceso.ipAcce LIKE :ipAcce', {
         ipAcce: `%${filtros.ipAcce}%`,
@@ -62,14 +64,30 @@ export class AccesosRepository {
     }
 
     if (filtros.usuarioCuen) {
-      qb.andWhere('LOWER(cuenta.usuarioCuen) LIKE LOWER(:usuarioCuen)', {
-        usuarioCuen: `%${filtros.usuarioCuen}%`,
-      });
+      qb.andWhere(
+        `
+          LOWER(
+            COALESCE(
+              acceso.usuarioIntentado,
+              cuenta.usuarioCuen
+            )
+          ) LIKE LOWER(:usuarioCuen)
+        `,
+        {
+          usuarioCuen: `%${filtros.usuarioCuen}%`,
+        },
+      );
     }
 
     if (filtros.navegadorAcce) {
       qb.andWhere('LOWER(acceso.navegadorAcce) LIKE LOWER(:navegadorAcce)', {
         navegadorAcce: `%${filtros.navegadorAcce}%`,
+      });
+    }
+
+    if (filtros.resultadoAcce) {
+      qb.andWhere('acceso.resultadoAcce = :resultadoAcce', {
+        resultadoAcce: filtros.resultadoAcce,
       });
     }
 
@@ -92,14 +110,21 @@ export class AccesosRepository {
     dto: CreateAccesoUsuarioDto,
     manager?: EntityManager,
   ): Promise<AccesoUsuarioEntity> {
-    const repository = this.getAccesoRepository(manager);
+    const cuenta = await this.getCuentaRepository(manager).findOne({
+      where: {
+        ideCuen: dto.ideCuen,
+      },
+    });
 
-    const acceso = repository.create({
-      ideCuen: dto.ideCuen,
-      navegadorAcce: dto.navegadorAcce,
+    const acceso = this.getAccesoRepository(manager).create({
+      ideCuen: cuenta?.ideCuen ?? null,
+      usuarioIntentado: cuenta?.usuarioCuen ?? null,
+      resultadoAcce: 'exitoso',
+      motivoAcce: null,
+      navegadorAcce: dto.navegadorAcce?.trim() || 'desconocido',
       fechaAcce: dto.fechaAcce ? new Date(dto.fechaAcce) : new Date(),
       numIntFallAcce: dto.numIntFallAcce ?? 0,
-      ipAcce: dto.ipAcce ?? '999.999.999.999',
+      ipAcce: dto.ipAcce?.trim() || null,
       latitudAcce:
         dto.latitudAcce !== null && dto.latitudAcce !== undefined
           ? String(dto.latitudAcce)
@@ -110,7 +135,7 @@ export class AccesosRepository {
           : null,
     });
 
-    return repository.save(acceso);
+    return this.getAccesoRepository(manager).save(acceso);
   }
 
   async listarCuentas(manager?: EntityManager): Promise<CuentaEntity[]> {

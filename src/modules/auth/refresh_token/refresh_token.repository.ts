@@ -26,15 +26,14 @@ export class RefreshTokenRepository {
         jti,
         revocado: false,
       },
-      relations: {
-        cuenta: true,
-      },
     });
   }
 
   async revocar(ideReft: number, manager?: EntityManager): Promise<void> {
     await this.getRepository(manager).update(
-      { ideReft },
+      {
+        ideReft,
+      },
       {
         revocado: true,
         usuaActua: 'sistema',
@@ -52,7 +51,9 @@ export class RefreshTokenRepository {
         usuaActua: 'sistema',
         fechaActua: () => 'CURRENT_TIMESTAMP',
       })
-      .where('ide_cuen = :ideCuen', { ideCuen })
+      .where('ide_cuen = :ideCuen', {
+        ideCuen,
+      })
       .andWhere('revocado = false')
       .execute();
   }
@@ -74,17 +75,5 @@ export class RefreshTokenRepository {
     }
 
     return this.repository;
-  }
-
-  async revocarTodosPorCuenta(ideCuen: number): Promise<void> {
-    await this.repository.update(
-      {
-        ideCuen,
-        revocado: false,
-      },
-      {
-        revocado: true,
-      },
-    );
   }
 }

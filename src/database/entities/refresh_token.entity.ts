@@ -1,6 +1,7 @@
 import {
   Column,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
@@ -8,11 +9,17 @@ import {
 import { CuentaEntity } from './cuenta.entity';
 
 @Entity({ name: 'refresh_token' })
+@Index('uq_refresh_token_jti', ['jti'], { unique: true })
 export class RefreshTokenEntity {
-  @PrimaryGeneratedColumn({ name: 'ide_reft' })
+  @PrimaryGeneratedColumn({
+    name: 'ide_reft',
+  })
   ideReft!: number;
 
-  @Column({ name: 'ide_cuen', type: 'int' })
+  @Column({
+    name: 'ide_cuen',
+    type: 'int',
+  })
   ideCuen!: number;
 
   @Column({
@@ -38,7 +45,6 @@ export class RefreshTokenEntity {
   @Column({
     name: 'revocado',
     type: 'boolean',
-    default: false,
   })
   revocado!: boolean;
 
@@ -98,7 +104,9 @@ export class RefreshTokenEntity {
   @ManyToOne(() => CuentaEntity, (cuenta) => cuenta.refreshTokens, {
     onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: 'ide_cuen' })
+  @JoinColumn({
+    name: 'ide_cuen',
+  })
   cuenta?: CuentaEntity;
 }
 

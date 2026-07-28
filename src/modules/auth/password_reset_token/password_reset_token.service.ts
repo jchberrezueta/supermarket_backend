@@ -1,32 +1,66 @@
 import { Injectable } from '@nestjs/common';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { createHash, randomBytes } from 'crypto';
+import { DataSource } from 'typeorm';
 import { PasswordResetTokenRepository } from './password_reset_token.repository';
-import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class PasswordResetTokenService {
-  constructor(private readonly repository: PasswordResetTokenRepository) {}
+  constructor(
+    private readonly repository: PasswordResetTokenRepository,
 
-  async guardar(ideCuen: number, token: string, expiracion: Date) {
-    const tokenHash = await bcrypt.hash(token, 10);
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
+  ) {}
 
-    return this.repository.crear(ideCuen, tokenHash, expiracion);
+  calcularHash(token: string): string {
+    return createHash('sha256').update(token).digest('hex');
   }
 
-  async validar(token: string) {
-    const registros = await this.repository.obtenerActivos();
+  async generar(
+    ideCuen: number,
+    fechaExpiracion: Date,
+    ipSolicitud?: string | null,
+  ): Promise<string> {
+    const token = randomBytes(32).toString('base64url');
+    const tokenHash = this.calcularHash(token);
 
-    for (const registro of registros) {
-      const coincide = await bcrypt.compare(token, registro.tokenHash);
+    await this.dataSource.transaction(async (manager) => {
+      await this.repository.invalidarActivosPorCuenta(ideCuen, manager);
 
-      if (coincide) {
-        return registro;
-      }
+      await this.repository.crear(
+        ideCuen,
+        tokenHash,
+        fechaExpiracion,
+        ipSolicitud,
+        manager,
+      );
+    });
+
+    return token;
+  }
+
+  async buscarValido(token: string) {
+    if (!token?.trim()) {
+      return null;
     }
 
-    return null;
+    const tokenHash = this.calcularHash(token.trim());
+
+    const registro = await this.repository.buscarPorHash(tokenHash);
+
+    if (!registro) {
+      return null;
+    }
+
+    if (registro.fechaExpiracion <= new Date()) {
+      return null;
+    }
+
+    return registro;
   }
 
-  async usar(idePrt: number) {
-    return this.repository.marcarUsado(idePrt);
+  async invalidarActivosPorCuenta(ideCuen: number): Promise<void> {
+    await this.repository.invalidarActivosPorCuenta(ideCuen);
   }
 }

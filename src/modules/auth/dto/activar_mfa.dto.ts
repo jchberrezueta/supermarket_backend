@@ -1,10 +1,7 @@
-import { IsNumber, IsString, Length } from 'class-validator';
+import { IsString, Matches } from 'class-validator';
 
 export class ActivarMfaDto {
-  @IsNumber()
-  ideCuen!: number;
-
   @IsString()
-  @Length(6, 6)
+  @Matches(/^\d{6}$/)
   codigo!: string;
 }

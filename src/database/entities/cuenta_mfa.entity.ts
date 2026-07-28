@@ -1,15 +1,19 @@
 import {
   Column,
   Entity,
+  Index,
   JoinColumn,
-  ManyToOne,
+  OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { CuentaEntity } from './cuenta.entity';
 
 @Entity({ name: 'cuenta_mfa' })
+@Index('uq_cuenta_mfa_cuenta', ['ideCuen'], { unique: true })
 export class CuentaMfaEntity {
-  @PrimaryGeneratedColumn({ name: 'ide_mfa' })
+  @PrimaryGeneratedColumn({
+    name: 'ide_mfa',
+  })
   ideMfa!: number;
 
   @Column({
@@ -21,14 +25,13 @@ export class CuentaMfaEntity {
   @Column({
     name: 'habilitado',
     type: 'boolean',
-    default: false,
   })
   habilitado!: boolean;
 
   @Column({
     name: 'secreto_mfa',
     type: 'varchar',
-    length: 255,
+    length: 500,
   })
   secretoMfa!: string;
 
@@ -75,7 +78,7 @@ export class CuentaMfaEntity {
   })
   fechaActua?: Date | null;
 
-  @ManyToOne(() => CuentaEntity, (cuenta) => cuenta.mfa, {
+  @OneToOne(() => CuentaEntity, (cuenta) => cuenta.mfa, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({

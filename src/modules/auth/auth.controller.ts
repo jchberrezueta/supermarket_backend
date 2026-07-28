@@ -15,10 +15,11 @@ import { LogoutDto } from './dto/logout.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { ForgotPasswordDto } from './dto/forgot_password.dto';
 import { ResetPasswordDto } from './dto/reset_password.dto';
-import { CuentaMfaService } from './cuenta_mfa/cuenta_mfa.service';
 import { GenerarMfaDto } from './dto/generar_mfa.dto';
 import { ActivarMfaDto } from './dto/activar_mfa.dto';
 import { VerificarMfaDto } from './dto/verificar_mfa.dto';
+import { ChangeRequiredPasswordDto } from './dto/change_required_password.dto';
+import { DesactivarMfaDto } from './dto/desactivar_mfa.dto';
 
 interface ICredential {
   usuario: string;
@@ -29,7 +30,6 @@ interface ICredential {
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    private readonly cuentaMfaService: CuentaMfaService,
     private servicio: AccesosUsuariosService,
   ) {}
 
@@ -87,24 +87,35 @@ export class AuthController {
     return this.authService.login(user);*/
   }
 
+  @UseGuards(AuthGuard('jwt'))
   @Post('cambiar-clave')
-  async cambiarClave(@Body() body: ChangePasswordDto) {
-    const result = await this.authService.cambiarClave(
-      body.ideCuen,
+  async cambiarClave(@Req() req: any, @Body() body: ChangePasswordDto) {
+    return this.authService.cambiarClave(
+      Number(req.user.sub),
       body.claveActual,
       body.claveNueva,
     );
+  }
 
-    if (!result.success) {
-      throw new UnauthorizedException(result.message);
-    }
-
-    return result;
+  @Post('cambiar-clave-obligatoria')
+  async cambiarClaveObligatoria(@Body() body: ChangeRequiredPasswordDto) {
+    return this.authService.cambiarClaveObligatoria(
+      body.changeToken,
+      body.claveNueva,
+    );
   }
 
   @Post('refresh')
-  async refresh(@Body() body: RefreshTokenDto) {
-    return this.authService.refresh(body.refreshToken);
+  async refresh(
+    @Body() body: RefreshTokenDto,
+    @Req() req: Request,
+    @Ip() ip: string,
+  ) {
+    return this.authService.refresh(
+      body.refreshToken,
+      req.headers['user-agent'] || '',
+      ip,
+    );
   }
 
   @Post('logout')
@@ -119,8 +130,8 @@ export class AuthController {
   }
 
   @Post('forgot-password')
-  async forgotPassword(@Body() body: ForgotPasswordDto) {
-    return this.authService.solicitarRecuperacion(body.usuario);
+  async forgotPassword(@Body() body: ForgotPasswordDto, @Ip() ip: string) {
+    return this.authService.solicitarRecuperacion(body.usuario, ip);
   }
 
   @Post('reset-password')
@@ -128,27 +139,44 @@ export class AuthController {
     return this.authService.resetPassword(body.token, body.nuevaClave);
   }
 
+  @UseGuards(AuthGuard('jwt'))
   @Post('mfa/generar')
-  async generarMfa(@Body() body: GenerarMfaDto) {
-    return this.cuentaMfaService.generarConfiguracion(
-      body.ideCuen,
-      `usuario-${body.ideCuen}`,
+  async generarMfa(@Req() req: any, @Body() body: GenerarMfaDto) {
+    return this.authService.generarMfa(
+      Number(req.user.sub),
+      req.user.username,
+      body.claveActual,
     );
   }
 
+  @UseGuards(AuthGuard('jwt'))
   @Post('mfa/activar')
-  async activarMfa(@Body() body: ActivarMfaDto) {
-    return this.cuentaMfaService.confirmarActivacion(body.ideCuen, body.codigo);
+  async activarMfa(@Req() req: any, @Body() body: ActivarMfaDto) {
+    return this.authService.activarMfa(
+      Number(req.user.sub),
+      req.user.username,
+      body.codigo,
+    );
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Post('mfa/desactivar')
+  async desactivarMfa(@Req() req: any, @Body() body: DesactivarMfaDto) {
+    return this.authService.desactivarMfa(
+      Number(req.user.sub),
+      body.claveActual,
+      body.codigo,
+    );
   }
 
   @Post('mfa/verificar-login')
   async verificarMfaLogin(
     @Body() body: VerificarMfaDto,
     @Req() req: Request,
-    @Ip() ip,
+    @Ip() ip: string,
   ) {
     return this.authService.verificarMfaLogin(
-      body.ideCuen,
+      body.mfaToken,
       body.codigo,
       req.headers['user-agent'] || '',
       ip,
