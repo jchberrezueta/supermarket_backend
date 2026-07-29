@@ -22,6 +22,20 @@ export interface LoteCaducadoDisponibleRow {
   estado_lote: string;
 }
 
+export interface LoteDevolucionPedidoRow {
+  ide_deta_pedi_lote_devo: number;
+
+  ide_lote: number;
+
+  fecha_caducidad_lote: string | null;
+
+  stock_lote: number | null;
+
+  cantidad_devolucion: number;
+
+  cantidad_procesada: number;
+}
+
 export interface DetallePedidoRow {
   ide_deta_pedi: number;
   ide_pedi: number;
@@ -35,6 +49,7 @@ export interface DetallePedidoRow {
   total_prod: number;
   dcto_caduc_prod: number;
   estado_deta_pedi: string;
+  lotes_devolucion: LoteDevolucionPedidoRow[];
 }
 
 export class PedidosMapper {
@@ -73,6 +88,21 @@ export class PedidosMapper {
       total_prod: MoneyUtil.toNumber(detalle.totalProd),
       dcto_caduc_prod: MoneyUtil.toNumber(detalle.dctoCaducProd),
       estado_deta_pedi: detalle.estadoDetaPedi,
+      lotes_devolucion: (detalle.lotesDevolucion ?? []).map((asignacion) => ({
+        ide_deta_pedi_lote_devo: asignacion.ideDetaPediLoteDevo,
+
+        ide_lote: asignacion.ideLote,
+
+        fecha_caducidad_lote: asignacion.lote
+          ? this.formatCalendarDate(asignacion.lote.fechaCaducidadLote)
+          : null,
+
+        stock_lote: asignacion.lote?.stockLote ?? null,
+
+        cantidad_devolucion: asignacion.cantidadDevolucion,
+
+        cantidad_procesada: asignacion.cantidadProcesada,
+      })),
     };
   }
 
@@ -113,7 +143,6 @@ export class PedidosMapper {
 
     return `${year}-${month}-${day}`;
   }
-
   static toLoteCaducadoDisponibleRow(
     lote: LoteEntity,
   ): LoteCaducadoDisponibleRow {

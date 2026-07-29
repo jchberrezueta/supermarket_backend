@@ -1,6 +1,15 @@
 import { EnumEstadoDetallePedido } from '@models';
-import { Transform } from 'class-transformer';
-import { Allow, IsInt, Min } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import {
+  Allow,
+  IsArray,
+  IsInt,
+  IsOptional,
+  Min,
+  ValidateNested,
+} from 'class-validator';
+import { CreatePedidoLoteDevolucionDTO } from './create_pedido_lote_devolucion.dto';
+
 function toRequiredInt(value: unknown): number | unknown {
   if (value === null || value === undefined || value === '') {
     return value;
@@ -21,6 +30,14 @@ export class CreatePedidoDetalleDTO {
   @IsInt()
   @Min(1)
   cantidadProd!: number;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({
+    each: true,
+  })
+  @Type(() => CreatePedidoLoteDevolucionDTO)
+  lotesDevolucion: CreatePedidoLoteDevolucionDTO[] = [];
 
   /*
    * Campos internos calculados

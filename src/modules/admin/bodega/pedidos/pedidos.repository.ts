@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { MoneyUtil } from '@common/utils/money.util';
 import {
   DetallePedidoEntity,
+  DetallePedidoLoteDevolucionEntity,
   EmpresaEntity,
   EmpresaPreciosEntity,
   EntregaEntity,
@@ -58,10 +59,79 @@ export class PedidosRepository {
         empresa: true,
         detalles: {
           producto: true,
+          lotesDevolucion: {
+            lote: true,
+          },
         },
         entregas: true,
       },
     });
+  }
+
+  async listarLotesPorIdsForUpdate(
+    idsLotes: number[],
+    manager: EntityManager,
+  ): Promise<LoteEntity[]> {
+    if (!idsLotes.length) {
+      return [];
+    }
+
+    return manager
+      .getRepository(LoteEntity)
+      .createQueryBuilder('lote')
+      .setLock('pessimistic_write')
+      .leftJoinAndSelect('lote.producto', 'producto')
+      .where('lote.ideLote IN (:...idsLotes)', {
+        idsLotes,
+      })
+      .orderBy('lote.ideLote', 'ASC')
+      .getMany();
+  }
+
+  async guardarLotesDevolucion(
+    detallesPersistidos: DetallePedidoEntity[],
+
+    detallesDto: CreatePedidoDetalleDTO[],
+
+    manager: EntityManager,
+  ): Promise<void> {
+    const repository = manager.getRepository(DetallePedidoLoteDevolucionEntity);
+
+    const detallePorProducto = new Map(
+      detallesPersistidos.map((detalle) => [detalle.ideProd, detalle]),
+    );
+
+    const registros: DetallePedidoLoteDevolucionEntity[] = [];
+
+    for (const detalleDto of detallesDto) {
+      const detallePersistido = detallePorProducto.get(detalleDto.ideProd);
+
+      if (!detallePersistido) {
+        throw new Error(
+          `No se encontró el detalle persistido del producto ${detalleDto.ideProd}.`,
+        );
+      }
+
+      for (const asignacion of detalleDto.lotesDevolucion ?? []) {
+        registros.push(
+          repository.create({
+            ideDetaPedi: detallePersistido.ideDetaPedi,
+
+            ideLote: asignacion.ideLote,
+
+            cantidadDevolucion: asignacion.cantidadDevolucion,
+
+            cantidadProcesada: 0,
+
+            usuaIngre: 'admin',
+          }),
+        );
+      }
+    }
+
+    if (registros.length) {
+      await repository.save(registros);
+    }
   }
 
   async buscarPorIdForUpdate(
@@ -142,6 +212,10 @@ export class PedidosRepository {
       },
       relations: {
         producto: true,
+
+        lotesDevolucion: {
+          lote: true,
+        },
       },
       order: {
         ideDetaPedi: 'ASC',

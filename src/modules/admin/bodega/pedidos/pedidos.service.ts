@@ -27,6 +27,16 @@ interface TotalesPedidoCalculados {
   totalPedi: number;
 }
 
+interface DetalleCanjeValidable {
+  ideProd: number;
+  cantidadProd: number;
+
+  lotesDevolucion?: {
+    ideLote: number;
+    cantidadDevolucion: number;
+  }[];
+}
+
 interface ValoresEconomicosDetallePedido {
   precioUnitarioProd: number;
   subtotalProd: number;
@@ -99,7 +109,13 @@ export class PedidosService {
     try {
       const pedido = await this.dataSource.transaction(async (manager) => {
         await this.validarEmpresaActiva(body.cabeceraPedido.ideEmpr, manager);
+        await this.validarAsignacionesCanje(
+          body.cabeceraPedido.motivoPedi,
 
+          body.detallePedido,
+
+          manager,
+        );
         /**
          * Sustituimos cualquier valor económico enviado
          * por el cliente por los valores oficiales.
@@ -119,8 +135,15 @@ export class PedidosService {
           manager,
         );
 
-        await this.pedidosRepository.reemplazarDetalles(
-          pedidoCreado.idePedi,
+        const detallesPersistidos =
+          await this.pedidosRepository.reemplazarDetalles(
+            pedidoCreado.idePedi,
+            body.detallePedido,
+            manager,
+          );
+
+        await this.pedidosRepository.guardarLotesDevolucion(
+          detallesPersistidos,
           body.detallePedido,
           manager,
         );
@@ -192,7 +215,13 @@ export class PedidosService {
         }
 
         await this.validarEmpresaActiva(body.cabeceraPedido.ideEmpr, manager);
+        await this.validarAsignacionesCanje(
+          body.cabeceraPedido.motivoPedi,
 
+          body.detallePedido,
+
+          manager,
+        );
         /**
          * El borrador actualizado también se recalcula
          * desde empresa_precios.
@@ -213,8 +242,15 @@ export class PedidosService {
           manager,
         );
 
-        await this.pedidosRepository.reemplazarDetalles(
-          pedidoActualizado.idePedi,
+        const detallesPersistidos =
+          await this.pedidosRepository.reemplazarDetalles(
+            pedidoActualizado.idePedi,
+            body.detallePedido,
+            manager,
+          );
+
+        await this.pedidosRepository.guardarLotesDevolucion(
+          detallesPersistidos,
           body.detallePedido,
           manager,
         );
@@ -852,6 +888,123 @@ export class PedidosService {
 
       detalle.estadoDetaPedi = EnumEstadoDetallePedido.PENDIENTE;
     }
+  }
+
+  private async validarAsignacionesCanje(
+    motivo: 'peticion' | 'devolucion',
+
+    detalles: DetalleCanjeValidable[],
+
+    manager: EntityManager,
+  ): Promise<void> {
+    const asignaciones = detalles.flatMap(
+      (detalle) => detalle.lotesDevolucion ?? [],
+    );
+
+    if (motivo === 'peticion') {
+      if (asignaciones.length) {
+        throw new BadRequestException(
+          'Una petición normal no puede incluir lotes para devolución.',
+        );
+      }
+
+      return;
+    }
+
+    for (const detalle of detalles) {
+      const lotes = detalle.lotesDevolucion ?? [];
+
+      if (!lotes.length) {
+        throw new BadRequestException(
+          `El producto ${detalle.ideProd} debe indicar al menos un lote caducado para el canje.`,
+        );
+      }
+
+      const ids = lotes.map((lote) => lote.ideLote);
+
+      if (new Set(ids).size !== ids.length) {
+        throw new BadRequestException(
+          `El producto ${detalle.ideProd} contiene lotes repetidos.`,
+        );
+      }
+
+      const totalAsignado = lotes.reduce(
+        (total, lote) => total + lote.cantidadDevolucion,
+
+        0,
+      );
+
+      if (totalAsignado !== detalle.cantidadProd) {
+        throw new BadRequestException(
+          `La cantidad asignada en lotes para el producto ${detalle.ideProd} debe ser igual a ${detalle.cantidadProd}.`,
+        );
+      }
+    }
+
+    const idsLotes = Array.from(
+      new Set(asignaciones.map((asignacion) => asignacion.ideLote)),
+    );
+
+    const lotes = await this.pedidosRepository.listarLotesPorIdsForUpdate(
+      idsLotes,
+      manager,
+    );
+
+    const lotesPorId = new Map(lotes.map((lote) => [lote.ideLote, lote]));
+
+    const hoy = this.fechaCalendario(new Date());
+
+    for (const detalle of detalles) {
+      for (const asignacion of detalle.lotesDevolucion ?? []) {
+        const lote = lotesPorId.get(asignacion.ideLote);
+
+        if (!lote) {
+          throw new BadRequestException(
+            `No existe el lote ${asignacion.ideLote}.`,
+          );
+        }
+
+        if (lote.ideProd !== detalle.ideProd) {
+          throw new BadRequestException(
+            `El lote ${lote.ideLote} no pertenece al producto ${detalle.ideProd}.`,
+          );
+        }
+
+        const fechaCaducidad = this.fechaCalendario(lote.fechaCaducidadLote);
+
+        if (fechaCaducidad >= hoy) {
+          throw new BadRequestException(
+            `El lote ${lote.ideLote} todavía no está caducado.`,
+          );
+        }
+
+        if (lote.estadoLote === 'devuelto') {
+          throw new BadRequestException(
+            `El lote ${lote.ideLote} ya fue devuelto.`,
+          );
+        }
+
+        if (lote.stockLote < asignacion.cantidadDevolucion) {
+          throw new BadRequestException(
+            `El lote ${lote.ideLote} no tiene suficiente stock para devolver ${asignacion.cantidadDevolucion} unidades.`,
+          );
+        }
+      }
+    }
+  }
+
+  private fechaCalendario(value: Date | string): string {
+    if (typeof value === 'string') {
+      return value.slice(0, 10);
+    }
+
+    const year = value.getFullYear();
+
+    const month = String(value.getMonth() + 1).padStart(2, '0');
+
+    const day = String(value.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
   }
 
   private async recalcularDetallesPersistidosDesdeEmpresa(
