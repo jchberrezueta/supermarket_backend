@@ -3,6 +3,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import {
   ClienteEntity,
   DetalleVentaEntity,
+  LoteEntity,
+  MovimientoInventarioEntity,
   ProductoEntity,
   VentaEntity,
 } from '@entities';
@@ -23,6 +25,8 @@ import { StockPolicyService } from './domain/stock-policy.service';
       ProductoEntity,
       VentaEntity,
       DetalleVentaEntity,
+      LoteEntity,
+      MovimientoInventarioEntity,
     ]),
   ],
   controllers: [PosController, PosScanController],

@@ -2,11 +2,27 @@ import { Injectable } from '@nestjs/common';
 import {
   ClienteEntity,
   DetalleVentaEntity,
+  LoteEntity,
   MetodoPagoClienteEntity,
+  MovimientoInventarioEntity,
   ProductoEntity,
   VentaEntity,
 } from '@entities';
 import { EntityManager } from 'typeorm';
+
+interface RegistrarMovimientoVentaParams {
+  ideProd: number;
+  ideLote: number;
+  ideDetaVent: number;
+  tipoMovi: MovimientoInventarioEntity['tipoMovi'];
+  cantidadMovi: number;
+  stockProdAnterior: number;
+  stockProdPosterior: number;
+  stockLoteAnterior: number;
+  stockLotePosterior: number;
+  observacionMovi: string;
+  usuaIngre?: string;
+}
 
 @Injectable()
 export class PosRepository {
@@ -38,6 +54,42 @@ export class PosRepository {
       .createQueryBuilder('producto')
       .setLock('pessimistic_write')
       .where('producto.ideProd = :ideProd', { ideProd })
+      .getOne();
+  }
+
+  /**
+   * Lotes vendibles en orden FEFO:
+   * primero vence, primero sale.
+   *
+   * La fecha es la autoridad real para impedir la venta de caducados.
+   * El bloqueo evita que dos ventas consuman simultáneamente las mismas
+   * unidades.
+   */
+  async findLotesVendiblesFefoForUpdate(
+    ideProd: number,
+    manager: EntityManager,
+  ): Promise<LoteEntity[]> {
+    return manager
+      .getRepository(LoteEntity)
+      .createQueryBuilder('lote')
+      .setLock('pessimistic_write')
+      .where('lote.ideProd = :ideProd', { ideProd })
+      .andWhere('lote.stockLote > 0')
+      .andWhere('DATE(lote.fechaCaducidadLote) >= CURRENT_DATE')
+      .andWhere('lote.estadoLote <> :estadoDevuelto', {
+        estadoDevuelto: 'devuelto',
+      })
+      .orderBy('lote.fechaCaducidadLote', 'ASC')
+      .addOrderBy('lote.ideLote', 'ASC')
+      .getMany();
+  }
+
+  async findLoteByIdForUpdate(ideLote: number, manager: EntityManager) {
+    return manager
+      .getRepository(LoteEntity)
+      .createQueryBuilder('lote')
+      .setLock('pessimistic_write')
+      .where('lote.ideLote = :ideLote', { ideLote })
       .getOne();
   }
 
@@ -92,6 +144,34 @@ export class PosRepository {
     return manager.getRepository(ProductoEntity).save(producto);
   }
 
+  async guardarLote(lote: LoteEntity, manager: EntityManager) {
+    return manager.getRepository(LoteEntity).save(lote);
+  }
+
+  async registrarMovimientoVenta(
+    params: RegistrarMovimientoVentaParams,
+    manager: EntityManager,
+  ) {
+    const repository = manager.getRepository(MovimientoInventarioEntity);
+
+    const movimiento = repository.create({
+      ideProd: params.ideProd,
+      ideLote: params.ideLote,
+      ideDetaEntr: null,
+      ideDetaVent: params.ideDetaVent,
+      tipoMovi: params.tipoMovi,
+      cantidadMovi: params.cantidadMovi,
+      stockProdAnterior: params.stockProdAnterior,
+      stockProdPosterior: params.stockProdPosterior,
+      stockLoteAnterior: params.stockLoteAnterior,
+      stockLotePosterior: params.stockLotePosterior,
+      observacionMovi: params.observacionMovi,
+      usuaIngre: params.usuaIngre ?? 'pos',
+    });
+
+    return repository.save(movimiento);
+  }
+
   async findVentaByIdForUpdate(ideVent: number, manager: EntityManager) {
     return manager
       .getRepository(VentaEntity)
@@ -106,6 +186,23 @@ export class PosRepository {
       .getRepository(DetalleVentaEntity)
       .createQueryBuilder('detalle')
       .where('detalle.ideVent = :ideVent', { ideVent })
+      .orderBy('detalle.ideDetaVent', 'ASC')
+      .getMany();
+  }
+
+  async findMovimientosSalidaVentaByDetalleForUpdate(
+    ideDetaVent: number,
+    manager: EntityManager,
+  ): Promise<MovimientoInventarioEntity[]> {
+    return manager
+      .getRepository(MovimientoInventarioEntity)
+      .createQueryBuilder('movimiento')
+      .setLock('pessimistic_write')
+      .where('movimiento.ideDetaVent = :ideDetaVent', { ideDetaVent })
+      .andWhere('movimiento.tipoMovi = :tipoMovi', {
+        tipoMovi: 'salida_venta',
+      })
+      .orderBy('movimiento.ideMovi', 'ASC')
       .getMany();
   }
 }

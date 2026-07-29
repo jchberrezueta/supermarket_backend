@@ -10,8 +10,6 @@ export interface PosAlertaStock {
 
 @Injectable()
 export class StockPolicyService {
-  private readonly stockMinimo = 5;
-
   validarStockDisponible(producto: ProductoEntity, cantidad: number): void {
     if (producto.stockProd < cantidad) {
       throw new BadRequestException(
@@ -47,7 +45,9 @@ export class StockPolicyService {
   }
 
   crearAlertaSiStockBajo(producto: ProductoEntity): PosAlertaStock | null {
-    if (producto.stockProd > this.stockMinimo) {
+    const stockMinimo = Math.max(0, Number(producto.stockMinimoProd ?? 0));
+
+    if (producto.stockProd > stockMinimo) {
       return null;
     }
 
@@ -55,7 +55,7 @@ export class StockPolicyService {
       ideProd: producto.ideProd,
       nombreProd: producto.nombreProd,
       stockActual: producto.stockProd,
-      mensaje: `Stock bajo para ${producto.nombreProd}`,
+      mensaje: `Stock bajo para ${producto.nombreProd}. Mínimo: ${stockMinimo}.`,
     };
   }
 }
