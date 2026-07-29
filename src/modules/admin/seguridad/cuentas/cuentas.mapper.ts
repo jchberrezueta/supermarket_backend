@@ -7,7 +7,6 @@ export interface CuentaRow {
   ide_perf: number;
   nombre_perf?: string | null;
   usuario_cuen: string;
-  password_cuen: string;
   estado_cuen: string;
   debe_cambiar_clave: boolean;
   intentos_fallidos: number;
@@ -18,7 +17,6 @@ export interface CuentaRow {
   usua_actua?: string;
   fecha_actua?: Date;
 }
-
 export interface CuentaAuthRaw {
   ide_cuen: number;
   ide_empl: number;
@@ -42,25 +40,36 @@ export class CuentasMapper {
     return {
       ide_cuen: cuenta.ideCuen,
       ide_empl: cuenta.ideEmpl,
+
       nombre_empleado: cuenta.empleado
         ? this.getNombreEmpleado(cuenta.empleado)
         : null,
+
       ide_perf: cuenta.idePerf,
+
       nombre_perf: cuenta.perfil?.nombrePerf ?? null,
+
       usuario_cuen: cuenta.usuarioCuen,
-      password_cuen: '',
+
       estado_cuen: cuenta.estadoCuen,
+
       debe_cambiar_clave: cuenta.debeCambiarClave ?? false,
+
       intentos_fallidos: cuenta.intentosFallidosCuen,
+
       bloqueado_hasta: cuenta.fechaBloqueoCuen,
+
       ultimo_login: cuenta.ultimoLoginCuen,
+
       usua_ingre: cuenta.usuaIngre,
+
       fecha_ingre: cuenta.fechaIngre,
+
       usua_actua: cuenta.usuaActua,
+
       fecha_actua: cuenta.fechaActua,
     };
   }
-
   static toRows(cuentas: CuentaEntity[]): CuentaRow[] {
     return cuentas.map((cuenta) => this.toRow(cuenta));
   }

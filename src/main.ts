@@ -1,32 +1,41 @@
-import { NestFactory } from '@nestjs/core';
-import { ConfigService } from '@nestjs/config';
-import { AppModule } from './app.module';
+import 'dotenv/config';
+
 import { ValidationPipe } from '@nestjs/common';
+
+import { ConfigService } from '@nestjs/config';
+
+import { NestFactory } from '@nestjs/core';
+
 import * as fs from 'fs';
 
-async function bootstrap() {
-  // Crear una instancia temporal para leer configuración
-  const configService = new ConfigService();
+import { AppModule } from './app.module';
 
-  const useHttps = configService.get<string>('HTTPS') === 'true';
+async function bootstrap() {
+  const useHttps = process.env.HTTPS === 'true';
+
+  const httpsOptions = useHttps
+    ? {
+        key: fs.readFileSync(
+          process.env.HTTPS_KEY_PATH || './certs/localhost+2-key.pem',
+        ),
+
+        cert: fs.readFileSync(
+          process.env.HTTPS_CERT_PATH || './certs/localhost+2.pem',
+        ),
+      }
+    : undefined;
 
   const app = await NestFactory.create(AppModule, {
     logger: ['log', 'warn', 'error', 'debug'],
-    ...(useHttps && {
-      httpsOptions: {
-        key: fs.readFileSync(
-          configService.get<string>('HTTPS_KEY_PATH') ||
-            './certs/localhost+2-key.pem',
-        ),
-        cert: fs.readFileSync(
-          configService.get<string>('HTTPS_CERT_PATH') ||
-            './certs/localhost+2.pem',
-        ),
-      },
-    }),
+
+    ...(httpsOptions
+      ? {
+          httpsOptions,
+        }
+      : {}),
   });
 
-  const appConfig = app.get(ConfigService);
+  const configService = app.get(ConfigService);
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -36,10 +45,10 @@ async function bootstrap() {
     }),
   );
 
-  app.setGlobalPrefix(appConfig.get<string>('APP_API_PREFIX') || 'api');
+  app.setGlobalPrefix(configService.get<string>('APP_API_PREFIX') || 'api');
 
   const corsOrigins = (
-    appConfig.get<string>('CORS_ORIGINS') ||
+    configService.get<string>('CORS_ORIGINS') ||
     [
       'http://localhost:4200',
       'https://localhost:4200',
@@ -56,11 +65,13 @@ async function bootstrap() {
   app.enableCors({
     origin: (origin, callback) => {
       /*
-       * Las aplicaciones móviles nativas,
-       * Postman y curl pueden no enviar Origin.
+       * Postman, curl y aplicaciones
+       * móviles nativas pueden no
+       * enviar el encabezado Origin.
        */
       if (!origin || corsOrigins.includes(origin)) {
         callback(null, true);
+
         return;
       }
 
@@ -74,11 +85,11 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
-  await app.listen(appConfig.get<number>('APP_PORT') || 3000, '0.0.0.0');
+  const port = Number(configService.get<string>('APP_PORT')) || 3001;
 
-  console.log(
-    `-----> El backend esta levantado en ${await app.getUrl()} :) <-----`,
-  );
+  await app.listen(port, '0.0.0.0');
+
+  console.log(`Backend levantado en ${await app.getUrl()}`);
 }
 
-bootstrap();
+void bootstrap();

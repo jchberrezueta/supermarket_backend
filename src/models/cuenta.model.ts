@@ -80,7 +80,6 @@ export interface ICuentaResult {
   ide_empl: number;
   ide_perf: number;
   usuario_cuen: string;
-  password_cuen: string;
   estado_cuen: EnumEstadosCuenta;
   debe_cambiar_clave: boolean;
 }

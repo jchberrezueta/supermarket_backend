@@ -20,7 +20,8 @@ export class EmailService {
     ).replace(/\/+$/, '');
 
     const url =
-      `${frontendUrl}/reset-password` + `?token=${encodeURIComponent(token)}`;
+      `${frontendUrl}/auth/reset-password` +
+      `?token=${encodeURIComponent(token)}`;
 
     const usuarioSeguro = this.escapeHtml(usuario);
 
