@@ -3,6 +3,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import {
   ClienteEntity,
   DetalleVentaEntity,
+  LoteEntity,
+  MovimientoInventarioEntity,
   ProductoEntity,
   VentaEntity,
 } from '@entities';
@@ -16,6 +18,8 @@ import { MobileVentasService } from './ventas.service';
       ProductoEntity,
       VentaEntity,
       DetalleVentaEntity,
+      LoteEntity,
+      MovimientoInventarioEntity,
     ]),
   ],
   controllers: [MobileVentasController],

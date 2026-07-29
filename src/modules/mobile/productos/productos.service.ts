@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { ApiResponseFactory, IdUtil } from '@common/index';
-import { ProductoEntity } from '@entities';
-import { DataSource } from 'typeorm';
+import { LoteEntity, ProductoEntity } from '@entities';
+import { DataSource, EntityManager } from 'typeorm';
 
 interface MobileProductoFiltros {
   ideCate?: number;
@@ -21,17 +21,16 @@ export class MobileProductosService {
   ) {}
 
   /**
-   * Listar todos los productos disponibles para la tienda móvil.
-   *
-   * Antes dependía de:
-   * - fn_listar_producto
-   *
-   * Ahora usa TypeORM y mantiene salida en snake_case
-   * para no romper la app móvil.
+   * Lista el catálogo público usando como stock disponible la suma de los
+   * lotes vigentes y no devueltos. Así la tienda no ofrece unidades que el
+   * motor FEFO no podría vender.
    */
   async listar() {
-    const productos = await this.dataSource.transaction((manager) =>
-      manager.getRepository(ProductoEntity).find({
+    const filas = await this.dataSource.transaction(async (manager) => {
+      const productos = await manager.getRepository(ProductoEntity).find({
+        where: {
+          estadoProd: 'activo',
+        },
         relations: {
           categoria: true,
           marca: true,
@@ -39,56 +38,52 @@ export class MobileProductosService {
         order: {
           nombreProd: 'ASC',
         },
-      }),
-    );
+      });
+
+      return this.mapearProductosConStockVendible(productos, manager);
+    });
 
     return ApiResponseFactory.legacyRead(
-      productos.map((producto) => this.toMobileProductoRow(producto)),
+      filas,
       'Listado de productos obtenido',
     );
   }
 
-  /**
-   * Buscar un producto por ID.
-   *
-   * Se permite id = 0 si existe en la base.
-   */
   async buscar(id: number) {
     const ideProd = IdUtil.requireId(id, 'El ID del producto no es válido.');
 
-    const producto = await this.dataSource.transaction((manager) =>
-      manager.getRepository(ProductoEntity).findOne({
+    const filas = await this.dataSource.transaction(async (manager) => {
+      const producto = await manager.getRepository(ProductoEntity).findOne({
         where: {
           ideProd,
+          estadoProd: 'activo',
         },
         relations: {
           categoria: true,
           marca: true,
         },
-      }),
-    );
+      });
 
-    return ApiResponseFactory.legacyRead(
-      producto ? [this.toMobileProductoRow(producto)] : [],
-      'Producto encontrado',
-    );
+      if (!producto) {
+        return [];
+      }
+
+      return this.mapearProductosConStockVendible([producto], manager);
+    });
+
+    return ApiResponseFactory.legacyRead(filas, 'Producto encontrado');
   }
 
-  /**
-   * Filtrar productos para la tienda móvil.
-   *
-   * Antes dependía de:
-   * - fn_filtrar_producto
-   *
-   * Ahora usa QueryBuilder para evitar funciones PostgreSQL.
-   */
   async filtrar(filtros: MobileProductoFiltros) {
-    const productos = await this.dataSource.transaction(async (manager) => {
+    const filas = await this.dataSource.transaction(async (manager) => {
       const qb = manager
         .getRepository(ProductoEntity)
         .createQueryBuilder('producto')
         .leftJoinAndSelect('producto.categoria', 'categoria')
         .leftJoinAndSelect('producto.marca', 'marca')
+        .andWhere('producto.estadoProd = :estadoProd', {
+          estadoProd: filtros.estadoProd ?? 'activo',
+        })
         .orderBy('producto.nombreProd', 'ASC');
 
       if (filtros.ideCate !== undefined && filtros.ideCate !== null) {
@@ -115,31 +110,91 @@ export class MobileProductosService {
         });
       }
 
-      if (filtros.estadoProd) {
-        qb.andWhere('producto.estadoProd = :estadoProd', {
-          estadoProd: filtros.estadoProd,
-        });
+      const productos = await qb.getMany();
+      const productosConStock = await this.mapearProductosConStockVendible(
+        productos,
+        manager,
+      );
+
+      if (filtros.disponibleProd === 'si') {
+        return productosConStock.filter(
+          (producto) => producto.disponible_prod === 'si',
+        );
       }
 
-      if (filtros.disponibleProd) {
-        qb.andWhere('producto.disponibleProd = :disponibleProd', {
-          disponibleProd: filtros.disponibleProd,
-        });
+      if (filtros.disponibleProd === 'no') {
+        return productosConStock.filter(
+          (producto) => producto.disponible_prod === 'no',
+        );
       }
 
-      return qb.getMany();
+      return productosConStock;
     });
 
     return ApiResponseFactory.legacyRead(
-      productos.map((producto) => this.toMobileProductoRow(producto)),
+      filas,
       'Filtrado de productos completado',
     );
   }
 
-  private toMobileProductoRow(producto: ProductoEntity) {
+  private async mapearProductosConStockVendible(
+    productos: ProductoEntity[],
+    manager: EntityManager,
+  ) {
+    const stockPorProducto = await this.obtenerStockVendiblePorProducto(
+      productos.map((producto) => producto.ideProd),
+      manager,
+    );
+
+    return productos.map((producto) =>
+      this.toMobileProductoRow(
+        producto,
+        stockPorProducto.get(producto.ideProd) ?? 0,
+      ),
+    );
+  }
+
+  private async obtenerStockVendiblePorProducto(
+    idsProductos: number[],
+    manager: EntityManager,
+  ): Promise<Map<number, number>> {
+    if (!idsProductos.length) {
+      return new Map<number, number>();
+    }
+
+    const rows = await manager
+      .getRepository(LoteEntity)
+      .createQueryBuilder('lote')
+      .select('lote.ideProd', 'ideProd')
+      .addSelect('COALESCE(SUM(lote.stockLote), 0)', 'stockVendible')
+      .where('lote.ideProd IN (:...idsProductos)', {
+        idsProductos,
+      })
+      .andWhere('lote.stockLote > 0')
+      .andWhere('DATE(lote.fechaCaducidadLote) >= CURRENT_DATE')
+      .andWhere('lote.estadoLote <> :estadoDevuelto', {
+        estadoDevuelto: 'devuelto',
+      })
+      .groupBy('lote.ideProd')
+      .getRawMany<{
+        ideProd: string | number;
+        stockVendible: string | number;
+      }>();
+
+    return new Map(
+      rows.map((row) => [Number(row.ideProd), Number(row.stockVendible)]),
+    );
+  }
+
+  private toMobileProductoRow(
+    producto: ProductoEntity,
+    stockVendible: number,
+  ) {
     const precioVenta = Number(producto.precioVentaProd ?? 0);
     const iva = Number(producto.ivaProd ?? 0);
     const descuento = Number(producto.dctoPromoProd ?? 0);
+    const stock = Math.max(0, Math.trunc(Number(stockVendible) || 0));
+    const disponible = stock > 0 ? 'si' : 'no';
 
     return {
       ide_prod: producto.ideProd,
@@ -152,8 +207,8 @@ export class MobileProductosService {
       precio_venta_prod: precioVenta,
       iva_prod: iva,
       dcto_promo_prod: descuento,
-      stock_prod: producto.stockProd,
-      disponible_prod: producto.disponibleProd,
+      stock_prod: stock,
+      disponible_prod: disponible,
       estado_prod: producto.estadoProd,
       descripcion_prod: producto.descripcionProd,
       url_img_prod: producto.urlImgProd,
@@ -162,10 +217,6 @@ export class MobileProductosService {
       usua_actua: producto.usuaActua,
       fecha_actua: producto.fechaActua,
 
-      /**
-       * También enviamos formato camelCase para que el frontend móvil
-       * pueda usar cualquiera de los dos formatos sin romper.
-       */
       ideProd: producto.ideProd,
       ideCate: producto.ideCate,
       nombreCate: producto.categoria?.nombreCate ?? null,
@@ -176,8 +227,8 @@ export class MobileProductosService {
       precioVentaProd: precioVenta,
       ivaProd: iva,
       dctoPromoProd: descuento,
-      stockProd: producto.stockProd,
-      disponibleProd: producto.disponibleProd,
+      stockProd: stock,
+      disponibleProd: disponible,
       estadoProd: producto.estadoProd,
       descripcionProd: producto.descripcionProd,
       urlImgProd: producto.urlImgProd,
