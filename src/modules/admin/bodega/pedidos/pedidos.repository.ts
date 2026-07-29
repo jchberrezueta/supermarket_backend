@@ -80,7 +80,6 @@ export class PedidosRepository {
       .getRepository(LoteEntity)
       .createQueryBuilder('lote')
       .setLock('pessimistic_write')
-      .leftJoinAndSelect('lote.producto', 'producto')
       .where('lote.ideLote IN (:...idsLotes)', {
         idsLotes,
       })
