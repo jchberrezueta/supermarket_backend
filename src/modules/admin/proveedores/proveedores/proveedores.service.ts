@@ -33,7 +33,7 @@ export class ProveedoresService {
     const proveedor = await this.dataSource.transaction((manager) =>
       this.proveedoresRepository.buscarPorId(ideProv, manager),
     );
-    console.log(proveedor);
+
     return ApiResponseFactory.legacyRead(
       proveedor ? [ProveedoresMapper.toRow(proveedor)] : [],
       'Proveedor encontrado',
