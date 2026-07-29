@@ -2,12 +2,12 @@ import { EnumEstadosProducto } from '@models';
 import { Transform } from 'class-transformer';
 import {
   IsEnum,
-  IsIn,
   IsInt,
   IsNumber,
   IsOptional,
   IsString,
   Length,
+  Max,
   Min,
 } from 'class-validator';
 
@@ -114,6 +114,7 @@ export class CreateProductoDTO {
   @Transform(({ value }) => toRequiredNumber(value))
   @IsNumber()
   @Min(0)
+  @Max(100)
   ivaProd!: number;
 
   @Transform(({ value }) => toRequiredNumber(value))
@@ -121,32 +122,11 @@ export class CreateProductoDTO {
   @Min(0)
   dctoPromoProd!: number;
 
-  /**
-   * Compatibilidad temporal con el frontend.
-   *
-   * Aunque se reciba, el backend ignora este valor.
-   * Todo producto nuevo comienza con stock cero.
-   */
-  @IsOptional()
-  @Transform(({ value }) => optionalInt(value))
-  @IsInt()
-  @Min(0)
-  stockProd?: number;
-
   @IsOptional()
   @Transform(({ value }) => optionalInt(value))
   @IsInt()
   @Min(0)
   stockMinimoProd?: number;
-
-  /**
-   * Compatibilidad temporal con el frontend.
-   *
-   * El backend calcula la disponibilidad desde stock_prod.
-   */
-  @IsOptional()
-  @IsIn(['si', 'no'])
-  disponibleProd?: 'si' | 'no';
 
   @IsEnum(EnumEstadosProducto)
   estadoProd!: EnumEstadosProducto;

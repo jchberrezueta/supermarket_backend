@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EmpresaEntity, EmpresaPreciosEntity } from '@entities';
+import { EmpresaEntity, EmpresaPreciosEntity, ProductoEntity } from '@entities';
 import { EntityManager, Repository } from 'typeorm';
 import { MoneyUtil } from '@common/utils/money.util';
 import { CreateEmpresaDTO } from './dto/create_empresa.dto';
@@ -208,6 +208,30 @@ export class EmpresasRepository {
     });
   }
 
+  async buscarPrecioPorEmpresaProducto(
+    ideEmpr: number,
+    ideProd: number,
+    manager?: EntityManager,
+  ): Promise<EmpresaPreciosEntity | null> {
+    return this.getEmpresaPreciosRepository(manager).findOne({
+      where: {
+        ideEmpr,
+        ideProd,
+      },
+    });
+  }
+
+  async buscarProductoPorId(
+    ideProd: number,
+    manager?: EntityManager,
+  ): Promise<ProductoEntity | null> {
+    return this.getProductoRepository(manager).findOne({
+      where: {
+        ideProd,
+      },
+    });
+  }
+
   async actualizarPrecio(
     precio: EmpresaPreciosEntity,
     dto: UpdateEmpresaPrecioDTO,
@@ -244,5 +268,15 @@ export class EmpresasRepository {
     }
 
     return this.empresaPreciosRepository;
+  }
+
+  private getProductoRepository(
+    manager?: EntityManager,
+  ): Repository<ProductoEntity> {
+    if (manager) {
+      return manager.getRepository(ProductoEntity);
+    }
+
+    return this.empresaPreciosRepository.manager.getRepository(ProductoEntity);
   }
 }

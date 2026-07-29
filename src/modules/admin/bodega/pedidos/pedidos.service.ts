@@ -960,7 +960,7 @@ export class PedidosService {
 
     if (idsSinPrecio.length > 0) {
       throw new BadRequestException(
-        `Los siguientes productos no tienen precio registrado para la empresa seleccionada: ${idsSinPrecio.join(', ')}.`,
+        `Los siguientes productos no tienen un precio activo registrado para la empresa seleccionada: ${idsSinPrecio.join(', ')}.`,
       );
     }
 

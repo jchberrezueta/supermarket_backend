@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { ApiResponseFactory, ComboMapper, IdUtil } from '@common/index';
 import { DataSource } from 'typeorm';
@@ -57,6 +61,7 @@ export class ProductosService {
 
   async insertar(body: CreateProductoDTO) {
     try {
+      this.validarValoresComerciales(body);
       const producto = await this.dataSource.transaction((manager) =>
         this.productosRepository.crear(body, manager),
       );
@@ -81,6 +86,8 @@ export class ProductosService {
     );
 
     try {
+      this.validarValoresComerciales(body);
+
       const producto = await this.dataSource.transaction(async (manager) => {
         const productoActual = await this.productosRepository.buscarPorId(
           ideProd,
@@ -238,5 +245,15 @@ export class ProductosService {
       producto,
       'Producto encontrado correctamente.',
     );
+  }
+
+  private validarValoresComerciales(
+    body: CreateProductoDTO | UpdateProductoDTO,
+  ): void {
+    if (body.dctoPromoProd > body.precioVentaProd) {
+      throw new BadRequestException(
+        'El descuento promocional unitario no puede superar el precio de venta.',
+      );
+    }
   }
 }

@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { ApiResponseFactory, ComboMapper, IdUtil } from '@common/index';
 import { DataSource } from 'typeorm';
@@ -221,9 +225,54 @@ export class EmpresasService {
 
   async insertarPrecio(body: CreateEmpresaPrecioDTO) {
     try {
-      const precio = await this.dataSource.transaction((manager) =>
-        this.empresasRepository.crearPrecio(body, manager),
-      );
+      const precio = await this.dataSource.transaction(async (manager) => {
+        this.validarValoresPrecio(body);
+
+        const empresa = await this.empresasRepository.buscarPorId(
+          body.ideEmpr,
+          manager,
+        );
+
+        if (!empresa) {
+          throw new NotFoundException('No se encontró la empresa indicada.');
+        }
+
+        if (empresa.estadoEmpr !== 'activo') {
+          throw new BadRequestException(
+            'No se puede registrar un precio para una empresa inactiva.',
+          );
+        }
+
+        const producto = await this.empresasRepository.buscarProductoPorId(
+          body.ideProd,
+          manager,
+        );
+
+        if (!producto) {
+          throw new NotFoundException('No se encontró el producto indicado.');
+        }
+
+        if (producto.estadoProd !== 'activo') {
+          throw new BadRequestException(
+            'No se puede registrar un precio para un producto inactivo.',
+          );
+        }
+
+        const precioExistente =
+          await this.empresasRepository.buscarPrecioPorEmpresaProducto(
+            body.ideEmpr,
+            body.ideProd,
+            manager,
+          );
+
+        if (precioExistente) {
+          throw new BadRequestException(
+            'La empresa ya tiene un precio configurado para este producto. Edite el registro existente.',
+          );
+        }
+
+        return this.empresasRepository.crearPrecio(body, manager);
+      });
 
       return ApiResponseFactory.legacyWrite(
         1,
@@ -246,6 +295,8 @@ export class EmpresasService {
 
     try {
       const precio = await this.dataSource.transaction(async (manager) => {
+        this.validarValoresPrecio(body);
+
         const precioActual = await this.empresasRepository.buscarPrecioPorId(
           ideEmprProd,
           manager,
@@ -255,6 +306,44 @@ export class EmpresasService {
           throw new NotFoundException(
             'No se encontró el precio de empresa indicado.',
           );
+        }
+
+        if (
+          precioActual.ideEmpr !== body.ideEmpr ||
+          precioActual.ideProd !== body.ideProd
+        ) {
+          throw new BadRequestException(
+            'La empresa y el producto no pueden modificarse. Cree otro registro o reactive el existente.',
+          );
+        }
+
+        /*
+         * Para mantener el precio activo,
+         * la empresa y el producto también
+         * deben estar activos.
+         */
+        if (body.estadoEmprProd === 'activo') {
+          const empresa = await this.empresasRepository.buscarPorId(
+            body.ideEmpr,
+            manager,
+          );
+
+          if (!empresa || empresa.estadoEmpr !== 'activo') {
+            throw new BadRequestException(
+              'No se puede activar un precio perteneciente a una empresa inactiva.',
+            );
+          }
+
+          const producto = await this.empresasRepository.buscarProductoPorId(
+            body.ideProd,
+            manager,
+          );
+
+          if (!producto || producto.estadoProd !== 'activo') {
+            throw new BadRequestException(
+              'No se puede activar un precio perteneciente a un producto inactivo.',
+            );
+          }
         }
 
         return this.empresasRepository.actualizarPrecio(
@@ -274,6 +363,46 @@ export class EmpresasService {
         0,
         error?.message || 'No se pudo actualizar el precio de empresa.',
       );
+    }
+  }
+
+  private validarValoresPrecio(
+    body: CreateEmpresaPrecioDTO | UpdateEmpresaPrecioDTO,
+  ): void {
+    const precio = Number(body.precioCompraProd);
+
+    const descuentoCompra = Number(body.dctoCompraProd);
+
+    const descuentoCaducidad = Number(body.dctoCaducidadProd);
+
+    const iva = Number(body.ivaProd);
+
+    if (!Number.isFinite(precio) || precio <= 0) {
+      throw new BadRequestException(
+        'El precio de compra debe ser mayor que cero.',
+      );
+    }
+
+    if (descuentoCompra > precio) {
+      throw new BadRequestException(
+        'El descuento de compra unitario no puede superar el precio de compra.',
+      );
+    }
+
+    if (descuentoCaducidad > precio) {
+      throw new BadRequestException(
+        'El descuento por caducidad unitario no puede superar el precio de compra.',
+      );
+    }
+
+    if (descuentoCompra + descuentoCaducidad > precio) {
+      throw new BadRequestException(
+        'La suma de los descuentos unitarios no puede superar el precio de compra.',
+      );
+    }
+
+    if (iva < 0 || iva > 100) {
+      throw new BadRequestException('El IVA debe estar entre 0 y 100.');
     }
   }
 }

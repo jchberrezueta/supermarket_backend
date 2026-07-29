@@ -282,6 +282,9 @@ export class PedidosRepository {
       .andWhere('precioEmpresa.ideProd IN (:...idsProductos)', {
         idsProductos,
       })
+      .andWhere('precioEmpresa.estadoEmprProd = :estadoPrecio', {
+        estadoPrecio: 'activo',
+      })
       .orderBy('precioEmpresa.ideProd', 'ASC')
       .addOrderBy('precioEmpresa.ideEmprProd', 'ASC')
       .getMany();

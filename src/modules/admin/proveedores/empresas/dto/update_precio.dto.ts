@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsEnum, IsInt, IsNumber, Min } from 'class-validator';
+import { IsEnum, IsInt, IsNumber, Max, Min } from 'class-validator';
 
 function toRequiredInt(value: unknown): number | unknown {
   if (value === null || value === undefined || value === '') {
@@ -37,22 +37,22 @@ enum EnumEstadosEmpresaProducto {
 export class UpdateEmpresaPrecioDTO {
   @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
-  @Min(0)
+  @Min(1)
   ideEmprProd!: number;
 
   @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
-  @Min(0)
+  @Min(1)
   ideEmpr!: number;
 
   @Transform(({ value }) => toRequiredInt(value))
   @IsInt()
-  @Min(0)
+  @Min(1)
   ideProd!: number;
 
   @Transform(({ value }) => toRequiredNumber(value))
   @IsNumber()
-  @Min(0)
+  @Min(0.01)
   precioCompraProd!: number;
 
   @Transform(({ value }) => toRequiredNumber(value))
@@ -68,6 +68,7 @@ export class UpdateEmpresaPrecioDTO {
   @Transform(({ value }) => toRequiredNumber(value))
   @IsNumber()
   @Min(0)
+  @Max(100)
   ivaProd!: number;
 
   @IsEnum(EnumEstadosEmpresaProducto)
