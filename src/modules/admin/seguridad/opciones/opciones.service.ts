@@ -53,9 +53,20 @@ export class OpcionesService {
 
   async insertar(body: CreateOpcionDto, usuarioResponsable: string) {
     try {
-      const opcion = await this.dataSource.transaction((manager) =>
-        this.opcionesRepository.crear(body, usuarioResponsable, manager),
-      );
+      const opcion = await this.dataSource.transaction(async (manager) => {
+        if (body.padreOpci !== null && body.padreOpci !== undefined) {
+          const padre = await this.opcionesRepository.buscarPorId(
+            body.padreOpci,
+            manager,
+          );
+
+          if (!padre) {
+            throw new Error('La opción padre seleccionada no existe.');
+          }
+        }
+
+        return this.opcionesRepository.crear(body, usuarioResponsable, manager);
+      });
 
       return ApiResponseFactory.legacyWrite(
         1,
@@ -65,7 +76,9 @@ export class OpcionesService {
     } catch (error) {
       return ApiResponseFactory.legacyWrite(
         0,
-        error?.message || 'No se pudo registrar la opción.',
+        error instanceof Error
+          ? error.message
+          : 'No se pudo registrar la opción.',
       );
     }
   }
@@ -76,6 +89,17 @@ export class OpcionesService {
       'El ID de la opción no es válido.',
     );
 
+    if (
+      body.padreOpci !== null &&
+      body.padreOpci !== undefined &&
+      body.padreOpci === ideOpci
+    ) {
+      return ApiResponseFactory.legacyWrite(
+        0,
+        'Una opción no puede ser su propio padre.',
+      );
+    }
+
     try {
       const opcion = await this.dataSource.transaction(async (manager) => {
         const opcionActual = await this.opcionesRepository.buscarPorId(
@@ -85,6 +109,17 @@ export class OpcionesService {
 
         if (!opcionActual) {
           throw new Error('No se encontró la opción indicada.');
+        }
+
+        if (body.padreOpci !== null && body.padreOpci !== undefined) {
+          const padre = await this.opcionesRepository.buscarPorId(
+            body.padreOpci,
+            manager,
+          );
+
+          if (!padre) {
+            throw new Error('La opción padre seleccionada no existe.');
+          }
         }
 
         return this.opcionesRepository.actualizar(
@@ -103,7 +138,9 @@ export class OpcionesService {
     } catch (error) {
       return ApiResponseFactory.legacyWrite(
         0,
-        error?.message || 'No se pudo actualizar la opción.',
+        error instanceof Error
+          ? error.message
+          : 'No se pudo actualizar la opción.',
       );
     }
   }
@@ -168,10 +205,14 @@ export class OpcionesService {
       this.opcionesRepository.listar(manager),
     );
 
+    const niveles = Array.from(
+      new Set(opciones.map((opcion) => opcion.nivelOpci)),
+    ).sort((a, b) => a - b);
+
     return ComboMapper.fromEntities(
-      opciones,
-      (opcion) => opcion.nivelOpci + '',
-      (opcion) => opcion.ideOpci,
+      niveles,
+      (nivel) => `Nivel ${nivel}`,
+      (nivel) => nivel,
     );
   }
 
@@ -182,30 +223,21 @@ export class OpcionesService {
 
     return ComboMapper.fromEntities(
       opciones,
-      (opcion) => opcion.padreOpci + '',
+      (opcion) => `${opcion.nombreOpci} — ${opcion.rutaOpci}`,
       (opcion) => opcion.ideOpci,
     );
   }
 
-  /*async listarComboPais() {
-    const marcas = await this.dataSource.transaction((manager) =>
-      this.marcasRepository.listar(manager),
-    );
-
-    const paisesUnicos = Array.from(
-      new Set(
-        marcas.map((marca) => marca.paisOrigenMarc).filter((pais) => !!pais),
-      ),
-    ).sort((a, b) => a.localeCompare(b));
-
-    return ComboMapper.fromEntities(
-      paisesUnicos,
-      (pais) => pais,
-      (pais) => pais,
-    );
-  }*/
-
   async listarComboEstados() {
-    return ComboMapper.fromValues(['si', 'no']);
+    return [
+      {
+        label: 'Activo',
+        value: 'si',
+      },
+      {
+        label: 'Inactivo',
+        value: 'no',
+      },
+    ];
   }
 }
