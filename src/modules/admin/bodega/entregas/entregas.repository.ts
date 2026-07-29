@@ -4,6 +4,7 @@ import {
   DetalleEntregaEntity,
   DetalleEntregaLoteEntity,
   DetallePedidoEntity,
+  DetallePedidoLoteDevolucionEntity,
   EntregaEntity,
   LoteEntity,
   MovimientoInventarioEntity,
@@ -59,6 +60,9 @@ export class EntregasRepository {
 
     @InjectRepository(DetallePedidoEntity)
     private readonly detallePedidoRepository: Repository<DetallePedidoEntity>,
+
+    @InjectRepository(DetallePedidoLoteDevolucionEntity)
+    private readonly detallePedidoLoteDevolucionRepository: Repository<DetallePedidoLoteDevolucionEntity>,
 
     @InjectRepository(ProveedorEntity)
     private readonly proveedorRepository: Repository<ProveedorEntity>,
@@ -368,6 +372,9 @@ export class EntregasRepository {
         empresa: true,
         detalles: {
           producto: true,
+          lotesDevolucion: {
+            lote: true,
+          },
         },
       },
     });
@@ -397,8 +404,8 @@ export class EntregasRepository {
   ): Promise<PedidoEntity[]> {
     return this.getPedidoRepository(manager).find({
       where: [
-        { motivoPedi: 'peticion', estadoPedi: 'emitido' },
-        { motivoPedi: 'peticion', estadoPedi: 'parcial' },
+        { estadoPedi: 'emitido' },
+        { estadoPedi: 'parcial' },
       ],
       relations: { empresa: true },
       order: { idePedi: 'DESC' },
@@ -500,7 +507,15 @@ export class EntregasRepository {
     lote: LoteEntity,
     manager?: EntityManager,
   ): Promise<LoteEntity> {
-    lote.estadoLote = this.obtenerEstadoLotePorFecha(lote.fechaCaducidadLote);
+    /**
+     * Un lote devuelto conserva ese estado mientras su stock sea cero.
+     * Si una anulación le devuelve unidades, recupera su estado por fecha.
+     */
+    if (lote.estadoLote !== 'devuelto' || Number(lote.stockLote) > 0) {
+      lote.estadoLote = this.obtenerEstadoLotePorFecha(
+        lote.fechaCaducidadLote,
+      );
+    }
 
     return this.getLoteRepository(manager).save(lote);
   }
@@ -560,6 +575,48 @@ export class EntregasRepository {
     }
 
     return qb.getRawMany<CantidadConfirmadaPedidoRow>();
+  }
+
+  async listarAsignacionesCanjeForUpdate(
+    ideDetaPedi: number,
+    manager: EntityManager,
+  ): Promise<DetallePedidoLoteDevolucionEntity[]> {
+    return manager
+      .getRepository(DetallePedidoLoteDevolucionEntity)
+      .createQueryBuilder('asignacion')
+      .setLock('pessimistic_write')
+      .where('asignacion.ideDetaPedi = :ideDetaPedi', { ideDetaPedi })
+      .orderBy('asignacion.ideDetaPediLoteDevo', 'ASC')
+      .getMany();
+  }
+
+  async guardarAsignacionesCanje(
+    asignaciones: DetallePedidoLoteDevolucionEntity[],
+    manager?: EntityManager,
+  ): Promise<DetallePedidoLoteDevolucionEntity[]> {
+    if (!asignaciones.length) {
+      return [];
+    }
+
+    return this.getDetallePedidoLoteDevolucionRepository(manager).save(
+      asignaciones,
+    );
+  }
+
+  async listarMovimientosSalidaCanjeForUpdate(
+    ideDetaEntr: number,
+    manager: EntityManager,
+  ): Promise<MovimientoInventarioEntity[]> {
+    return manager
+      .getRepository(MovimientoInventarioEntity)
+      .createQueryBuilder('movimiento')
+      .setLock('pessimistic_write')
+      .where('movimiento.ideDetaEntr = :ideDetaEntr', { ideDetaEntr })
+      .andWhere('movimiento.tipoMovi = :tipoMovi', {
+        tipoMovi: 'salida_devolucion_proveedor',
+      })
+      .orderBy('movimiento.ideMovi', 'ASC')
+      .getMany();
   }
 
   async guardarDetallesEntrega(
@@ -671,6 +728,16 @@ export class EntregasRepository {
     }
 
     return this.detallePedidoRepository;
+  }
+
+  private getDetallePedidoLoteDevolucionRepository(
+    manager?: EntityManager,
+  ): Repository<DetallePedidoLoteDevolucionEntity> {
+    if (manager) {
+      return manager.getRepository(DetallePedidoLoteDevolucionEntity);
+    }
+
+    return this.detallePedidoLoteDevolucionRepository;
   }
 
   private getProveedorRepository(

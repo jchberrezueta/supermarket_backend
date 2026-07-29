@@ -373,39 +373,52 @@ export class EntregasService {
             totalesConfirmados.totalEntr,
           );
 
-          const movimiento = this.obtenerMovimientoEntrega(
-            pedido,
-            estadoConfirmado,
-          );
-
-          /**
-           * Primero actualizamos y capturamos el cambio total
-           * del stock general de cada producto.
-           */
-          const ajustesStockProducto =
-            await this.ajustarStockPorCambioDeEntrega(
-              new Map<number, number>(),
-              0,
-              this.consolidarCantidadesPorProducto(detalles),
-              movimiento,
-              manager,
+          if (pedido.motivoPedi === 'devolucion') {
+            /**
+             * El canje es una operación doble y atómica:
+             *
+             * 1. salen las unidades de los lotes caducados asignados;
+             * 2. entran las mismas unidades en los lotes de reemplazo.
+             *
+             * El stock general termina con el mismo valor, pero quedan
+             * registrados ambos movimientos y los lotes exactos.
+             */
+            await this.confirmarCanjeCaducidad(detalles, pedido, manager);
+          } else {
+            const movimiento = this.obtenerMovimientoEntrega(
+              pedido,
+              estadoConfirmado,
             );
 
-          /**
-           * Después distribuimos ese cambio entre los lotes,
-           * registrando en cada movimiento:
-           *
-           * - stock general anterior y posterior;
-           * - stock del lote anterior y posterior.
-           */
-          await this.aplicarMovimientoLotesEntrega(
-            detalles,
-            pedido,
-            movimiento,
-            this.obtenerTipoMovimientoNuevo(pedido, movimiento),
-            ajustesStockProducto,
-            manager,
-          );
+            /**
+             * Primero actualizamos y capturamos el cambio total
+             * del stock general de cada producto.
+             */
+            const ajustesStockProducto =
+              await this.ajustarStockPorCambioDeEntrega(
+                new Map<number, number>(),
+                0,
+                this.consolidarCantidadesPorProducto(detalles),
+                movimiento,
+                manager,
+              );
+
+            /**
+             * Después distribuimos ese cambio entre los lotes,
+             * registrando en cada movimiento:
+             *
+             * - stock general anterior y posterior;
+             * - stock del lote anterior y posterior.
+             */
+            await this.aplicarMovimientoLotesEntrega(
+              detalles,
+              pedido,
+              movimiento,
+              this.obtenerTipoMovimientoNuevo(pedido, movimiento),
+              ajustesStockProducto,
+              manager,
+            );
+          }
           entrega.estadoEntr = estadoConfirmado;
           entrega.usuaActua = 'admin';
           entrega.fechaActua = new Date();
@@ -480,39 +493,43 @@ export class EntregasService {
             );
           }
 
-          const movimientoAnterior = this.obtenerMovimientoEntrega(
-            pedido,
-            entrega.estadoEntr,
-          );
-
-          const movimientoReversion =
-            this.invertirMovimiento(movimientoAnterior);
-
-          /**
-           * Actualizamos primero el stock general y conservamos
-           * sus valores anterior y posterior.
-           *
-           * Todo permanece dentro de la misma transacción:
-           * si falla un lote, PostgreSQL revierte también el producto.
-           */
-          const ajustesStockProducto =
-            await this.ajustarStockPorCambioDeEntrega(
-              this.consolidarCantidadesPorProducto(detalles),
-              movimientoAnterior,
-              new Map<number, number>(),
-              0,
-              manager,
+          if (pedido.motivoPedi === 'devolucion') {
+            await this.anularCanjeCaducidad(detalles, pedido, manager);
+          } else {
+            const movimientoAnterior = this.obtenerMovimientoEntrega(
+              pedido,
+              entrega.estadoEntr,
             );
 
-          await this.aplicarMovimientoLotesEntrega(
-            detalles,
-            pedido,
-            movimientoReversion,
-            EnumTipoMovimientoInventario.ANULACION_ENTREGA,
-            ajustesStockProducto,
-            manager,
-            true,
-          );
+            const movimientoReversion =
+              this.invertirMovimiento(movimientoAnterior);
+
+            /**
+             * Actualizamos primero el stock general y conservamos
+             * sus valores anterior y posterior.
+             *
+             * Todo permanece dentro de la misma transacción:
+             * si falla un lote, PostgreSQL revierte también el producto.
+             */
+            const ajustesStockProducto =
+              await this.ajustarStockPorCambioDeEntrega(
+                this.consolidarCantidadesPorProducto(detalles),
+                movimientoAnterior,
+                new Map<number, number>(),
+                0,
+                manager,
+              );
+
+            await this.aplicarMovimientoLotesEntrega(
+              detalles,
+              pedido,
+              movimientoReversion,
+              EnumTipoMovimientoInventario.ANULACION_ENTREGA,
+              ajustesStockProducto,
+              manager,
+              true,
+            );
+          }
 
           entrega.estadoEntr = 'anulada';
           entrega.observacionEntr = this.construirObservacionAnulacion(
@@ -630,8 +647,11 @@ export class EntregasService {
     return ApiResponseFactory.legacyRead(
       pedidos.map((pedido) => ({
         ide_pedi: pedido.idePedi,
-        label: `Pedido #${pedido.idePedi} · ${pedido.empresa?.nombreEmpr ?? 'Empresa'}`,
+        label: `${
+          pedido.motivoPedi === 'devolucion' ? 'Canje' : 'Pedido'
+        } #${pedido.idePedi} · ${pedido.empresa?.nombreEmpr ?? 'Empresa'}`,
         ide_empr: pedido.ideEmpr,
+        motivo_pedi: pedido.motivoPedi,
         nombre_empr: pedido.empresa?.nombreEmpr ?? null,
         responsable_empr: pedido.empresa?.responsableEmpr ?? null,
         fecha_pedi: this.toDateOnly(pedido.fechaPedi),
@@ -651,10 +671,8 @@ export class EntregasService {
         idePedi,
         manager,
       );
-      if (!pedido || pedido.motivoPedi !== 'peticion') {
-        throw new NotFoundException(
-          'No se encontró un pedido de petición válido.',
-        );
+      if (!pedido) {
+        throw new NotFoundException('No se encontró el pedido indicado.');
       }
       if (pedido.estadoPedi !== 'emitido' && pedido.estadoPedi !== 'parcial') {
         throw new BadRequestException(
@@ -695,6 +713,21 @@ export class EntregasService {
             totalProd: MoneyUtil.toNumber(detalle.totalProd),
             dctoCaducProd: MoneyUtil.toNumber(detalle.dctoCaducProd),
             estadoDetaPedi: detalle.estadoDetaPedi,
+            lotesDevolucion: (detalle.lotesDevolucion ?? []).map(
+              (asignacion) => ({
+                ideLote: asignacion.ideLote,
+                fechaCaducidadLote: asignacion.lote
+                  ? this.toDateOnly(asignacion.lote.fechaCaducidadLote)
+                  : null,
+                cantidadDevolucion: Number(asignacion.cantidadDevolucion),
+                cantidadProcesada: Number(asignacion.cantidadProcesada),
+                cantidadPendiente: Math.max(
+                  Number(asignacion.cantidadDevolucion) -
+                    Number(asignacion.cantidadProcesada),
+                  0,
+                ),
+              }),
+            ),
           };
         })
         .filter((detalle) => detalle.cantidadPendiente > 0);
@@ -785,12 +818,6 @@ export class EntregasService {
     if (pedido.estadoPedi !== 'emitido' && pedido.estadoPedi !== 'parcial') {
       throw new BadRequestException(
         `El pedido no admite entregas porque se encuentra en estado "${pedido.estadoPedi}". Solo los pedidos emitidos o parciales pueden recibir productos.`,
-      );
-    }
-
-    if (pedido.motivoPedi !== 'peticion') {
-      throw new BadRequestException(
-        'En este proceso solo se admiten pedidos con motivo petición.',
       );
     }
 
@@ -1320,6 +1347,553 @@ export class EntregasService {
       throw new BadRequestException(
         `El producto "${producto.nombreProd}" no está activo.`,
       );
+    }
+  }
+
+  private async confirmarCanjeCaducidad(
+    detalles: DetalleEntregaEntity[],
+    pedido: PedidoEntity,
+    manager: EntityManager,
+  ): Promise<void> {
+    const detallesPedido = new Map(
+      (pedido.detalles ?? []).map((detalle) => [
+        detalle.ideDetaPedi,
+        detalle,
+      ]),
+    );
+
+    const hoy = this.toDateOnly(new Date());
+
+    for (const detalle of [...detalles].sort(
+      (a, b) => a.ideDetaEntr - b.ideDetaEntr,
+    )) {
+      const cantidadCanje = Number(detalle.cantidadProd);
+
+      if (
+        detalle.estadoDetaEntr === EnumEstadoDetalleEntrega.NO_ENTREGADO ||
+        cantidadCanje <= 0
+      ) {
+        continue;
+      }
+
+      const detallePedido = detallesPedido.get(detalle.ideDetaPedi);
+
+      if (!detallePedido) {
+        throw new BadRequestException(
+          `No existe el detalle de pedido ${detalle.ideDetaPedi} del canje.`,
+        );
+      }
+
+      const asignaciones =
+        await this.entregasRepository.listarAsignacionesCanjeForUpdate(
+          detalle.ideDetaPedi,
+          manager,
+        );
+
+      if (!asignaciones.length) {
+        throw new BadRequestException(
+          `El producto ${detalle.ideProd} no tiene lotes caducados asignados al canje.`,
+        );
+      }
+
+      const cantidadAsignadaPendiente = asignaciones.reduce(
+        (total, asignacion) =>
+          total +
+          Math.max(
+            Number(asignacion.cantidadDevolucion) -
+              Number(asignacion.cantidadProcesada),
+            0,
+          ),
+        0,
+      );
+
+      if (cantidadCanje > cantidadAsignadaPendiente) {
+        throw new BadRequestException(
+          `El producto ${detalle.ideProd} intenta canjear ${cantidadCanje} unidades, pero solo quedan ${cantidadAsignadaPendiente} unidades asignadas pendientes.`,
+        );
+      }
+
+      const producto =
+        await this.entregasRepository.buscarProductoPorIdForUpdate(
+          detalle.ideProd,
+          manager,
+        );
+
+      if (!producto) {
+        throw new BadRequestException(
+          `No existe el producto ${detalle.ideProd} del canje.`,
+        );
+      }
+
+      this.validarProductoParaMovimientoNuevo(producto, cantidadCanje, 1);
+
+      const stockProductoInicial = Number(producto.stockProd);
+      let stockProductoCursor = stockProductoInicial;
+      let cantidadPorRetirar = cantidadCanje;
+
+      /**
+       * Primero salen los lotes caducados. La asignación del pedido
+       * determina de forma inequívoca qué lotes se entregan al proveedor.
+       */
+      for (const asignacion of asignaciones) {
+        if (cantidadPorRetirar <= 0) {
+          break;
+        }
+
+        const pendienteAsignacion = Math.max(
+          Number(asignacion.cantidadDevolucion) -
+            Number(asignacion.cantidadProcesada),
+          0,
+        );
+
+        if (pendienteAsignacion <= 0) {
+          continue;
+        }
+
+        const cantidadMovimiento = Math.min(
+          pendienteAsignacion,
+          cantidadPorRetirar,
+        );
+
+        const loteOrigen =
+          await this.entregasRepository.buscarLotePorIdForUpdate(
+            asignacion.ideLote,
+            manager,
+          );
+
+        if (!loteOrigen) {
+          throw new BadRequestException(
+            `No existe el lote caducado ${asignacion.ideLote} asignado al canje.`,
+          );
+        }
+
+        if (Number(loteOrigen.ideProd) !== Number(detalle.ideProd)) {
+          throw new BadRequestException(
+            `El lote ${loteOrigen.ideLote} no pertenece al producto ${detalle.ideProd}.`,
+          );
+        }
+
+        const fechaCaducidadOrigen = this.toDateOnly(
+          loteOrigen.fechaCaducidadLote,
+        );
+
+        if (fechaCaducidadOrigen >= hoy) {
+          throw new BadRequestException(
+            `El lote ${loteOrigen.ideLote} ya no cumple la condición de caducado.`,
+          );
+        }
+
+        const stockLoteAnterior = Number(loteOrigen.stockLote);
+        const stockLotePosterior = stockLoteAnterior - cantidadMovimiento;
+
+        if (stockLotePosterior < 0) {
+          throw new BadRequestException(
+            `El lote caducado ${loteOrigen.ideLote} no tiene stock suficiente. Disponible: ${stockLoteAnterior}, requerido: ${cantidadMovimiento}.`,
+          );
+        }
+
+        const stockProdAnterior = stockProductoCursor;
+        const stockProdPosterior =
+          stockProdAnterior - cantidadMovimiento;
+
+        if (stockProdPosterior < 0) {
+          throw new BadRequestException(
+            `El stock general del producto ${detalle.ideProd} no permite retirar ${cantidadMovimiento} unidades para el canje.`,
+          );
+        }
+
+        loteOrigen.stockLote = stockLotePosterior;
+        loteOrigen.estadoLote =
+          stockLotePosterior === 0 ? 'devuelto' : 'caducado';
+
+        await this.entregasRepository.guardarLote(loteOrigen, manager);
+
+        asignacion.cantidadProcesada =
+          Number(asignacion.cantidadProcesada) + cantidadMovimiento;
+        asignacion.usuaActua = 'admin';
+        asignacion.fechaActua = new Date();
+
+        await this.entregasRepository.registrarMovimientoInventario(
+          {
+            ideProd: detalle.ideProd,
+            ideLote: loteOrigen.ideLote,
+            ideDetaEntr: detalle.ideDetaEntr,
+            ideDetaVent: null,
+            tipoMovi:
+              EnumTipoMovimientoInventario.SALIDA_DEVOLUCION_PROVEEDOR,
+            cantidadMovi: -cantidadMovimiento,
+            stockProdAnterior,
+            stockProdPosterior,
+            stockLoteAnterior,
+            stockLotePosterior,
+            observacionMovi: `Canje por caducidad. Salida al proveedor del lote ${loteOrigen.ideLote}. Pedido ${pedido.idePedi}, detalle entrega ${detalle.ideDetaEntr}.`,
+            usuaIngre: 'admin',
+          },
+          manager,
+        );
+
+        stockProductoCursor = stockProdPosterior;
+        cantidadPorRetirar -= cantidadMovimiento;
+      }
+
+      if (cantidadPorRetirar !== 0) {
+        throw new BadRequestException(
+          `No fue posible asignar ${cantidadPorRetirar} unidades caducadas del producto ${detalle.ideProd} para completar el canje.`,
+        );
+      }
+
+      await this.entregasRepository.guardarAsignacionesCanje(
+        asignaciones,
+        manager,
+      );
+
+      /**
+       * Después entran los lotes nuevos entregados como reemplazo.
+       */
+      const lotesReemplazo = [...(detalle.lotesRecibidos ?? [])].sort(
+        (a, b) => a.ideDetaEntrLote - b.ideDetaEntrLote,
+      );
+
+      let cantidadIngresada = 0;
+
+      for (const detalleLote of lotesReemplazo) {
+        const fechaCaducidad = this.toDateOnly(
+          detalleLote.fechaCaducidadLote,
+        );
+
+        if (fechaCaducidad <= hoy) {
+          throw new BadRequestException(
+            `La caducidad ${fechaCaducidad} del reemplazo del producto ${detalle.ideProd} debe ser posterior a la fecha actual.`,
+          );
+        }
+
+        const cantidadMovimiento = Number(detalleLote.cantidadLote);
+
+        let loteReemplazo =
+          await this.entregasRepository.buscarLotePorProductoYFechaForUpdate(
+            detalle.ideProd,
+            fechaCaducidad,
+            manager,
+          );
+
+        if (!loteReemplazo) {
+          loteReemplazo = await this.entregasRepository.crearLote(
+            detalle.ideProd,
+            fechaCaducidad,
+            0,
+            manager,
+          );
+        }
+
+        const stockLoteAnterior = Number(loteReemplazo.stockLote);
+        const stockLotePosterior =
+          stockLoteAnterior + cantidadMovimiento;
+        const stockProdAnterior = stockProductoCursor;
+        const stockProdPosterior =
+          stockProdAnterior + cantidadMovimiento;
+
+        loteReemplazo.stockLote = stockLotePosterior;
+
+        const loteGuardado = await this.entregasRepository.guardarLote(
+          loteReemplazo,
+          manager,
+        );
+
+        detalleLote.ideLote = loteGuardado.ideLote;
+        detalleLote.estadoDetaEntrLote = 'confirmado';
+        detalleLote.usuaActua = 'admin';
+        detalleLote.fechaActua = new Date();
+
+        await manager
+          .getRepository(DetalleEntregaLoteEntity)
+          .save(detalleLote);
+
+        await this.entregasRepository.registrarMovimientoInventario(
+          {
+            ideProd: detalle.ideProd,
+            ideLote: loteGuardado.ideLote,
+            ideDetaEntr: detalle.ideDetaEntr,
+            ideDetaVent: null,
+            tipoMovi: EnumTipoMovimientoInventario.ENTRADA_CANJE_CADUCIDAD,
+            cantidadMovi: cantidadMovimiento,
+            stockProdAnterior,
+            stockProdPosterior,
+            stockLoteAnterior,
+            stockLotePosterior,
+            observacionMovi: `Canje por caducidad. Entrada de reemplazo con caducidad ${fechaCaducidad}. Pedido ${pedido.idePedi}, detalle entrega ${detalle.ideDetaEntr}.`,
+            usuaIngre: 'admin',
+          },
+          manager,
+        );
+
+        stockProductoCursor = stockProdPosterior;
+        cantidadIngresada += cantidadMovimiento;
+      }
+
+      if (cantidadIngresada !== cantidadCanje) {
+        throw new BadRequestException(
+          `El producto ${detalle.ideProd} retiró ${cantidadCanje} unidades caducadas, pero registró ${cantidadIngresada} unidades de reemplazo.`,
+        );
+      }
+
+      if (stockProductoCursor !== stockProductoInicial) {
+        throw new BadRequestException(
+          `El canje del producto ${detalle.ideProd} no conserva el stock general. Inicial: ${stockProductoInicial}, final calculado: ${stockProductoCursor}.`,
+        );
+      }
+
+      producto.stockProd = stockProductoCursor;
+      producto.disponibleProd = stockProductoCursor > 0 ? 'si' : 'no';
+      producto.usuaActua = 'admin';
+      producto.fechaActua = new Date();
+
+      await this.entregasRepository.guardarProducto(producto, manager);
+    }
+  }
+
+  private async anularCanjeCaducidad(
+    detalles: DetalleEntregaEntity[],
+    pedido: PedidoEntity,
+    manager: EntityManager,
+  ): Promise<void> {
+    for (const detalle of [...detalles].sort(
+      (a, b) => a.ideDetaEntr - b.ideDetaEntr,
+    )) {
+      const cantidadCanje = Number(detalle.cantidadProd);
+
+      if (
+        detalle.estadoDetaEntr === EnumEstadoDetalleEntrega.NO_ENTREGADO ||
+        cantidadCanje <= 0
+      ) {
+        continue;
+      }
+
+      const producto =
+        await this.entregasRepository.buscarProductoPorIdForUpdate(
+          detalle.ideProd,
+          manager,
+        );
+
+      if (!producto) {
+        throw new BadRequestException(
+          `No existe el producto ${detalle.ideProd} del canje.`,
+        );
+      }
+
+      const stockProductoInicial = Number(producto.stockProd);
+      let stockProductoCursor = stockProductoInicial;
+      let cantidadReemplazoRevertida = 0;
+
+      /**
+       * Primero retiramos los reemplazos que entraron con esta entrega.
+       * Usamos el ide_lote guardado en cada distribución confirmada.
+       */
+      for (const detalleLote of [...(detalle.lotesRecibidos ?? [])].sort(
+        (a, b) => b.ideDetaEntrLote - a.ideDetaEntrLote,
+      )) {
+        const ideLote = Number(detalleLote.ideLote);
+        const cantidadMovimiento = Number(detalleLote.cantidadLote);
+
+        if (!Number.isInteger(ideLote) || ideLote <= 0) {
+          throw new BadRequestException(
+            `La distribución ${detalleLote.ideDetaEntrLote} no tiene un lote de reemplazo confirmado.`,
+          );
+        }
+
+        const loteReemplazo =
+          await this.entregasRepository.buscarLotePorIdForUpdate(
+            ideLote,
+            manager,
+          );
+
+        if (!loteReemplazo) {
+          throw new BadRequestException(
+            `No existe el lote de reemplazo ${ideLote}.`,
+          );
+        }
+
+        const stockLoteAnterior = Number(loteReemplazo.stockLote);
+        const stockLotePosterior =
+          stockLoteAnterior - cantidadMovimiento;
+
+        if (stockLotePosterior < 0) {
+          throw new BadRequestException(
+            `No se puede anular el canje porque el lote de reemplazo ${ideLote} ya no tiene ${cantidadMovimiento} unidades disponibles.`,
+          );
+        }
+
+        const stockProdAnterior = stockProductoCursor;
+        const stockProdPosterior =
+          stockProdAnterior - cantidadMovimiento;
+
+        if (stockProdPosterior < 0) {
+          throw new BadRequestException(
+            `No se puede anular el canje porque el stock general del producto ${detalle.ideProd} es insuficiente.`,
+          );
+        }
+
+        loteReemplazo.stockLote = stockLotePosterior;
+
+        await this.entregasRepository.guardarLote(loteReemplazo, manager);
+
+        detalleLote.estadoDetaEntrLote = 'anulado';
+        detalleLote.usuaActua = 'admin';
+        detalleLote.fechaActua = new Date();
+
+        await manager
+          .getRepository(DetalleEntregaLoteEntity)
+          .save(detalleLote);
+
+        await this.entregasRepository.registrarMovimientoInventario(
+          {
+            ideProd: detalle.ideProd,
+            ideLote,
+            ideDetaEntr: detalle.ideDetaEntr,
+            ideDetaVent: null,
+            tipoMovi: EnumTipoMovimientoInventario.ANULACION_ENTREGA,
+            cantidadMovi: -cantidadMovimiento,
+            stockProdAnterior,
+            stockProdPosterior,
+            stockLoteAnterior,
+            stockLotePosterior,
+            observacionMovi: `Anulación de canje. Retiro del lote de reemplazo ${ideLote}. Pedido ${pedido.idePedi}, detalle entrega ${detalle.ideDetaEntr}.`,
+            usuaIngre: 'admin',
+          },
+          manager,
+        );
+
+        stockProductoCursor = stockProdPosterior;
+        cantidadReemplazoRevertida += cantidadMovimiento;
+      }
+
+      if (cantidadReemplazoRevertida !== cantidadCanje) {
+        throw new BadRequestException(
+          `La entrega ${detalle.ideEntr} no contiene todos los lotes de reemplazo necesarios para revertir el canje del producto ${detalle.ideProd}.`,
+        );
+      }
+
+      const movimientosSalida =
+        await this.entregasRepository.listarMovimientosSalidaCanjeForUpdate(
+          detalle.ideDetaEntr,
+          manager,
+        );
+
+      const asignaciones =
+        await this.entregasRepository.listarAsignacionesCanjeForUpdate(
+          detalle.ideDetaPedi,
+          manager,
+        );
+
+      const asignacionPorLote = new Map(
+        asignaciones.map((asignacion) => [asignacion.ideLote, asignacion]),
+      );
+
+      let cantidadCaducadaRestaurada = 0;
+
+      /**
+       * Los movimientos originales conservan los lotes caducados exactos
+       * usados por esta entrega, incluso cuando el canje fue parcial.
+       */
+      for (const movimientoSalida of movimientosSalida) {
+        const ideLote = Number(movimientoSalida.ideLote);
+        const cantidadMovimiento = Math.abs(
+          Number(movimientoSalida.cantidadMovi),
+        );
+
+        if (!Number.isInteger(ideLote) || ideLote <= 0) {
+          throw new BadRequestException(
+            `El movimiento ${movimientoSalida.ideMovi} no tiene lote de origen.`,
+          );
+        }
+
+        const asignacion = asignacionPorLote.get(ideLote);
+
+        if (!asignacion) {
+          throw new BadRequestException(
+            `El lote ${ideLote} ya no está asignado al detalle de pedido ${detalle.ideDetaPedi}.`,
+          );
+        }
+
+        if (Number(asignacion.cantidadProcesada) < cantidadMovimiento) {
+          throw new BadRequestException(
+            `La cantidad procesada del lote ${ideLote} no permite revertir ${cantidadMovimiento} unidades.`,
+          );
+        }
+
+        const loteOrigen =
+          await this.entregasRepository.buscarLotePorIdForUpdate(
+            ideLote,
+            manager,
+          );
+
+        if (!loteOrigen) {
+          throw new BadRequestException(
+            `No existe el lote caducado ${ideLote} que debe restaurarse.`,
+          );
+        }
+
+        const stockLoteAnterior = Number(loteOrigen.stockLote);
+        const stockLotePosterior =
+          stockLoteAnterior + cantidadMovimiento;
+        const stockProdAnterior = stockProductoCursor;
+        const stockProdPosterior =
+          stockProdAnterior + cantidadMovimiento;
+
+        loteOrigen.stockLote = stockLotePosterior;
+        loteOrigen.estadoLote = 'caducado';
+
+        await this.entregasRepository.guardarLote(loteOrigen, manager);
+
+        asignacion.cantidadProcesada =
+          Number(asignacion.cantidadProcesada) - cantidadMovimiento;
+        asignacion.usuaActua = 'admin';
+        asignacion.fechaActua = new Date();
+
+        await this.entregasRepository.registrarMovimientoInventario(
+          {
+            ideProd: detalle.ideProd,
+            ideLote,
+            ideDetaEntr: detalle.ideDetaEntr,
+            ideDetaVent: null,
+            tipoMovi: EnumTipoMovimientoInventario.ANULACION_ENTREGA,
+            cantidadMovi: cantidadMovimiento,
+            stockProdAnterior,
+            stockProdPosterior,
+            stockLoteAnterior,
+            stockLotePosterior,
+            observacionMovi: `Anulación de canje. Restauración del lote caducado ${ideLote}. Pedido ${pedido.idePedi}, detalle entrega ${detalle.ideDetaEntr}.`,
+            usuaIngre: 'admin',
+          },
+          manager,
+        );
+
+        stockProductoCursor = stockProdPosterior;
+        cantidadCaducadaRestaurada += cantidadMovimiento;
+      }
+
+      if (cantidadCaducadaRestaurada !== cantidadCanje) {
+        throw new BadRequestException(
+          `Los movimientos de salida del canje suman ${cantidadCaducadaRestaurada}, pero la entrega registró ${cantidadCanje} unidades para el producto ${detalle.ideProd}.`,
+        );
+      }
+
+      await this.entregasRepository.guardarAsignacionesCanje(
+        asignaciones,
+        manager,
+      );
+
+      if (stockProductoCursor !== stockProductoInicial) {
+        throw new BadRequestException(
+          `La anulación del canje del producto ${detalle.ideProd} no conserva el stock general. Inicial: ${stockProductoInicial}, final calculado: ${stockProductoCursor}.`,
+        );
+      }
+
+      producto.stockProd = stockProductoCursor;
+      producto.disponibleProd = stockProductoCursor > 0 ? 'si' : 'no';
+      producto.usuaActua = 'admin';
+      producto.fechaActua = new Date();
+
+      await this.entregasRepository.guardarProducto(producto, manager);
     }
   }
 
