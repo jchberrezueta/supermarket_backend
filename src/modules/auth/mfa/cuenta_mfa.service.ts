@@ -1,16 +1,11 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { TOTP } from 'otplib';
+import { generateSecret, generateURI, verify } from 'otplib';
 import * as QRCode from 'qrcode';
 import { CuentaMfaRepository } from './cuenta_mfa.repository';
 import { MfaCryptoService } from './cuenta_mfa_crypto.service';
 
 @Injectable()
 export class CuentaMfaService {
-  private readonly totp = new TOTP({
-    digits: 6,
-    period: 30,
-  });
-
   constructor(
     private readonly repository: CuentaMfaRepository,
     private readonly cryptoService: MfaCryptoService,
@@ -23,12 +18,14 @@ export class CuentaMfaService {
       throw new BadRequestException('MFA ya está activado para esta cuenta');
     }
 
-    const secreto = await this.totp.generateSecret();
+    const secreto = generateSecret();
 
-    const otpauth = this.totp.toURI({
+    const otpauth = generateURI({
       secret: secreto,
       issuer: 'SuperMarket SIG',
       label: usuario,
+      digits: 6,
+      period: 30,
     });
 
     const qr = await QRCode.toDataURL(otpauth);
@@ -161,8 +158,11 @@ export class CuentaMfaService {
     secreto: string,
     codigo: string,
   ): Promise<boolean> {
-    const resultado = await this.totp.verify(codigo.trim(), {
+    const resultado = await verify({
       secret: secreto,
+      token: codigo.trim(),
+      digits: 6,
+      period: 30,
     });
 
     return resultado.valid;

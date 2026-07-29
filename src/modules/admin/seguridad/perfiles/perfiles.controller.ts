@@ -16,8 +16,7 @@ import {
   PermissionGuard,
   RequirePermission,
 } from 'src/modules/auth/authorization';
-import { Roles } from 'src/modules/auth/authorization/roles/roles.decorator';
-import { RolesGuard } from 'src/modules/auth/authorization/roles/roles.guard';
+
 import { CreatePerfilDto } from './dto/create_perfil.dto';
 import { FilterPerfilDto } from './dto/filter_perfil.dto';
 import { UpdatePerfilDto } from './dto/update_perfil.dto';
@@ -26,8 +25,7 @@ import { GuardarPermisosPerfilDto } from './dto/guardar_permisos_perfil.dto';
 
 const RUTA_PERFILES = '/admin/seguridad/perfiles';
 
-@UseGuards(AuthGuard('jwt'), RolesGuard, PermissionGuard)
-@Roles('padmin', 'pseguridad')
+@UseGuards(AuthGuard('jwt'), PermissionGuard)
 @Controller('perfiles')
 export class PerfilesController {
   constructor(private readonly perfilesService: PerfilesService) {}

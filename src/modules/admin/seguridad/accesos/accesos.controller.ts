@@ -11,15 +11,13 @@ import {
   PermissionGuard,
   RequirePermission,
 } from 'src/modules/auth/authorization';
-import { Roles } from 'src/modules/auth/authorization/roles/roles.decorator';
-import { RolesGuard } from 'src/modules/auth/authorization/roles/roles.guard';
+
 import { FilterAccesoUsuarioDto } from './dto/filter_acceso.dto';
 import { AccesosUsuariosService } from './accesos.service';
 
 const RUTA_ACCESOS = '/admin/seguridad/accesos';
 
-@UseGuards(AuthGuard('jwt'), RolesGuard, PermissionGuard)
-@Roles('padmin', 'pseguridad')
+@UseGuards(AuthGuard('jwt'), PermissionGuard)
 @Controller('accesos')
 export class accesosController {
   constructor(private readonly servicio: AccesosUsuariosService) {}

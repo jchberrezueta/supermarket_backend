@@ -16,8 +16,7 @@ import {
   PermissionGuard,
   RequirePermission,
 } from 'src/modules/auth/authorization';
-import { Roles } from 'src/modules/auth/authorization/roles/roles.decorator';
-import { RolesGuard } from 'src/modules/auth/authorization/roles/roles.guard';
+
 import { CreateOpcionDto } from './dto/create_opcion.dto';
 import { FilterOpcionDto } from './dto/filter_opcion.dto';
 import { UpdateOpcionDto } from './dto/update_opcion.dto';
@@ -25,8 +24,7 @@ import { OpcionesService } from './opciones.service';
 
 const RUTA_OPCIONES = '/admin/seguridad/opciones';
 
-@UseGuards(AuthGuard('jwt'), RolesGuard, PermissionGuard)
-@Roles('padmin', 'pseguridad')
+@UseGuards(AuthGuard('jwt'), PermissionGuard)
 @Controller('opciones')
 export class OpcionesController {
   constructor(private readonly opcionesService: OpcionesService) {}

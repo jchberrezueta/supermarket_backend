@@ -16,8 +16,7 @@ import {
   PermissionGuard,
   RequirePermission,
 } from 'src/modules/auth/authorization';
-import { Roles } from 'src/modules/auth/authorization/roles/roles.decorator';
-import { RolesGuard } from 'src/modules/auth/authorization/roles/roles.guard';
+
 import { CuentasService } from './cuentas.service';
 import { CreateCuentaDto } from './dto/create_cuenta.dto';
 import { FiltroCuentaDto } from './dto/filter_cuenta.dto';
@@ -26,8 +25,7 @@ import { UpdateCuentaDto } from './dto/update_cuenta.dto';
 
 const RUTA_CUENTAS = '/admin/seguridad/cuentas';
 
-@UseGuards(AuthGuard('jwt'), RolesGuard, PermissionGuard)
-@Roles('padmin', 'pseguridad')
+@UseGuards(AuthGuard('jwt'), PermissionGuard)
 @Controller('cuentas')
 export class CuentasController {
   constructor(private readonly servicio: CuentasService) {}

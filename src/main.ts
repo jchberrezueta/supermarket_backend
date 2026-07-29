@@ -1,5 +1,14 @@
 import 'dotenv/config';
 
+import { setDefaultResultOrder } from 'node:dns';
+
+/*
+ * Algunas redes resuelven Gmail primero
+ * mediante IPv6, aunque no tengan salida
+ * IPv6 funcional.
+ */
+setDefaultResultOrder('ipv4first');
+
 import { ValidationPipe } from '@nestjs/common';
 
 import { ConfigService } from '@nestjs/config';

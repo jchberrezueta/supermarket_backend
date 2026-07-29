@@ -196,65 +196,127 @@ export class PerfilesRepository {
     idePerf: number,
     manager?: EntityManager,
   ): Promise<OpcionPermisoPerfilRow[]> {
-    return this.getOpcionesRepository(manager)
-      .createQueryBuilder('opcion')
-      .leftJoin(
-        PerfilOpcionesEntity,
-        'permiso',
-        `
-          permiso.idePerf = :idePerf
-          AND permiso.ideOpci = opcion.ideOpci
-        `,
-        {
-          idePerf,
-        },
-      )
-      .select([
-        'permiso.idePerfOpci AS ide_perf_opci',
-        'opcion.ideOpci AS ide_opci',
-        'opcion.nombreOpci AS nombre_opci',
-        'opcion.rutaOpci AS ruta_opci',
-        'opcion.descripcionOpci AS descripcion_opci',
-        'opcion.activoOpci AS activo_opci',
-        'opcion.visibleOpci AS visible_opci',
-        'opcion.nivelOpci AS nivel_opci',
-        'opcion.padreOpci AS padre_opci',
-        'opcion.iconoOpci AS icono_opci',
-        `
-          CASE
-            WHEN permiso.idePerfOpci IS NULL
-              THEN false
-            ELSE true
-          END AS asignado
-        `,
-        `
-          COALESCE(
-            permiso.listar,
-            'no'
-          ) AS listar
-        `,
-        `
-          COALESCE(
-            permiso.insertar,
-            'no'
-          ) AS insertar
-        `,
-        `
-          COALESCE(
-            permiso.modificar,
-            'no'
-          ) AS modificar
-        `,
-        `
-          COALESCE(
-            permiso.eliminar,
-            'no'
-          ) AS eliminar
-        `,
-      ])
-      .orderBy('opcion.nivelOpci', 'ASC')
-      .addOrderBy('opcion.ideOpci', 'ASC')
-      .getRawMany<OpcionPermisoPerfilRow>();
+    return (
+      this.getOpcionesRepository(manager)
+        .createQueryBuilder('opcion')
+
+        /*
+         * TypeORM construye automáticamente
+         * la relación por ide_opci.
+         *
+         * La condición adicional limita
+         * los permisos al perfil consultado.
+         */
+        .leftJoin(
+          'opcion.perfilesOpciones',
+          'permiso',
+          '"permiso"."ide_perf" = :idePerf',
+          {
+            idePerf,
+          },
+        )
+
+        .select([
+          `
+        "permiso"."ide_perf_opci"
+        AS "ide_perf_opci"
+      `,
+
+          `
+        "opcion"."ide_opci"
+        AS "ide_opci"
+      `,
+
+          `
+        "opcion"."nombre_opci"
+        AS "nombre_opci"
+      `,
+
+          `
+        "opcion"."ruta_opci"
+        AS "ruta_opci"
+      `,
+
+          `
+        "opcion"."descripcion_opci"
+        AS "descripcion_opci"
+      `,
+
+          `
+        "opcion"."activo_opci"
+        AS "activo_opci"
+      `,
+
+          `
+        "opcion"."visible_opci"
+        AS "visible_opci"
+      `,
+
+          `
+        "opcion"."nivel_opci"
+        AS "nivel_opci"
+      `,
+
+          `
+        "opcion"."padre_opci"
+        AS "padre_opci"
+      `,
+
+          `
+        "opcion"."icono_opci"
+        AS "icono_opci"
+      `,
+
+          `
+        CASE
+          WHEN
+            "permiso"."ide_perf_opci"
+            IS NULL
+          THEN false
+          ELSE true
+        END
+        AS "asignado"
+      `,
+
+          `
+        COALESCE(
+          "permiso"."listar",
+          'no'
+        )
+        AS "listar"
+      `,
+
+          `
+        COALESCE(
+          "permiso"."insertar",
+          'no'
+        )
+        AS "insertar"
+      `,
+
+          `
+        COALESCE(
+          "permiso"."modificar",
+          'no'
+        )
+        AS "modificar"
+      `,
+
+          `
+        COALESCE(
+          "permiso"."eliminar",
+          'no'
+        )
+        AS "eliminar"
+      `,
+        ])
+
+        .orderBy('"opcion"."nivel_opci"', 'ASC')
+
+        .addOrderBy('"opcion"."ide_opci"', 'ASC')
+
+        .getRawMany<OpcionPermisoPerfilRow>()
+    );
   }
 
   async eliminarPermisosPorPerfil(

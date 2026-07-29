@@ -180,25 +180,53 @@ export class CuentasRepository {
     usuarioResponsable: string,
     manager?: EntityManager,
   ): Promise<CuentaEntity> {
-    cuenta.ideEmpl = dto.ideEmpl;
-    cuenta.idePerf = dto.idePerf;
-    cuenta.usuarioCuen = dto.usuarioCuen.trim().toLowerCase();
-    cuenta.estadoCuen = dto.estadoCuen as CuentaEntity['estadoCuen'];
+    const repository = this.getCuentaRepository(manager);
 
-    /*
-     * Si un administrador inactiva o bloquea
-     * una cuenta, también se eliminan los
-     * bloqueos temporales pendientes.
-     */
-    if (cuenta.estadoCuen !== 'activo') {
-      cuenta.fechaBloqueoCuen = null;
-      cuenta.intentosFallidosCuen = 0;
+    const intentosFallidos =
+      dto.estadoCuen !== 'activo' ? 0 : cuenta.intentosFallidosCuen;
+
+    const fechaBloqueo =
+      dto.estadoCuen !== 'activo' ? null : cuenta.fechaBloqueoCuen;
+
+    await repository.update(
+      {
+        ideCuen: cuenta.ideCuen,
+      },
+      {
+        ideEmpl: dto.ideEmpl,
+
+        idePerf: dto.idePerf,
+
+        usuarioCuen: dto.usuarioCuen.trim().toLowerCase(),
+
+        estadoCuen: dto.estadoCuen as CuentaEntity['estadoCuen'],
+
+        intentosFallidosCuen: intentosFallidos,
+
+        fechaBloqueoCuen: fechaBloqueo,
+
+        usuaActua: usuarioResponsable,
+
+        fechaActua: new Date(),
+      },
+    );
+
+    const cuentaActualizada = await repository.findOne({
+      where: {
+        ideCuen: cuenta.ideCuen,
+      },
+
+      relations: {
+        empleado: true,
+        perfil: true,
+      },
+    });
+
+    if (!cuentaActualizada) {
+      throw new Error('No fue posible consultar la cuenta actualizada.');
     }
 
-    cuenta.usuaActua = usuarioResponsable;
-    cuenta.fechaActua = new Date();
-
-    return this.getCuentaRepository(manager).save(cuenta);
+    return cuentaActualizada;
   }
 
   async eliminar(ideCuen: number, manager?: EntityManager): Promise<number> {
