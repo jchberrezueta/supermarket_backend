@@ -15,6 +15,7 @@ import {
   DetalleEntregaLoteEntity,
   DetallePedidoEntity,
   EstadoEntrega,
+  LoteEntity,
   PedidoEntity,
   ProductoEntity,
 } from '@entities';
@@ -170,10 +171,7 @@ export class EntregasService {
 
   async actualizar(id: number, body: UpdateEntregaDTO) {
     const detalles = body.detalleEntrega ?? [];
-    const ideEntr = IdUtil.requireId(
-      id,
-      'El ID de la entrega no es válido.',
-    );
+    const ideEntr = IdUtil.requireId(id, 'El ID de la entrega no es válido.');
 
     try {
       const entrega = await this.dataSource.transaction(async (manager) => {
@@ -366,9 +364,8 @@ export class EntregasService {
             pedido,
           );
 
-          const totalesConfirmados = this.calcularTotalesDesdeDetalle(
-            detallesValidacion,
-          );
+          const totalesConfirmados =
+            this.calcularTotalesDesdeDetalle(detallesValidacion);
 
           entrega.cantidadTotalEntr = totalesConfirmados.cantidadTotalEntr;
 
@@ -655,35 +652,52 @@ export class EntregasService {
         manager,
       );
       if (!pedido || pedido.motivoPedi !== 'peticion') {
-        throw new NotFoundException('No se encontró un pedido de petición válido.');
+        throw new NotFoundException(
+          'No se encontró un pedido de petición válido.',
+        );
       }
       if (pedido.estadoPedi !== 'emitido' && pedido.estadoPedi !== 'parcial') {
-        throw new BadRequestException('El pedido no está disponible para entregas.');
+        throw new BadRequestException(
+          'El pedido no está disponible para entregas.',
+        );
       }
-      const confirmadas = await this.entregasRepository.obtenerCantidadesConfirmadasPorPedido(
-        idePedi,
-        null,
-        manager,
+      const confirmadas =
+        await this.entregasRepository.obtenerCantidadesConfirmadasPorPedido(
+          idePedi,
+          null,
+          manager,
+        );
+      const recibidas = new Map(
+        confirmadas.map((row) => [
+          Number(row.ide_deta_pedi),
+          Number(row.cantidad_confirmada),
+        ]),
       );
-      const recibidas = new Map(confirmadas.map((row) => [Number(row.ide_deta_pedi), Number(row.cantidad_confirmada)]));
-      const detalles = (pedido.detalles ?? []).map((detalle) => {
-        const cantidadRecibidaConfirmada = recibidas.get(detalle.ideDetaPedi) ?? 0;
-        return {
-          ideDetaPedi: detalle.ideDetaPedi,
-          ideProd: detalle.ideProd,
-          nombreProd: detalle.producto?.nombreProd ?? `Producto #${detalle.ideProd}`,
-          cantidadSolicitada: detalle.cantidadProd,
-          cantidadRecibidaConfirmada,
-          cantidadPendiente: Math.max(detalle.cantidadProd - cantidadRecibidaConfirmada, 0),
-          precioUnitarioProd: MoneyUtil.toNumber(detalle.precioUnitarioProd),
-          subtotalProd: MoneyUtil.toNumber(detalle.subtotalProd),
-          dctoCompraProd: MoneyUtil.toNumber(detalle.dctoCompraProd),
-          ivaProd: MoneyUtil.toNumber(detalle.ivaProd),
-          totalProd: MoneyUtil.toNumber(detalle.totalProd),
-          dctoCaducProd: MoneyUtil.toNumber(detalle.dctoCaducProd),
-          estadoDetaPedi: detalle.estadoDetaPedi,
-        };
-      }).filter((detalle) => detalle.cantidadPendiente > 0);
+      const detalles = (pedido.detalles ?? [])
+        .map((detalle) => {
+          const cantidadRecibidaConfirmada =
+            recibidas.get(detalle.ideDetaPedi) ?? 0;
+          return {
+            ideDetaPedi: detalle.ideDetaPedi,
+            ideProd: detalle.ideProd,
+            nombreProd:
+              detalle.producto?.nombreProd ?? `Producto #${detalle.ideProd}`,
+            cantidadSolicitada: detalle.cantidadProd,
+            cantidadRecibidaConfirmada,
+            cantidadPendiente: Math.max(
+              detalle.cantidadProd - cantidadRecibidaConfirmada,
+              0,
+            ),
+            precioUnitarioProd: MoneyUtil.toNumber(detalle.precioUnitarioProd),
+            subtotalProd: MoneyUtil.toNumber(detalle.subtotalProd),
+            dctoCompraProd: MoneyUtil.toNumber(detalle.dctoCompraProd),
+            ivaProd: MoneyUtil.toNumber(detalle.ivaProd),
+            totalProd: MoneyUtil.toNumber(detalle.totalProd),
+            dctoCaducProd: MoneyUtil.toNumber(detalle.dctoCaducProd),
+            estadoDetaPedi: detalle.estadoDetaPedi,
+          };
+        })
+        .filter((detalle) => detalle.cantidadPendiente > 0);
 
       return {
         idePedi: pedido.idePedi,
@@ -691,25 +705,39 @@ export class EntregasService {
         nombreEmpr: pedido.empresa?.nombreEmpr ?? null,
         responsableEmpr: pedido.empresa?.responsableEmpr ?? null,
         fechaPedi: this.toDateOnly(pedido.fechaPedi),
-        fechaEntrPedi: pedido.fechaEntrPedi ? this.toDateOnly(pedido.fechaEntrPedi) : null,
+        fechaEntrPedi: pedido.fechaEntrPedi
+          ? this.toDateOnly(pedido.fechaEntrPedi)
+          : null,
         estadoPedi: pedido.estadoPedi,
         motivoPedi: pedido.motivoPedi,
         detalles,
       };
     });
 
-    return ApiResponseFactory.legacyRead([data], 'Información pendiente del pedido obtenida.');
+    return ApiResponseFactory.legacyRead(
+      [data],
+      'Información pendiente del pedido obtenida.',
+    );
   }
 
   async listarProveedoresEmpresa(id: number) {
     const ideEmpr = IdUtil.requireId(id, 'El ID de la empresa no es válido.');
     const proveedores = await this.dataSource.transaction((manager) =>
-      this.entregasRepository.listarProveedoresActivosPorEmpresa(ideEmpr, manager),
+      this.entregasRepository.listarProveedoresActivosPorEmpresa(
+        ideEmpr,
+        manager,
+      ),
     );
     return proveedores.map((proveedor) => ({
       value: proveedor.ideProv,
-      label: [proveedor.primerNombreProv, proveedor.segundoNombreProv, proveedor.apellidoPaternoProv, proveedor.apellidoMaternoProv]
-        .filter(Boolean).join(' '),
+      label: [
+        proveedor.primerNombreProv,
+        proveedor.segundoNombreProv,
+        proveedor.apellidoPaternoProv,
+        proveedor.apellidoMaternoProv,
+      ]
+        .filter(Boolean)
+        .join(' '),
     }));
   }
 
@@ -996,14 +1024,23 @@ export class EntregasService {
     const pendientesEsperados = new Set(
       (pedido.detalles ?? [])
         .filter((detalle) => {
-          const confirmado = cantidadesConfirmadas.get(detalle.ideDetaPedi) ?? 0;
-          return (detalle.estadoDetaPedi === 'pendiente' || detalle.estadoDetaPedi === 'parcial')
-            && detalle.cantidadProd - confirmado > 0;
+          const confirmado =
+            cantidadesConfirmadas.get(detalle.ideDetaPedi) ?? 0;
+          return (
+            (detalle.estadoDetaPedi === 'pendiente' ||
+              detalle.estadoDetaPedi === 'parcial') &&
+            detalle.cantidadProd - confirmado > 0
+          );
         })
         .map((detalle) => detalle.ideDetaPedi),
     );
-    const recibidos = new Set(detalles.map((detalle) => Number(detalle.ideDetaPedi)));
-    if (recibidos.size !== pendientesEsperados.size || [...pendientesEsperados].some((id) => !recibidos.has(id))) {
+    const recibidos = new Set(
+      detalles.map((detalle) => Number(detalle.ideDetaPedi)),
+    );
+    if (
+      recibidos.size !== pendientesEsperados.size ||
+      [...pendientesEsperados].some((id) => !recibidos.has(id))
+    ) {
       throw new BadRequestException(
         'La entrega debe incluir exactamente todas las líneas pendientes del pedido, incluso las recibidas con cantidad cero.',
       );
@@ -1400,26 +1437,57 @@ export class EntregasService {
       );
     }
 
-    let lote =
-      await this.entregasRepository.buscarLotePorProductoYFechaForUpdate(
-        detalle.ideProd,
-        fechaCaducidad,
-        manager,
-      );
+    let lote: LoteEntity | null = null;
 
-    if (!lote) {
-      if (cantidadMovimiento < 0) {
+    /*
+     * Cuando anulamos, usamos el lote exacto
+     * que quedó relacionado al confirmar.
+     */
+    if (esReversion) {
+      const ideLote = Number(detalleLote.ideLote);
+
+      if (!Number.isInteger(ideLote) || ideLote <= 0) {
         throw new BadRequestException(
-          `No existe un lote para el producto ${detalle.ideProd} con caducidad ${fechaCaducidad}.`,
+          `La distribución ${detalleLote.ideDetaEntrLote} no tiene un lote confirmado asociado.`,
         );
       }
 
-      lote = await this.entregasRepository.crearLote(
-        detalle.ideProd,
-        fechaCaducidad,
-        0,
+      lote = await this.entregasRepository.buscarLotePorIdForUpdate(
+        ideLote,
         manager,
       );
+
+      if (!lote) {
+        throw new BadRequestException(
+          `No existe el lote ${ideLote} asociado a la distribución ${detalleLote.ideDetaEntrLote}.`,
+        );
+      }
+
+      if (Number(lote.ideProd) !== Number(detalle.ideProd)) {
+        throw new BadRequestException(
+          `El lote ${ideLote} no pertenece al producto ${detalle.ideProd}.`,
+        );
+      }
+    } else {
+      /*
+       * En una confirmación normal sí buscamos
+       * por producto y fecha, para reutilizar
+       * un lote existente.
+       */
+      lote = await this.entregasRepository.buscarLotePorProductoYFechaForUpdate(
+        detalle.ideProd,
+        fechaCaducidad,
+        manager,
+      );
+
+      if (!lote) {
+        lote = await this.entregasRepository.crearLote(
+          detalle.ideProd,
+          fechaCaducidad,
+          0,
+          manager,
+        );
+      }
     }
 
     const stockLoteAnterior = Number(lote.stockLote);
@@ -1840,7 +1908,9 @@ export class EntregasService {
 
   private validarFechaReal(fechaEntr: string, pedido: PedidoEntity): void {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(fechaEntr)) {
-      throw new BadRequestException('La fecha real debe tener formato YYYY-MM-DD.');
+      throw new BadRequestException(
+        'La fecha real debe tener formato YYYY-MM-DD.',
+      );
     }
     const fecha = new Date(`${fechaEntr}T00:00:00`);
     if (Number.isNaN(fecha.getTime()) || this.toDateOnly(fecha) !== fechaEntr) {
@@ -1850,10 +1920,14 @@ export class EntregasService {
     const ahora = new Date();
     const hoy = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')}`;
     if (fechaEntr < fechaPedido) {
-      throw new BadRequestException('La fecha real no puede ser anterior a la fecha del pedido.');
+      throw new BadRequestException(
+        'La fecha real no puede ser anterior a la fecha del pedido.',
+      );
     }
     if (fechaEntr > hoy) {
-      throw new BadRequestException('La fecha real no puede ser futura respecto a la fecha del servidor.');
+      throw new BadRequestException(
+        'La fecha real no puede ser futura respecto a la fecha del servidor.',
+      );
     }
   }
 

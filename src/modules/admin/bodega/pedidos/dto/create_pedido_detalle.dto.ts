@@ -1,7 +1,6 @@
 import { EnumEstadoDetallePedido } from '@models';
 import { Transform } from 'class-transformer';
-import { IsInt, Min } from 'class-validator';
-
+import { Allow, IsInt, Min } from 'class-validator';
 function toRequiredInt(value: unknown): number | unknown {
   if (value === null || value === undefined || value === '') {
     return value;
@@ -23,12 +22,29 @@ export class CreatePedidoDetalleDTO {
   @Min(1)
   cantidadProd!: number;
 
-  /** Campos internos calculados después de validar el payload mínimo. */
-  precioUnitarioProd: number = 0;
-  subtotalProd: number = 0;
-  dctoCompraProd: number = 0;
-  ivaProd: number = 0;
-  totalProd: number = 0;
-  dctoCaducProd: number = 0;
+  /*
+   * Campos internos calculados
+   * exclusivamente por el backend.
+   */
+
+  @Allow()
+  precioUnitarioProd = 0;
+
+  @Allow()
+  subtotalProd = 0;
+
+  @Allow()
+  dctoCompraProd = 0;
+
+  @Allow()
+  ivaProd = 0;
+
+  @Allow()
+  totalProd = 0;
+
+  @Allow()
+  dctoCaducProd = 0;
+
+  @Allow()
   estadoDetaPedi: EnumEstadoDetallePedido = EnumEstadoDetallePedido.PENDIENTE;
 }

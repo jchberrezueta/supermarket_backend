@@ -309,7 +309,9 @@ export class EntregasRepository {
              * una afectación real sobre la tabla lote.
              */
             ideLote: null,
-            fechaCaducidadLote: new Date(`${loteDto.fechaCaducidadLote}T00:00:00`),
+            fechaCaducidadLote: new Date(
+              `${loteDto.fechaCaducidadLote}T00:00:00`,
+            ),
             cantidadLote: loteDto.cantidadLote,
             estadoDetaEntrLote: 'registrado',
             usuaIngre: 'admin',
@@ -462,6 +464,20 @@ export class EntregasRepository {
       .getOne();
   }
 
+  async buscarLotePorIdForUpdate(
+    ideLote: number,
+    manager: EntityManager,
+  ): Promise<LoteEntity | null> {
+    return manager
+      .getRepository(LoteEntity)
+      .createQueryBuilder('lote')
+      .setLock('pessimistic_write')
+      .where('lote.ideLote = :ideLote', {
+        ideLote,
+      })
+      .getOne();
+  }
+
   async crearLote(
     ideProd: number,
     fechaCaducidadLote: string,
@@ -472,7 +488,7 @@ export class EntregasRepository {
 
     const lote = repository.create({
       ideProd,
-      fechaCaducidadLote: new Date(fechaCaducidadLote),
+      fechaCaducidadLote: new Date(`${fechaCaducidadLote}T00:00:00`),
       stockLote: stockInicial,
       estadoLote: this.obtenerEstadoLotePorFecha(fechaCaducidadLote),
     });
