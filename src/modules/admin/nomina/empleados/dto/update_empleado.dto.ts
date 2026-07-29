@@ -9,6 +9,8 @@ import {
   IsString,
   Length,
   Min,
+  IsEmail,
+  MaxLength,
 } from 'class-validator';
 
 function toRequiredInt(value: unknown): number | unknown {
@@ -131,4 +133,22 @@ export class UpdateEmpleadoDTO {
   )
   @IsDateString()
   fechaTerminoEmpl?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @Length(7, 20)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
+  telefonoEmpl?: string | null;
+
+  @IsOptional()
+  @IsEmail()
+  @MaxLength(150)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : null,
+  )
+  emailEmpl?: string | null;
 }

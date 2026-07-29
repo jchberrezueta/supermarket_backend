@@ -146,6 +146,8 @@ export class EmpleadosRepository {
       fechaTerminoEmpl: dto.fechaTerminoEmpl
         ? new Date(dto.fechaTerminoEmpl)
         : null,
+      telefonoEmpl: dto.telefonoEmpl ?? null,
+      emailEmpl: dto.emailEmpl ?? null,
       usuaIngre: 'admin',
     });
 
@@ -172,6 +174,9 @@ export class EmpleadosRepository {
     empleado.fechaTerminoEmpl = dto.fechaTerminoEmpl
       ? new Date(dto.fechaTerminoEmpl)
       : null;
+    empleado.telefonoEmpl = dto.telefonoEmpl ?? null;
+
+    empleado.emailEmpl = dto.emailEmpl ?? null;
     empleado.usuaActua = 'admin';
     empleado.fechaActua = new Date();
 

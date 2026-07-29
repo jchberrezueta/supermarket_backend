@@ -1,6 +1,7 @@
 import { Transform } from 'class-transformer';
 import {
   IsDateString,
+  IsEmail,
   IsIn,
   IsInt,
   IsNumber,
@@ -8,6 +9,7 @@ import {
   IsOptional,
   IsString,
   Length,
+  MaxLength,
   Min,
 } from 'class-validator';
 
@@ -126,4 +128,22 @@ export class CreateEmpleadoDTO {
   )
   @IsDateString()
   fechaTerminoEmpl?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @Length(7, 20)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== '' ? value.trim() : null,
+  )
+  telefonoEmpl?: string | null;
+
+  @IsOptional()
+  @IsEmail()
+  @MaxLength(150)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() !== ''
+      ? value.trim().toLowerCase()
+      : null,
+  )
+  emailEmpl?: string | null;
 }
