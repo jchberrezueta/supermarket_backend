@@ -152,4 +152,19 @@ export class PedidosController {
   async listarComboPedidos() {
     return this.pedidosService.listarComboPedidos();
   }
+
+  /**
+   * Devuelve los lotes caducados con stock
+   * para un producto específico.
+   *
+   * Se utiliza al preparar un pedido de
+   * devolución/canje.
+   */
+  @Get('listar/lotes-caducados/:ideProd')
+  async listarLotesCaducadosDisponibles(
+    @Param('ideProd', ParseIntPipe)
+    ideProd: number,
+  ) {
+    return this.pedidosService.listarLotesCaducadosDisponibles(ideProd);
+  }
 }

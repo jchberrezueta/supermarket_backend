@@ -1078,4 +1078,21 @@ export class PedidosService {
 
     return `${observacionActual.trim()} | ${nuevaObservacion}`.slice(0, 250);
   }
+
+  async listarLotesCaducadosDisponibles(idProducto: number) {
+    const ideProd = IdUtil.requireId(
+      idProducto,
+      'El ID del producto no es válido.',
+    );
+
+    const lotes = await this.dataSource.transaction((manager) =>
+      this.pedidosRepository.listarLotesCaducadosDisponibles(ideProd, manager),
+    );
+
+    return ApiResponseFactory.legacyRead(
+      PedidosMapper.toLotesCaducadosDisponiblesRows(lotes),
+
+      'Lotes caducados disponibles obtenidos.',
+    );
+  }
 }

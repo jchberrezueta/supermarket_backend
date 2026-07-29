@@ -9,6 +9,7 @@ import {
 import { DetalleEntregaLoteEntity } from './detalle_entrega_lote.entity';
 import { MovimientoInventarioEntity } from './movimiento_inventario.entity';
 import { ProductoEntity } from './producto.entity';
+import { DetallePedidoLoteDevolucionEntity } from './detalle_pedido_lote_devolucion.entity';
 
 export type EstadoLote = 'correcto' | 'proximo' | 'caducado' | 'devuelto';
 
@@ -40,6 +41,13 @@ export class LoteEntity {
 
   @OneToMany(() => MovimientoInventarioEntity, (movimiento) => movimiento.lote)
   movimientosInventario?: MovimientoInventarioEntity[];
+
+  @OneToMany(
+    () => DetallePedidoLoteDevolucionEntity,
+
+    (detalleDevolucion) => detalleDevolucion.lote,
+  )
+  detallesPedidoDevolucion?: DetallePedidoLoteDevolucionEntity[];
 }
 
 export { LoteEntity as Lote };

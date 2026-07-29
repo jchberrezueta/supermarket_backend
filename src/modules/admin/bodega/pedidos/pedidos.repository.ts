@@ -6,6 +6,7 @@ import {
   EmpresaEntity,
   EmpresaPreciosEntity,
   EntregaEntity,
+  LoteEntity,
   PedidoEntity,
   ProductoEntity,
 } from '@entities';
@@ -381,6 +382,38 @@ export class PedidosRepository {
     return result.affected ?? 0;
   }
 
+  async listarLotesCaducadosDisponibles(
+    ideProd: number,
+    manager?: EntityManager,
+  ): Promise<LoteEntity[]> {
+    return (
+      this.getLoteRepository(manager)
+        .createQueryBuilder('lote')
+        .leftJoinAndSelect('lote.producto', 'producto')
+        .where('lote.ideProd = :ideProd', {
+          ideProd,
+        })
+        .andWhere('lote.stockLote > 0')
+        /*
+         * La fecha es la autoridad real.
+         *
+         * No dependemos únicamente de estadoLote
+         * porque ese estado puede no haberse
+         * actualizado diariamente.
+         */
+        .andWhere('lote.fechaCaducidadLote < CURRENT_DATE')
+        .andWhere('lote.estadoLote <> :estadoDevuelto', {
+          estadoDevuelto: 'devuelto',
+        })
+        .andWhere('producto.estadoProd = :estadoProducto', {
+          estadoProducto: 'activo',
+        })
+        .orderBy('lote.fechaCaducidadLote', 'ASC')
+        .addOrderBy('lote.ideLote', 'ASC')
+        .getMany()
+    );
+  }
+
   private getPedidoRepository(
     manager?: EntityManager,
   ): Repository<PedidoEntity> {
@@ -439,5 +472,13 @@ export class PedidosRepository {
     }
 
     return this.pedidoRepository.manager.getRepository(EntregaEntity);
+  }
+
+  private getLoteRepository(manager?: EntityManager): Repository<LoteEntity> {
+    if (manager) {
+      return manager.getRepository(LoteEntity);
+    }
+
+    return this.pedidoRepository.manager.getRepository(LoteEntity);
   }
 }

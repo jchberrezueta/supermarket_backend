@@ -9,6 +9,7 @@ import {
 import { DetalleEntregaEntity } from './detalle_entrega.entity';
 import { PedidoEntity } from './pedido.entity';
 import { ProductoEntity } from './producto.entity';
+import { DetallePedidoLoteDevolucionEntity } from './detalle_pedido_lote_devolucion.entity';
 
 export type EstadoDetallePedido =
   | 'pendiente'
@@ -96,6 +97,13 @@ export class DetallePedidoEntity {
 
   @OneToMany(() => DetalleEntregaEntity, (detalle) => detalle.detallePedido)
   detallesEntrega?: DetalleEntregaEntity[];
+
+  @OneToMany(
+    () => DetallePedidoLoteDevolucionEntity,
+
+    (detalleLote) => detalleLote.detallePedido,
+  )
+  lotesDevolucion?: DetallePedidoLoteDevolucionEntity[];
 }
 
 export { DetallePedidoEntity as DetallePedido };

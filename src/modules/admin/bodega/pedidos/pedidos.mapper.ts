@@ -1,6 +1,5 @@
 import { MoneyUtil } from '@common/utils/money.util';
-import { DetallePedidoEntity, PedidoEntity } from '@entities';
-
+import { DetallePedidoEntity, LoteEntity, PedidoEntity } from '@entities';
 export interface PedidoRow {
   ide_pedi: number;
   ide_empr: number;
@@ -12,6 +11,15 @@ export interface PedidoRow {
   estado_pedi: string;
   motivo_pedi: string;
   observacion_pedi: string;
+}
+
+export interface LoteCaducadoDisponibleRow {
+  ide_lote: number;
+  ide_prod: number;
+  nombre_prod: string | null;
+  fecha_caducidad_lote: string;
+  stock_lote: number;
+  estado_lote: string;
 }
 
 export interface DetallePedidoRow {
@@ -92,10 +100,46 @@ export class PedidosMapper {
     return `${day}/${month}/${year} ${hour}:${minute}`;
   }
 
-  private static formatCalendarDate(value: Date): string {
+  private static formatCalendarDate(value: Date | string): string {
+    if (typeof value === 'string') {
+      return value.slice(0, 10);
+    }
+
     const year = value.getFullYear();
+
     const month = String(value.getMonth() + 1).padStart(2, '0');
+
     const day = String(value.getDate()).padStart(2, '0');
+
     return `${year}-${month}-${day}`;
+  }
+
+  static toLoteCaducadoDisponibleRow(
+    lote: LoteEntity,
+  ): LoteCaducadoDisponibleRow {
+    return {
+      ide_lote: lote.ideLote,
+
+      ide_prod: lote.ideProd,
+
+      nombre_prod: lote.producto?.nombreProd ?? null,
+
+      fecha_caducidad_lote: this.formatCalendarDate(lote.fechaCaducidadLote),
+
+      stock_lote: lote.stockLote,
+
+      /*
+       * Si la fecha ya pasó, para este
+       * endpoint siempre se presenta
+       * como caducado.
+       */
+      estado_lote: 'caducado',
+    };
+  }
+
+  static toLotesCaducadosDisponiblesRows(
+    lotes: LoteEntity[],
+  ): LoteCaducadoDisponibleRow[] {
+    return lotes.map((lote) => this.toLoteCaducadoDisponibleRow(lote));
   }
 }

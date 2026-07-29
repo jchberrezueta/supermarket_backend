@@ -7,6 +7,7 @@ import {
   EntregaEntity,
   PedidoEntity,
   ProductoEntity,
+  DetallePedidoLoteDevolucionEntity,
 } from '@entities';
 import { PedidosController } from './pedidos.controller';
 import { PedidosMapper } from './pedidos.mapper';
@@ -22,6 +23,7 @@ import { PedidosService } from './pedidos.service';
       EmpresaPreciosEntity,
       ProductoEntity,
       EntregaEntity,
+      DetallePedidoLoteDevolucionEntity,
     ]),
   ],
   controllers: [PedidosController],
