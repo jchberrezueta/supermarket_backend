@@ -1,13 +1,14 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DetalleVentaEntity, VentaEntity } from '@entities';
+import { AuthorizationModule } from 'src/modules/auth/authorization';
 import { VentasController } from './ventas.controller';
 import { VentasMapper } from './ventas.mapper';
 import { VentasRepository } from './ventas.repository';
 import { VentasService } from './ventas.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([VentaEntity, DetalleVentaEntity])],
+  imports: [AuthorizationModule, TypeOrmModule.forFeature([VentaEntity, DetalleVentaEntity])],
   controllers: [VentasController],
   providers: [VentasService, VentasRepository, VentasMapper],
 })

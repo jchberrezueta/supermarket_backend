@@ -13,6 +13,7 @@ import {
   ProductoEntity,
   ProveedorEntity,
 } from '@entities';
+import { AuthorizationModule } from 'src/modules/auth/authorization';
 import { EntregasController } from './entregas.controller';
 import { EntregasMapper } from './entregas.mapper';
 import { EntregasRepository } from './entregas.repository';
@@ -20,6 +21,7 @@ import { EntregasService } from './entregas.service';
 
 @Module({
   imports: [
+    AuthorizationModule,
     TypeOrmModule.forFeature([
       EntregaEntity,
       DetalleEntregaEntity,

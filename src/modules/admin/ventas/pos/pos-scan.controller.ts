@@ -1,10 +1,14 @@
 import { Body, Controller, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { Roles } from 'src/modules/auth/authorization/roles/roles.decorator';
-import { RolesGuard } from 'src/modules/auth/authorization/roles/roles.guard';
+import {
+  PermissionGuard,
+  RequirePermission,
+} from 'src/modules/auth/authorization';
 import { EnviarCodigoScanDto } from './dto/enviar_codigo_scan.dto';
 import { PosScanGateway } from './pos-scan.gateway';
 import { PosScanService } from './pos-scan.service';
+
+const RUTA_POS = '/admin/ventas/pos';
 
 @Controller('ventas/pos/scan')
 export class PosScanController {
@@ -13,8 +17,8 @@ export class PosScanController {
     private readonly posScanGateway: PosScanGateway,
   ) {}
 
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles('padmin', 'pventas')
+  @UseGuards(AuthGuard('jwt'), PermissionGuard)
+  @RequirePermission(RUTA_POS, 'listar')
   @Post('session')
   createSession(@Req() req: any) {
     const session = this.posScanService.createSession();
@@ -66,8 +70,8 @@ export class PosScanController {
     };
   }
 
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles('padmin', 'pventas')
+  @UseGuards(AuthGuard('jwt'), PermissionGuard)
+  @RequirePermission(RUTA_POS, 'modificar')
   @Post(':sessionId/cerrar')
   closeSession(@Param('sessionId') sessionId: string) {
     const session = this.posScanService.closeSession(sessionId);

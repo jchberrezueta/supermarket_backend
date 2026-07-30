@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { EmpresaEntity, EmpresaPreciosEntity, ProductoEntity } from '@entities';
+import { AuthorizationModule } from 'src/modules/auth/authorization';
 import { EmpresasController } from './empresas.controller';
 import { EmpresasMapper } from './empresas.mapper';
 import { EmpresasRepository } from './empresas.repository';
@@ -8,6 +9,7 @@ import { EmpresasService } from './empresas.service';
 
 @Module({
   imports: [
+    AuthorizationModule,
     TypeOrmModule.forFeature([
       EmpresaEntity,
       EmpresaPreciosEntity,

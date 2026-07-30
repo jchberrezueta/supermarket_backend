@@ -8,6 +8,7 @@ import {
   ProductoEntity,
   VentaEntity,
 } from '@entities';
+import { AuthorizationModule } from 'src/modules/auth/authorization';
 import { PosController } from './pos.controller';
 import { PosRepository } from './pos.repository';
 import { PosService } from './pos.service';
@@ -20,6 +21,7 @@ import { StockPolicyService } from './domain/stock-policy.service';
 
 @Module({
   imports: [
+    AuthorizationModule,
     TypeOrmModule.forFeature([
       ClienteEntity,
       ProductoEntity,
