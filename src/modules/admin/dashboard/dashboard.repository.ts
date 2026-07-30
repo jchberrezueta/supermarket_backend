@@ -13,6 +13,9 @@ export interface DashboardEstadisticas {
   entregasPendientes: number;
   ventasMes: number;
   productosStockBajo: number;
+  productosSinStock: number;
+  lotesProximosCaducar: number;
+  lotesCaducadosConStock: number;
 }
 
 export interface VentaMensualRow {
@@ -47,8 +50,6 @@ export interface PedidoRecienteRow {
 
 @Injectable()
 export class DashboardRepository {
-  private readonly STOCK_BAJO_LIMITE = 10;
-
   constructor(
     @InjectDataSource()
     private readonly dataSource: DataSource,
@@ -90,12 +91,12 @@ export class DashboardRepository {
         (
           SELECT COUNT(*)
           FROM pedido
-          WHERE estado_pedi IN ('progreso', 'emitido', 'incompleto')
+          WHERE estado_pedi IN ('emitido', 'parcial')
         ) AS "pedidosPendientes",
         (
           SELECT COUNT(*)
           FROM entrega
-          WHERE estado_entr = 'incompleto'
+          WHERE estado_entr IN ('borrador', 'parcial')
         ) AS "entregasPendientes",
         (
           SELECT COALESCE(SUM(total_vent), 0)
@@ -108,11 +109,33 @@ export class DashboardRepository {
           SELECT COUNT(*)
           FROM producto
           WHERE estado_prod = 'activo'
-            AND stock_prod < $1
-        ) AS "productosStockBajo"
+            AND stock_prod > 0
+            AND stock_prod <= stock_minimo_prod
+        ) AS "productosStockBajo",
+        (
+          SELECT COUNT(*)
+          FROM producto
+          WHERE estado_prod = 'activo'
+            AND stock_prod = 0
+        ) AS "productosSinStock",
+        (
+          SELECT COUNT(*)
+          FROM lote
+          WHERE stock_lote > 0
+            AND estado_lote <> 'devuelto'
+            AND fecha_caducidad_lote >= CURRENT_DATE
+            AND fecha_caducidad_lote <= CURRENT_DATE + INTERVAL '30 days'
+        ) AS "lotesProximosCaducar",
+        (
+          SELECT COUNT(*)
+          FROM lote
+          WHERE stock_lote > 0
+            AND estado_lote <> 'devuelto'
+            AND fecha_caducidad_lote < CURRENT_DATE
+        ) AS "lotesCaducadosConStock"
     `;
 
-    const result = await this.dataSource.query(query, [this.STOCK_BAJO_LIMITE]);
+    const result = await this.dataSource.query(query);
 
     const row = result?.[0] ?? {};
 
@@ -127,6 +150,9 @@ export class DashboardRepository {
       entregasPendientes: this.toNumber(row.entregasPendientes),
       ventasMes: this.toNumber(row.ventasMes),
       productosStockBajo: this.toNumber(row.productosStockBajo),
+      productosSinStock: this.toNumber(row.productosSinStock),
+      lotesProximosCaducar: this.toNumber(row.lotesProximosCaducar),
+      lotesCaducadosConStock: this.toNumber(row.lotesCaducadosConStock),
     };
   }
 

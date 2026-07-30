@@ -15,9 +15,10 @@ export class LotesService {
   ) {}
 
   async listar() {
-    const lotes = await this.dataSource.transaction((manager) =>
-      this.lotesRepository.listar(manager),
-    );
+    const lotes = await this.dataSource.transaction(async (manager) => {
+      await this.lotesRepository.actualizarEstadosPorFecha(manager);
+      return this.lotesRepository.listar(manager);
+    });
 
     return ApiResponseFactory.legacyRead(
       LotesMapper.toRows(lotes),
@@ -32,9 +33,10 @@ export class LotesService {
   async buscar(id: number) {
     const ideLote = IdUtil.requireId(id, 'El ID del lote no es válido.');
 
-    const lote = await this.dataSource.transaction((manager) =>
-      this.lotesRepository.buscarPorId(ideLote, manager),
-    );
+    const lote = await this.dataSource.transaction(async (manager) => {
+      await this.lotesRepository.actualizarEstadosPorFecha(manager);
+      return this.lotesRepository.buscarPorId(ideLote, manager);
+    });
 
     return ApiResponseFactory.legacyRead(
       lote ? [LotesMapper.toRow(lote)] : [],
@@ -43,9 +45,10 @@ export class LotesService {
   }
 
   async filtrar(queryParams: FilterLoteDTO) {
-    const lotes = await this.dataSource.transaction((manager) =>
-      this.lotesRepository.filtrar(queryParams, manager),
-    );
+    const lotes = await this.dataSource.transaction(async (manager) => {
+      await this.lotesRepository.actualizarEstadosPorFecha(manager);
+      return this.lotesRepository.filtrar(queryParams, manager);
+    });
 
     return ApiResponseFactory.legacyRead(
       LotesMapper.toRows(lotes),

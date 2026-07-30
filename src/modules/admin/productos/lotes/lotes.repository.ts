@@ -14,6 +14,28 @@ export class LotesRepository {
     private readonly productoRepository: Repository<ProductoEntity>,
   ) {}
 
+  async actualizarEstadosPorFecha(manager?: EntityManager): Promise<void> {
+    const entityManager = manager ?? this.loteRepository.manager;
+
+    await entityManager.query(`
+      UPDATE lote
+      SET estado_lote = CASE
+        WHEN estado_lote = 'devuelto' THEN 'devuelto'
+        WHEN fecha_caducidad_lote < CURRENT_DATE THEN 'caducado'
+        WHEN fecha_caducidad_lote <= CURRENT_DATE + INTERVAL '30 days'
+          THEN 'proximo'
+        ELSE 'correcto'
+      END
+      WHERE estado_lote <> 'devuelto'
+        AND estado_lote IS DISTINCT FROM CASE
+          WHEN fecha_caducidad_lote < CURRENT_DATE THEN 'caducado'
+          WHEN fecha_caducidad_lote <= CURRENT_DATE + INTERVAL '30 days'
+            THEN 'proximo'
+          ELSE 'correcto'
+        END
+    `);
+  }
+
   async listar(manager?: EntityManager): Promise<LoteEntity[]> {
     return this.getLoteRepository(manager).find({
       relations: {
