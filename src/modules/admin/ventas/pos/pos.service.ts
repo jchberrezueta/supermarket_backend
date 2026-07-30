@@ -50,18 +50,42 @@ export class PosService {
   ) {}
 
   async buscarProductoPorCodigo(codigo: string) {
-    const producto = await this.dataSource.transaction(async (manager) => {
-      return this.posRepository.findProductoActivoByCodigo(codigo, manager);
+    const resultado = await this.dataSource.transaction(async (manager) => {
+      const producto =
+        await this.posRepository.findProductoActivoByCodigo(codigo, manager);
+
+      if (!producto) {
+        return null;
+      }
+
+      const stockVendible =
+        await this.posRepository.obtenerStockVendiblePorProducto(
+          producto.ideProd,
+          manager,
+        );
+
+      return {
+        producto,
+        stockVendible,
+      };
     });
 
-    if (!producto) {
+    if (!resultado) {
       throw new NotFoundException(
         'No se encontró un producto activo con ese código.',
       );
     }
 
     return {
-      data: producto,
+      data: {
+        ...resultado.producto,
+        /*
+         * Para el POS, stockProd representa las unidades realmente vendibles
+         * por FEFO. El stock físico general puede incluir unidades caducadas.
+         */
+        stockProd: resultado.stockVendible,
+        disponibleProd: resultado.stockVendible > 0 ? 'si' : 'no',
+      },
       response: {
         success: true,
         message: 'Producto encontrado correctamente.',

@@ -35,6 +35,25 @@ export class PosRepository {
       .getOne();
   }
 
+  async obtenerStockVendiblePorProducto(
+    ideProd: number,
+    manager: EntityManager,
+  ): Promise<number> {
+    const row = await manager
+      .getRepository(LoteEntity)
+      .createQueryBuilder('lote')
+      .select('COALESCE(SUM(lote.stockLote), 0)', 'stockVendible')
+      .where('lote.ideProd = :ideProd', { ideProd })
+      .andWhere('lote.stockLote > 0')
+      .andWhere('DATE(lote.fechaCaducidadLote) >= CURRENT_DATE')
+      .andWhere('lote.estadoLote <> :estadoDevuelto', {
+        estadoDevuelto: 'devuelto',
+      })
+      .getRawOne<{ stockVendible: string | number }>();
+
+    return Math.max(0, Math.trunc(Number(row?.stockVendible ?? 0)));
+  }
+
   async findProductoActivoByIdForUpdate(
     ideProd: number,
     manager: EntityManager,

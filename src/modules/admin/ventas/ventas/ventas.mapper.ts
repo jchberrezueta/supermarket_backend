@@ -15,6 +15,7 @@ export interface VentaRow {
   estado_vent: string;
   tipo_pago_vent?: string | null;
   ide_meto_pago?: number | null;
+  canal_vent: string;
 }
 
 export interface DetalleVentaRow {
@@ -45,6 +46,7 @@ export class VentasMapper {
       estado_vent: venta.estadoVent,
       tipo_pago_vent: venta.tipoPagoVent ?? null,
       ide_meto_pago: venta.ideMetoPago ?? null,
+      canal_vent: this.formatCanal(venta.usuaIngre),
     };
   }
 
@@ -68,6 +70,19 @@ export class VentasMapper {
 
   static toDetalleRows(detalles: DetalleVentaEntity[]): DetalleVentaRow[] {
     return detalles.map((detalle) => this.toDetalleRow(detalle));
+  }
+
+  private static formatCanal(value?: string | null): string {
+    switch (String(value ?? '').toLowerCase()) {
+      case 'pos':
+        return 'POS';
+      case 'mobile':
+        return 'Móvil';
+      case 'admin':
+        return 'Administrativo / legado';
+      default:
+        return value || 'No identificado';
+    }
   }
 
   private static formatDateTime(value: Date | string): string {

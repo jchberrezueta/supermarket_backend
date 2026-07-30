@@ -145,24 +145,17 @@ export class MobileVentasService {
       const ventaCreada = ventaRepository.create({
         ideEmpl: null,
         ideClie,
-        numFacturaVent:
-          cabecera.numFacturaVent || this.generarNumeroFacturaMobile(),
-        fechaVent: cabecera.fechaVent
-          ? new Date(cabecera.fechaVent)
-          : new Date(),
+        /*
+         * La factura, fecha y descuentos globales son propiedad del servidor.
+         * El cliente móvil solo decide el tipo de pago y los productos.
+         */
+        numFacturaVent: this.generarNumeroFacturaMobile(),
+        fechaVent: new Date(),
         cantidadVent: totales.cantidadVent,
         subTotalVent: MoneyUtil.toMoneyString(totales.subTotalVent),
-        dctoSocioVent: MoneyUtil.toMoneyString(cabecera.dctoSocioVent ?? 0),
-        dctoEdadVent: MoneyUtil.toMoneyString(cabecera.dctoEdadVent ?? 0),
-        totalVent: MoneyUtil.toMoneyString(
-          MoneyUtil.subtract(
-            totales.totalVent,
-            MoneyUtil.add(
-              cabecera.dctoSocioVent ?? 0,
-              cabecera.dctoEdadVent ?? 0,
-            ),
-          ),
-        ),
+        dctoSocioVent: MoneyUtil.toMoneyString(0),
+        dctoEdadVent: MoneyUtil.toMoneyString(0),
+        totalVent: MoneyUtil.toMoneyString(totales.totalVent),
         estadoVent: 'completado',
         tipoPagoVent: pagoValidado.tipoPagoVent,
         ideMetoPago: pagoValidado.ideMetoPago,

@@ -61,7 +61,7 @@ export class FilterProveedorDTO {
   @IsString()
   @Length(1, 50)
   @Transform(({ value }) => optionalString(value))
-  nombreEmp?: number;
+  nombreEmp?: string;
 
   @IsOptional()
   @IsNumberString()
