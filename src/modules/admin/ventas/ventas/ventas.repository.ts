@@ -4,7 +4,9 @@ import {
   ClienteEntity,
   DetalleVentaEntity,
   EmpleadoEntity,
+  LoteEntity,
   MetodoPagoClienteEntity,
+  MovimientoInventarioEntity,
   ProductoEntity,
   VentaEntity,
 } from '@entities';
@@ -173,6 +175,73 @@ export class VentasRepository {
     manager: EntityManager,
   ): Promise<ProductoEntity> {
     return manager.getRepository(ProductoEntity).save(producto);
+  }
+
+  async buscarLotePorIdForUpdate(
+    ideLote: number,
+    manager: EntityManager,
+  ): Promise<LoteEntity | null> {
+    return manager
+      .getRepository(LoteEntity)
+      .createQueryBuilder('lote')
+      .setLock('pessimistic_write')
+      .where('lote.ideLote = :ideLote', { ideLote })
+      .getOne();
+  }
+
+  async listarMovimientosSalidaPorDetalleForUpdate(
+    ideDetaVent: number,
+    manager: EntityManager,
+  ): Promise<MovimientoInventarioEntity[]> {
+    return manager
+      .getRepository(MovimientoInventarioEntity)
+      .createQueryBuilder('movimiento')
+      .setLock('pessimistic_write')
+      .where('movimiento.ideDetaVent = :ideDetaVent', { ideDetaVent })
+      .andWhere('movimiento.tipoMovi = :tipoMovi', {
+        tipoMovi: 'salida_venta',
+      })
+      .orderBy('movimiento.ideMovi', 'ASC')
+      .getMany();
+  }
+
+  async listarMovimientosPorVenta(
+    ideVent: number,
+    manager?: EntityManager,
+  ): Promise<MovimientoInventarioEntity[]> {
+    const repository = manager
+      ? manager.getRepository(MovimientoInventarioEntity)
+      : this.ventaRepository.manager.getRepository(MovimientoInventarioEntity);
+
+    return repository
+      .createQueryBuilder('movimiento')
+      .innerJoin('movimiento.detalleVenta', 'detalle')
+      .leftJoinAndSelect('movimiento.lote', 'lote')
+      .where('detalle.ideVent = :ideVent', { ideVent })
+      .orderBy('movimiento.ideMovi', 'ASC')
+      .getMany();
+  }
+
+  async guardarLote(
+    lote: LoteEntity,
+    manager: EntityManager,
+  ): Promise<LoteEntity> {
+    return manager.getRepository(LoteEntity).save(lote);
+  }
+
+  async guardarMovimiento(
+    movimiento: Partial<MovimientoInventarioEntity>,
+    manager: EntityManager,
+  ): Promise<MovimientoInventarioEntity> {
+    const repository = manager.getRepository(MovimientoInventarioEntity);
+    return repository.save(repository.create(movimiento));
+  }
+
+  async guardarVenta(
+    venta: VentaEntity,
+    manager: EntityManager,
+  ): Promise<VentaEntity> {
+    return manager.getRepository(VentaEntity).save(venta);
   }
 
   async crearVenta(

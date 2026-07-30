@@ -1,5 +1,9 @@
 import { MoneyUtil } from '@common/utils/money.util';
-import { DetalleVentaEntity, VentaEntity } from '@entities';
+import {
+  DetalleVentaEntity,
+  MovimientoInventarioEntity,
+  VentaEntity,
+} from '@entities';
 
 export interface VentaRow {
   ide_vent: number;
@@ -28,6 +32,24 @@ export interface DetalleVentaRow {
   dcto_promo_prod: number;
   iva_prod: number;
   total_prod: number;
+}
+
+
+export interface MovimientoVentaRow {
+  ide_movi: number;
+  ide_deta_vent: number | null;
+  ide_prod: number;
+  ide_lote: number | null;
+  fecha_caducidad_lote: string | null;
+  tipo_movi: string;
+  cantidad_movi: number;
+  stock_prod_anterior: number | null;
+  stock_prod_posterior: number | null;
+  stock_lote_anterior: number | null;
+  stock_lote_posterior: number | null;
+  observacion_movi: string | null;
+  usua_ingre: string;
+  fecha_ingre: string;
 }
 
 export class VentasMapper {
@@ -72,6 +94,36 @@ export class VentasMapper {
     return detalles.map((detalle) => this.toDetalleRow(detalle));
   }
 
+
+  static toMovimientoRow(
+    movimiento: MovimientoInventarioEntity,
+  ): MovimientoVentaRow {
+    return {
+      ide_movi: movimiento.ideMovi,
+      ide_deta_vent: movimiento.ideDetaVent ?? null,
+      ide_prod: movimiento.ideProd,
+      ide_lote: movimiento.ideLote ?? null,
+      fecha_caducidad_lote: movimiento.lote
+        ? this.formatCalendarDate(movimiento.lote.fechaCaducidadLote)
+        : null,
+      tipo_movi: movimiento.tipoMovi,
+      cantidad_movi: movimiento.cantidadMovi,
+      stock_prod_anterior: movimiento.stockProdAnterior ?? null,
+      stock_prod_posterior: movimiento.stockProdPosterior ?? null,
+      stock_lote_anterior: movimiento.stockLoteAnterior ?? null,
+      stock_lote_posterior: movimiento.stockLotePosterior ?? null,
+      observacion_movi: movimiento.observacionMovi ?? null,
+      usua_ingre: movimiento.usuaIngre,
+      fecha_ingre: this.formatDateTime(movimiento.fechaIngre),
+    };
+  }
+
+  static toMovimientoRows(
+    movimientos: MovimientoInventarioEntity[],
+  ): MovimientoVentaRow[] {
+    return movimientos.map((movimiento) => this.toMovimientoRow(movimiento));
+  }
+
   private static formatCanal(value?: string | null): string {
     switch (String(value ?? '').toLowerCase()) {
       case 'pos':
@@ -83,6 +135,18 @@ export class VentasMapper {
       default:
         return value || 'No identificado';
     }
+  }
+
+  private static formatCalendarDate(value: Date | string): string {
+    if (typeof value === 'string') {
+      return value.slice(0, 10);
+    }
+
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, '0');
+    const day = String(value.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
   }
 
   private static formatDateTime(value: Date | string): string {

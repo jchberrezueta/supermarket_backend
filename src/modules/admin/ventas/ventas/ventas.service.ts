@@ -5,7 +5,11 @@ import {
 } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { ApiResponseFactory, IdUtil, MoneyUtil } from '@common/index';
-import { DetalleVentaEntity, ProductoEntity } from '@entities';
+import {
+  DetalleVentaEntity,
+  ProductoEntity,
+  VentaEntity,
+} from '@entities';
 import { DataSource, EntityManager } from 'typeorm';
 import { CreateVentaDTO } from './dto/create_venta.dto';
 import { CreateVentaDetalleDTO } from './dto/create_venta_detalle.dto';
@@ -261,6 +265,209 @@ export class VentasService {
       VentasMapper.toDetalleRows(detalles),
       'Filtrado de detalles de venta completado',
     );
+  }
+
+  async buscarTrazabilidadVenta(ideVent: number) {
+    const id = IdUtil.requireId(ideVent, 'El ID de la venta no es válido.');
+
+    const venta = await this.dataSource.transaction((manager) =>
+      this.ventasRepository.buscarPorId(id, manager),
+    );
+
+    if (!venta) {
+      throw new NotFoundException('No se encontró la venta indicada.');
+    }
+
+    const movimientos = await this.dataSource.transaction((manager) =>
+      this.ventasRepository.listarMovimientosPorVenta(id, manager),
+    );
+
+    return ApiResponseFactory.legacyRead(
+      VentasMapper.toMovimientoRows(movimientos),
+      'Trazabilidad de inventario de la venta obtenida.',
+    );
+  }
+
+  async cancelarVenta(
+    ideVent: number,
+    motivoRaw: string,
+    usuarioRaw: string,
+  ) {
+    const id = IdUtil.requireId(ideVent, 'El ID de la venta no es válido.');
+    const motivo = String(motivoRaw ?? '').trim();
+    const usuario = String(usuarioRaw || 'admin').trim().slice(0, 25) || 'admin';
+
+    if (motivo.length < 5 || motivo.length > 250) {
+      return ApiResponseFactory.legacyWrite(
+        0,
+        'El motivo de cancelación debe tener entre 5 y 250 caracteres.',
+      );
+    }
+
+    try {
+      await this.dataSource.transaction(async (manager) => {
+        const venta = await this.ventasRepository.buscarPorIdForUpdate(
+          id,
+          manager,
+        );
+
+        if (!venta) {
+          throw new NotFoundException('No se encontró la venta indicada.');
+        }
+
+        this.validarEstadoCancelable(venta);
+
+        const detalles = await this.ventasRepository.listarDetallesPorVenta(
+          id,
+          manager,
+        );
+
+        if (!detalles.length) {
+          throw new BadRequestException(
+            'La venta no tiene detalles asociados para revertir el inventario.',
+          );
+        }
+
+        for (const detalle of detalles) {
+          const movimientos =
+            await this.ventasRepository.listarMovimientosSalidaPorDetalleForUpdate(
+              detalle.ideDetaVent,
+              manager,
+            );
+
+          if (!movimientos.length) {
+            throw new BadRequestException(
+              `La venta ${venta.numFacturaVent} no posee movimientos FEFO para el producto ${detalle.ideProd}. ` +
+                'Se considera una venta heredada y no puede anularse automáticamente.',
+            );
+          }
+
+          const cantidadMovida = movimientos.reduce(
+            (total, movimiento) => {
+              const cantidad = Number(movimiento.cantidadMovi);
+
+              if (!Number.isInteger(cantidad) || cantidad >= 0) {
+                throw new BadRequestException(
+                  `El movimiento ${movimiento.ideMovi} no es una salida de venta válida.`,
+                );
+              }
+
+              return total + Math.abs(cantidad);
+            },
+            0,
+          );
+
+          if (cantidadMovida !== Number(detalle.cantidadProd)) {
+            throw new BadRequestException(
+              `Los movimientos del producto ${detalle.ideProd} no coinciden con la cantidad vendida.`,
+            );
+          }
+
+          const producto =
+            await this.ventasRepository.buscarProductoPorIdForUpdate(
+              detalle.ideProd,
+              manager,
+            );
+
+          if (!producto) {
+            throw new BadRequestException(
+              `No se encontró el producto ${detalle.ideProd} para revertir la venta.`,
+            );
+          }
+
+          for (const movimiento of movimientos) {
+            const ideLote = Number(movimiento.ideLote);
+            const cantidad = Math.abs(Number(movimiento.cantidadMovi));
+
+            if (!Number.isInteger(ideLote) || ideLote <= 0 || cantidad <= 0) {
+              throw new BadRequestException(
+                `El movimiento ${movimiento.ideMovi} no contiene un lote válido.`,
+              );
+            }
+
+            const lote = await this.ventasRepository.buscarLotePorIdForUpdate(
+              ideLote,
+              manager,
+            );
+
+            if (!lote || Number(lote.ideProd) !== Number(detalle.ideProd)) {
+              throw new BadRequestException(
+                `No se encontró el lote ${ideLote} del producto ${detalle.ideProd}.`,
+              );
+            }
+
+            const stockProdAnterior = Number(producto.stockProd);
+            const stockLoteAnterior = Number(lote.stockLote);
+
+            producto.stockProd = stockProdAnterior + cantidad;
+            producto.disponibleProd = 'si';
+            producto.usuaActua = usuario;
+            producto.fechaActua = new Date();
+
+            lote.stockLote = stockLoteAnterior + cantidad;
+
+            await this.ventasRepository.guardarProducto(producto, manager);
+            await this.ventasRepository.guardarLote(lote, manager);
+
+            await this.ventasRepository.guardarMovimiento(
+              {
+                ideProd: detalle.ideProd,
+                ideLote,
+                ideDetaEntr: null,
+                ideDetaVent: detalle.ideDetaVent,
+                tipoMovi: 'anulacion_venta',
+                cantidadMovi: cantidad,
+                stockProdAnterior,
+                stockProdPosterior: Number(producto.stockProd),
+                stockLoteAnterior,
+                stockLotePosterior: Number(lote.stockLote),
+                observacionMovi: (
+                  `Anulación administrativa de venta ${venta.numFacturaVent}. ` +
+                  `Motivo: ${motivo}`
+                ).slice(0, 250),
+                usuaIngre: usuario,
+              },
+              manager,
+            );
+          }
+        }
+
+        venta.estadoVent = 'cancelado';
+        venta.usuaActua = usuario;
+        venta.fechaActua = new Date();
+
+        await this.ventasRepository.guardarVenta(venta, manager);
+      });
+
+      return ApiResponseFactory.legacyWrite(
+        1,
+        'Venta cancelada correctamente; el stock general y los lotes FEFO fueron restaurados.',
+        id,
+      );
+    } catch (error) {
+      return ApiResponseFactory.legacyWrite(
+        0,
+        error?.message || 'No se pudo cancelar la venta.',
+      );
+    }
+  }
+
+  private validarEstadoCancelable(venta: VentaEntity): void {
+    if (venta.estadoVent === 'cancelado') {
+      throw new BadRequestException('La venta ya se encuentra cancelada.');
+    }
+
+    if (venta.estadoVent === 'devuelto') {
+      throw new BadRequestException(
+        'La venta está marcada como devuelta y no puede cancelarse.',
+      );
+    }
+
+    if (venta.estadoVent !== 'completado') {
+      throw new BadRequestException(
+        `La venta se encuentra en estado ${venta.estadoVent} y no puede cancelarse.`,
+      );
+    }
   }
 
   private async validarClienteEmpleadoYPago(
