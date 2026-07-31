@@ -8,7 +8,13 @@ import { configOptions } from '@config';
 
 import { TypeOrmConfigService } from '@database';
 
-import { AdminModule, AuthModule, LandingModule, MobileModule } from '@modules';
+import {
+  AdminModule,
+  AuthModule,
+  IntegrationModule,
+  LandingModule,
+  MobileModule,
+} from '@modules';
 
 import { AppController } from './app.controller';
 
@@ -26,6 +32,7 @@ import { AppService } from './app.service';
     LandingModule,
     AuthModule,
     MobileModule,
+    IntegrationModule,
   ],
 
   controllers: [AppController],

@@ -1,5 +1,6 @@
 export const configLoader = () => {
   const env = process.env;
+
   return {
     port: env.APP_PORT,
     apiKey: env.API_KEY,
@@ -8,6 +9,7 @@ export const configLoader = () => {
     backendDomain: env.BACKEND_DOMAIN ?? 'http://localhost:' + env.APP_PORT,
     jwtSecret: env.JWT_SECRET,
     jwtExpiration: env.JWT_EXPIRATION,
+
     db: {
       type: env.DB_TYPE,
       dbname: env.DB_NAME,
@@ -16,10 +18,15 @@ export const configLoader = () => {
       port: env.DB_PORT,
       hostname: env.DB_HOST,
     },
+
     payment: {
       loginKey: env.LOGINKEY,
       secretKey: env.SECRETKEY,
       endpoint: env.ENDPOINT,
+    },
+
+    integration: {
+      sigSyncKey: env.SIG_SYNC_KEY,
     },
   };
 };
