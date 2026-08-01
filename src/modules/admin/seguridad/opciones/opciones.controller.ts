@@ -124,4 +124,10 @@ export class OpcionesController {
   async listarComboEstados() {
     return this.opcionesService.listarComboEstados();
   }
+
+  @RequirePermission(RUTA_OPCIONES, 'listar')
+  @Get('listar/combo/visible')
+  async listarComboVisible() {
+    return this.opcionesService.listarComboVisible();
+  }
 }

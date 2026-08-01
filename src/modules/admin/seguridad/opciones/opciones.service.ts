@@ -240,4 +240,8 @@ export class OpcionesService {
       },
     ];
   }
+
+  async listarComboVisible() {
+    return ComboMapper.fromValues(['si', 'no']);
+  }
 }

@@ -1,5 +1,6 @@
 import { Transform } from 'class-transformer';
 import {
+  IsBoolean,
   IsIn,
   IsInt,
   IsOptional,
@@ -31,6 +32,30 @@ function optionalIntOrNull(value: unknown): number | null | unknown {
 
   if (Number.isInteger(numberValue)) {
     return numberValue;
+  }
+
+  return value;
+}
+
+function optionalBoolean(value: unknown): boolean | undefined | unknown {
+  if (value === null || value === undefined || value === '') {
+    return undefined;
+  }
+
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const text = value.trim().toLowerCase();
+
+    if (['true', '1', 'si', 'sí'].includes(text)) {
+      return true;
+    }
+
+    if (['false', '0', 'no'].includes(text)) {
+      return false;
+    }
   }
 
   return value;
@@ -68,4 +93,9 @@ export class FilterOpcionDto {
   @IsInt()
   @Min(0)
   padreOpci?: number;
+
+  @IsOptional()
+  @Transform(({ value }) => optionalBoolean(value))
+  @IsBoolean()
+  visibleOpci?: boolean;
 }

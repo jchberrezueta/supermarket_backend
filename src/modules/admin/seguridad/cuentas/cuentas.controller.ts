@@ -153,6 +153,12 @@ export class CuentasController {
   }
 
   @RequirePermission(RUTA_CUENTAS, 'listar')
+  @Get('listar/combo/cambio/clave')
+  async listarComboCambioClaves() {
+    return this.servicio.listarComboCambioClaves();
+  }
+
+  @RequirePermission(RUTA_CUENTAS, 'listar')
   @Get('listar/combo/empleados')
   async listarComboEmpleados() {
     return this.servicio.listarComboEmpleados();

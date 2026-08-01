@@ -70,6 +70,12 @@ export class OpcionesRepository {
       });
     }
 
+    if (filtros.visibleOpci !== undefined) {
+      qb.andWhere('opcion.visibleOpci = :visibleOpci', {
+        visibleOpci: filtros.visibleOpci,
+      });
+    }
+
     return qb.getMany();
   }
 

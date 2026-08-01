@@ -538,6 +538,10 @@ export class CuentasService {
     return ComboMapper.fromValues(['activo', 'inactivo', 'bloqueado']);
   }
 
+  async listarComboCambioClaves() {
+    return ComboMapper.fromValues(['si', 'no']);
+  }
+
   async listarComboEmpleados() {
     const empleados = await this.dataSource.transaction((manager) =>
       this.cuentasRepository.listarEmpleados(manager),
