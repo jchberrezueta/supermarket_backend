@@ -1,28 +1,6 @@
 import { EnumEstadosProducto } from '@models';
 import { Transform } from 'class-transformer';
-import {
-  IsEnum,
-  IsIn,
-  IsInt,
-  IsOptional,
-  IsString,
-  Length,
-  Min,
-} from 'class-validator';
-
-function optionalInt(value: unknown): number | undefined | unknown {
-  if (value === null || value === undefined || value === '') {
-    return undefined;
-  }
-
-  const numberValue = Number(value);
-
-  if (Number.isInteger(numberValue)) {
-    return numberValue;
-  }
-
-  return value;
-}
+import { IsEnum, IsIn, IsOptional, IsString, Length } from 'class-validator';
 
 function optionalString(value: unknown): string | undefined | unknown {
   if (value === null || value === undefined) {
@@ -40,16 +18,16 @@ function optionalString(value: unknown): string | undefined | unknown {
 
 export class FilterProductoDTO {
   @IsOptional()
-  @Transform(({ value }) => optionalInt(value))
-  @IsInt()
-  @Min(0)
-  ideCate?: number;
+  @IsString()
+  @Length(1, 100)
+  @Transform(({ value }) => optionalString(value))
+  categoria?: string;
 
   @IsOptional()
-  @Transform(({ value }) => optionalInt(value))
-  @IsInt()
-  @Min(0)
-  ideMarc?: number;
+  @IsString()
+  @Length(1, 100)
+  @Transform(({ value }) => optionalString(value))
+  marca?: string;
 
   @IsOptional()
   @IsString()

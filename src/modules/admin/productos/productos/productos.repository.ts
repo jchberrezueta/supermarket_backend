@@ -101,15 +101,15 @@ export class ProductosRepository {
       .leftJoinAndSelect('producto.marca', 'marca')
       .orderBy('producto.nombreProd', 'ASC');
 
-    if (filtros.ideCate !== undefined && filtros.ideCate !== null) {
-      qb.andWhere('producto.ideCate = :ideCate', {
-        ideCate: filtros.ideCate,
+    if (filtros.categoria) {
+      qb.andWhere('LOWER(categoria.nombreCate) LIKE LOWER(:categoria)', {
+        categoria: `%${filtros.categoria}%`,
       });
     }
 
-    if (filtros.ideMarc !== undefined && filtros.ideMarc !== null) {
-      qb.andWhere('producto.ideMarc = :ideMarc', {
-        ideMarc: filtros.ideMarc,
+    if (filtros.marca) {
+      qb.andWhere('LOWER(marca.nombreMarc) LIKE LOWER(:marca)', {
+        marca: `%${filtros.marca}%`,
       });
     }
 
@@ -120,8 +120,8 @@ export class ProductosRepository {
     }
 
     if (filtros.codigoBarraProd) {
-      qb.andWhere('producto.codigoBarraProd = :codigoBarraProd', {
-        codigoBarraProd: filtros.codigoBarraProd,
+      qb.andWhere('producto.codigoBarraProd LIKE :codigoBarraProd', {
+        codigoBarraProd: `%${filtros.codigoBarraProd}%`,
       });
     }
 

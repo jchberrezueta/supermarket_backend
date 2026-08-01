@@ -78,9 +78,9 @@ export class LotesRepository {
       });
     }
 
-    if (filtros.ideProd !== undefined && filtros.ideProd !== null) {
-      qb.andWhere('lote.ideProd = :ideProd', {
-        ideProd: filtros.ideProd,
+    if (filtros.producto) {
+      qb.andWhere('LOWER(producto.nombreProd) LIKE LOWER(:producto)', {
+        producto: `%${filtros.producto}%`,
       });
     }
 

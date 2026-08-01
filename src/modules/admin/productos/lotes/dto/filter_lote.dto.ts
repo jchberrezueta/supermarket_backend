@@ -1,5 +1,13 @@
 import { Transform } from 'class-transformer';
-import { IsDateString, IsIn, IsInt, IsOptional, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  Length,
+  Min,
+} from 'class-validator';
 
 function optionalInt(value: unknown): number | undefined | unknown {
   if (value === null || value === undefined || value === '') {
@@ -15,6 +23,20 @@ function optionalInt(value: unknown): number | undefined | unknown {
   return value;
 }
 
+function optionalString(value: unknown): string | undefined | unknown {
+  if (value === null || value === undefined) {
+    return undefined;
+  }
+
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const text = value.trim();
+
+  return text !== '' ? text : undefined;
+}
+
 export class FilterLoteDTO {
   @IsOptional()
   @Transform(({ value }) => optionalInt(value))
@@ -23,10 +45,10 @@ export class FilterLoteDTO {
   ideLote?: number;
 
   @IsOptional()
-  @Transform(({ value }) => optionalInt(value))
-  @IsInt()
-  @Min(0)
-  ideProd?: number;
+  @IsString()
+  @Length(1, 100)
+  @Transform(({ value }) => optionalString(value))
+  producto?: number;
 
   @IsOptional()
   @IsDateString()
