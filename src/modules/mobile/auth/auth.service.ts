@@ -38,7 +38,7 @@ export class MobileAuthService {
       const clienteRepository = manager.getRepository(ClienteEntity);
       const cuentaRepository = manager.getRepository(CuentaClienteEntity);
 
-      const fechaNacimiento = new Date(body.fechaNacimientoClie);
+      const fechaNacimiento = String(body.fechaNacimientoClie).trim();
 
       const cliente = clienteRepository.create({
         cedulaClie: body.cedulaClie,

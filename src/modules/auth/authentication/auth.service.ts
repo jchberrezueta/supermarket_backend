@@ -280,6 +280,7 @@ export class AuthService {
     await this.accesosService.registrarAccesoExitoso({
       ideCuen: user.ide_cuen,
       usuario: user.usuario_cuen,
+      intentosFallidos: Math.max(0, Number(user.intentos_fallidos ?? 0)),
       navegador: navegadorNormalizado,
       ip: ipNormalizada,
       latitud: geo?.latitud ?? null,
@@ -1097,6 +1098,11 @@ export class AuthService {
       );
     }
 
+    const intentosFallidos = Math.max(
+      0,
+      Number(cuenta.intentosFallidosCuen ?? 0),
+    );
+
     await this.cuentasService.reiniciarIntentos(ideCuen);
 
     await this.cuentasService.actualizarUltimoLogin(ideCuen);
@@ -1107,6 +1113,7 @@ export class AuthService {
         usuario_cuen: cuenta.usuarioCuen,
         estado_cuen: cuenta.estadoCuen,
         ide_empl: cuenta.ideEmpl,
+        intentos_fallidos: intentosFallidos,
       },
       navegador,
       ip,

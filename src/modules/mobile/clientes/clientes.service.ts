@@ -76,10 +76,12 @@ export class MobileClientesService {
         }
 
         if (this.tieneValor(data.fechaNacimientoClie)) {
-          const fechaNacimiento = new Date(data.fechaNacimientoClie);
+          const fechaNacimiento = String(data.fechaNacimientoClie).trim();
+
+          const fechaNacimientoLocal = new Date(`${fechaNacimiento}T00:00:00`);
 
           cliente.fechaNacimientoClie = fechaNacimiento;
-          cliente.edadClie = this.calcularEdad(fechaNacimiento);
+          cliente.edadClie = this.calcularEdad(fechaNacimientoLocal);
         }
 
         if (this.tieneValor(data.telefonoClie)) {

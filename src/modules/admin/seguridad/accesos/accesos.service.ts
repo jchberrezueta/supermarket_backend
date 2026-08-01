@@ -78,6 +78,7 @@ export class AccesosUsuariosService {
   async registrarAccesoExitoso(data: {
     ideCuen: number;
     usuario: string;
+    intentosFallidos: number;
     navegador?: string | null;
     ip?: string | null;
     latitud?: number | null;
@@ -89,7 +90,7 @@ export class AccesosUsuariosService {
       resultadoAcce: 'exitoso',
       motivoAcce: null,
       navegadorAcce: data.navegador || 'desconocido',
-      numIntFallAcce: 0,
+      numIntFallAcce: Math.max(0, data.intentosFallidos),
       ipAcce: data.ip ?? null,
       latitudAcce: data.latitud ?? null,
       longitudAcce: data.longitud ?? null,
