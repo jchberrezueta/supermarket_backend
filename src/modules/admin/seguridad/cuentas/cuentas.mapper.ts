@@ -9,6 +9,7 @@ export interface CuentaRow {
   usuario_cuen: string;
   estado_cuen: string;
   debe_cambiar_clave: boolean;
+  cambiar_clave: string;
   intentos_fallidos: number;
   bloqueado_hasta?: Date | null;
   ultimo_login?: Date | null;
@@ -54,6 +55,8 @@ export class CuentasMapper {
       estado_cuen: cuenta.estadoCuen,
 
       debe_cambiar_clave: cuenta.debeCambiarClave ?? false,
+
+      cambiar_clave: cuenta.debeCambiarClave ? 'si' : 'no',
 
       intentos_fallidos: cuenta.intentosFallidosCuen,
 

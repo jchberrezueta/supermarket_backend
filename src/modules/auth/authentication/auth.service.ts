@@ -273,9 +273,9 @@ export class AuthService {
       navegadorNormalizado,
     );
 
-    const geo = await this.geolocationService.buscar(
-      ipNormalizada ?? undefined,
-    );
+    const geo = ipNormalizada
+      ? await this.geolocationService.buscar(ipNormalizada)
+      : null;
 
     await this.accesosService.registrarAccesoExitoso({
       ideCuen: user.ide_cuen,

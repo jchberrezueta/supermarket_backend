@@ -80,8 +80,8 @@ export class AccesosRepository {
         `
           LOWER(
             COALESCE(
-              acceso.usuarioIntentado,
-              cuenta.usuarioCuen
+              "acceso"."usuario_intentado",
+              "cuenta"."usuario_cuen"
             )
           ) LIKE LOWER(:usuarioCuen)
         `,
