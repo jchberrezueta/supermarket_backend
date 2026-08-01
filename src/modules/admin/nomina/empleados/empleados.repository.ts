@@ -133,9 +133,9 @@ export class EmpleadosRepository {
     const empleado = repository.create({
       ideRol: dto.ideRol,
       cedulaEmpl: dto.cedulaEmpl,
-      fechaNacimientoEmpl: new Date(dto.fechaNacimientoEmpl),
+      fechaNacimientoEmpl: dto.fechaNacimientoEmpl,
       edadEmpl: dto.edadEmpl,
-      fechaInicioEmpl: new Date(dto.fechaInicioEmpl),
+      fechaInicioEmpl: dto.fechaInicioEmpl,
       primerNombreEmpl: dto.primerNombreEmpl,
       apellidoPaternoEmpl: dto.apellidoPaternoEmpl,
       rmuEmpl: MoneyUtil.toMoneyString(dto.rmuEmpl),
@@ -143,9 +143,7 @@ export class EmpleadosRepository {
       estadoEmpl: dto.estadoEmpl as EmpleadoEntity['estadoEmpl'],
       segundoNombreEmpl: dto.segundoNombreEmpl ?? null,
       apellidoMaternoEmpl: dto.apellidoMaternoEmpl ?? null,
-      fechaTerminoEmpl: dto.fechaTerminoEmpl
-        ? new Date(dto.fechaTerminoEmpl)
-        : null,
+      fechaTerminoEmpl: dto.fechaTerminoEmpl ? dto.fechaTerminoEmpl : null,
       telefonoEmpl: dto.telefonoEmpl ?? null,
       emailEmpl: dto.emailEmpl ?? null,
       usuaIngre: 'admin',
@@ -161,9 +159,9 @@ export class EmpleadosRepository {
   ): Promise<EmpleadoEntity> {
     empleado.ideRol = dto.ideRol;
     empleado.cedulaEmpl = dto.cedulaEmpl;
-    empleado.fechaNacimientoEmpl = new Date(dto.fechaNacimientoEmpl);
+    empleado.fechaNacimientoEmpl = dto.fechaNacimientoEmpl;
     empleado.edadEmpl = dto.edadEmpl;
-    empleado.fechaInicioEmpl = new Date(dto.fechaInicioEmpl);
+    empleado.fechaInicioEmpl = dto.fechaInicioEmpl;
     empleado.primerNombreEmpl = dto.primerNombreEmpl;
     empleado.apellidoPaternoEmpl = dto.apellidoPaternoEmpl;
     empleado.rmuEmpl = MoneyUtil.toMoneyString(dto.rmuEmpl);
@@ -172,7 +170,7 @@ export class EmpleadosRepository {
     empleado.segundoNombreEmpl = dto.segundoNombreEmpl ?? null;
     empleado.apellidoMaternoEmpl = dto.apellidoMaternoEmpl ?? null;
     empleado.fechaTerminoEmpl = dto.fechaTerminoEmpl
-      ? new Date(dto.fechaTerminoEmpl)
+      ? dto.fechaTerminoEmpl
       : null;
     empleado.telefonoEmpl = dto.telefonoEmpl ?? null;
 

@@ -15,7 +15,7 @@ export class EmpresaEntity {
   responsableEmpr!: string;
 
   @Column({ name: 'fecha_contrato_empr', type: 'timestamp' })
-  fechaContratoEmpr!: Date;
+  fechaContratoEmpr!: string;
 
   @Column({ name: 'direccion_empr', type: 'varchar', length: 250 })
   direccionEmpr!: string;

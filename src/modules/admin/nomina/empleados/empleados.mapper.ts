@@ -6,9 +6,9 @@ export interface EmpleadoRow {
   ide_rol: number;
   nombre_rol?: string | null;
   cedula_empl: string;
-  fecha_nacimiento_empl: Date;
+  fecha_nacimiento_empl: string;
   edad_empl: number;
-  fecha_inicio_empl: Date;
+  fecha_inicio_empl: string;
   primer_nombre_empl: string;
   apellido_paterno_empl: string;
   rmu_empl: number;
@@ -17,7 +17,7 @@ export interface EmpleadoRow {
   segundo_nombre_empl?: string | null;
   apellido_materno_empl?: string | null;
   nombre_completo?: string | null;
-  fecha_termino_empl?: Date | null;
+  fecha_termino_empl?: string | null;
   telefono_empl?: string | null;
   email_empl?: string | null;
   usua_ingre?: string;
@@ -32,10 +32,10 @@ export interface EmpleadoRolRow {
   nombre_rol?: string | null;
   cedula_empl: string;
   nombre_completo: string;
-  fecha_nacimiento_empl: Date;
+  fecha_nacimiento_empl: string;
   edad_empl: number;
-  fecha_inicio_empl: Date;
-  fecha_termino_empl?: Date | null;
+  fecha_inicio_empl: string;
+  fecha_termino_empl?: string | null;
   telefono_empl?: string | null;
   titulo_empl: string | null;
   email_empl?: string | null;

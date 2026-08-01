@@ -19,7 +19,7 @@ export class ClienteEntity {
   cedulaClie!: string;
 
   @Column({ name: 'fecha_nacimiento_clie', type: 'timestamp' })
-  fechaNacimientoClie!: Date;
+  fechaNacimientoClie!: string;
 
   @Column({ name: 'edad_clie', type: 'int' })
   edadClie!: number;

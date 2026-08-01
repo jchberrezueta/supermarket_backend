@@ -25,7 +25,7 @@ export class ProveedorEntity {
   cedulaProv!: string;
 
   @Column({ name: 'fecha_nacimiento_prov', type: 'timestamp' })
-  fechaNacimientoProv!: Date;
+  fechaNacimientoProv!: string;
 
   @Column({ name: 'edad_prov', type: 'int' })
   edadProv!: number;

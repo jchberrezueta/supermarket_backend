@@ -5,7 +5,7 @@ export interface EmpresaRow {
   ide_empr: number;
   nombre_empr: string;
   responsable_empr: string;
-  fecha_contrato_empr: Date;
+  fecha_contrato_empr: string;
   direccion_empr: string;
   telefono_empr: string;
   email_empr: string;

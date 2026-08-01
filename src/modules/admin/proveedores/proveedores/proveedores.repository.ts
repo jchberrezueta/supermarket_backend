@@ -134,7 +134,7 @@ export class ProveedoresRepository {
     const proveedor = repository.create({
       ideEmpr: dto.ideEmpr,
       cedulaProv: dto.cedulaProv,
-      fechaNacimientoProv: new Date(dto.fechaNacimientoProv),
+      fechaNacimientoProv: dto.fechaNacimientoProv,
       edadProv: dto.edadProv,
       telefonoProv: dto.telefonoProv,
       emailProv: dto.emailProv,
@@ -157,7 +157,7 @@ export class ProveedoresRepository {
   ): Promise<ProveedorEntity> {
     proveedor.ideEmpr = dto.ideEmpr;
     proveedor.cedulaProv = dto.cedulaProv;
-    proveedor.fechaNacimientoProv = new Date(dto.fechaNacimientoProv);
+    proveedor.fechaNacimientoProv = dto.fechaNacimientoProv;
     proveedor.edadProv = dto.edadProv;
     proveedor.telefonoProv = dto.telefonoProv;
     proveedor.emailProv = dto.emailProv;

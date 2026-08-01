@@ -5,7 +5,7 @@ export interface ProveedorRow {
   ide_empr: number;
   nombre_empr?: string | null;
   cedula_prov: string;
-  fecha_nacimiento_prov: Date | string;
+  fecha_nacimiento_prov: string;
   edad_prov: number;
   telefono_prov: string;
   email_prov: string;
@@ -80,9 +80,7 @@ export class ProveedoresMapper {
       segundo_nombre_prov: proveedor.segundoNombreProv ?? null,
       apellido_materno_prov: proveedor.apellidoMaternoProv ?? null,
       nombre_completo: this.getNombreCompleto(proveedor),
-      fecha_nacimiento_prov: this.formatDateTimeDDMMYYYY(
-        proveedor.fechaNacimientoProv,
-      ),
+      fecha_nacimiento_prov: proveedor.fechaNacimientoProv,
       edad_prov: proveedor.edadProv,
       telefono_prov: proveedor.telefonoProv,
       email_prov: proveedor.emailProv,
@@ -106,25 +104,5 @@ export class ProveedoresMapper {
       .join(' ')
       .replace(/\s+/g, ' ')
       .trim();
-  }
-
-  private static formatDateTimeDDMMYYYY(value: Date | string): string {
-    if (!value) {
-      return '';
-    }
-
-    const date = value instanceof Date ? value : new Date(value);
-
-    if (Number.isNaN(date.getTime())) {
-      return String(value);
-    }
-
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    const hour = String(date.getHours()).padStart(2, '0');
-    const minute = String(date.getMinutes()).padStart(2, '0');
-
-    return `${day}/${month}/${year} ${hour}:${minute}`;
   }
 }

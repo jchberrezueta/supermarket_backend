@@ -124,7 +124,7 @@ export class ClientesRepository {
 
     const cliente = repository.create({
       cedulaClie: dto.cedulaClie,
-      fechaNacimientoClie: new Date(dto.fechaNacimientoClie),
+      fechaNacimientoClie: dto.fechaNacimientoClie,
       edadClie: dto.edadClie,
       telefonoClie: dto.telefonoClie,
       primerNombreClie: dto.primerNombreClie,
@@ -146,7 +146,7 @@ export class ClientesRepository {
     manager?: EntityManager,
   ): Promise<ClienteEntity> {
     cliente.cedulaClie = dto.cedulaClie;
-    cliente.fechaNacimientoClie = new Date(dto.fechaNacimientoClie);
+    cliente.fechaNacimientoClie = dto.fechaNacimientoClie;
     cliente.edadClie = dto.edadClie;
     cliente.telefonoClie = dto.telefonoClie;
     cliente.primerNombreClie = dto.primerNombreClie;

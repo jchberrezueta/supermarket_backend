@@ -86,11 +86,10 @@ export class EmpresasRepository {
     manager?: EntityManager,
   ): Promise<EmpresaEntity> {
     const repository = this.getEmpresaRepository(manager);
-
     const empresa = repository.create({
       nombreEmpr: dto.nombreEmp,
       responsableEmpr: dto.responsableEmp,
-      fechaContratoEmpr: new Date(dto.fechaContratoEmp),
+      fechaContratoEmpr: dto.fechaContratoEmp,
       direccionEmpr: dto.direccionEmp,
       telefonoEmpr: dto.telefonoEmp,
       emailEmpr: dto.emailEmp,
@@ -109,7 +108,7 @@ export class EmpresasRepository {
   ): Promise<EmpresaEntity> {
     empresa.nombreEmpr = dto.nombreEmp;
     empresa.responsableEmpr = dto.responsableEmp;
-    empresa.fechaContratoEmpr = new Date(dto.fechaContratoEmp);
+    empresa.fechaContratoEmpr = dto.fechaContratoEmp;
     empresa.direccionEmpr = dto.direccionEmp;
     empresa.telefonoEmpr = dto.telefonoEmp;
     empresa.emailEmpr = dto.emailEmp;
