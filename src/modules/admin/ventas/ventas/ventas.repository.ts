@@ -93,17 +93,25 @@ export class VentasRepository {
     }
 
     if (filtros.fechaDesde) {
-      qb.andWhere('venta.fechaVent >= :fechaDesde', {
+      qb.andWhere('venta.fechaVent >= CAST(:fechaDesde AS date)', {
         fechaDesde: filtros.fechaDesde,
       });
     }
 
     if (filtros.fechaHasta) {
-      qb.andWhere('venta.fechaVent <= :fechaHasta', {
-        fechaHasta: filtros.fechaHasta,
-      });
+      qb.andWhere(
+        `
+      venta.fechaVent <
+      (
+        CAST(:fechaHasta AS date) +
+        INTERVAL '1 day'
+      )
+    `,
+        {
+          fechaHasta: filtros.fechaHasta,
+        },
+      );
     }
-
     return qb.getMany();
   }
 

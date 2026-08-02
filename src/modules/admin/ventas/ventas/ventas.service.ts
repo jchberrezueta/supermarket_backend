@@ -5,11 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { ApiResponseFactory, IdUtil, MoneyUtil } from '@common/index';
-import {
-  DetalleVentaEntity,
-  ProductoEntity,
-  VentaEntity,
-} from '@entities';
+import { DetalleVentaEntity, ProductoEntity, VentaEntity } from '@entities';
 import { DataSource, EntityManager } from 'typeorm';
 import { CreateVentaDTO } from './dto/create_venta.dto';
 import { CreateVentaDetalleDTO } from './dto/create_venta_detalle.dto';
@@ -288,14 +284,13 @@ export class VentasService {
     );
   }
 
-  async cancelarVenta(
-    ideVent: number,
-    motivoRaw: string,
-    usuarioRaw: string,
-  ) {
+  async cancelarVenta(ideVent: number, motivoRaw: string, usuarioRaw: string) {
     const id = IdUtil.requireId(ideVent, 'El ID de la venta no es válido.');
     const motivo = String(motivoRaw ?? '').trim();
-    const usuario = String(usuarioRaw || 'admin').trim().slice(0, 25) || 'admin';
+    const usuario =
+      String(usuarioRaw || 'admin')
+        .trim()
+        .slice(0, 25) || 'admin';
 
     if (motivo.length < 5 || motivo.length > 250) {
       return ApiResponseFactory.legacyWrite(
@@ -342,20 +337,17 @@ export class VentasService {
             );
           }
 
-          const cantidadMovida = movimientos.reduce(
-            (total, movimiento) => {
-              const cantidad = Number(movimiento.cantidadMovi);
+          const cantidadMovida = movimientos.reduce((total, movimiento) => {
+            const cantidad = Number(movimiento.cantidadMovi);
 
-              if (!Number.isInteger(cantidad) || cantidad >= 0) {
-                throw new BadRequestException(
-                  `El movimiento ${movimiento.ideMovi} no es una salida de venta válida.`,
-                );
-              }
+            if (!Number.isInteger(cantidad) || cantidad >= 0) {
+              throw new BadRequestException(
+                `El movimiento ${movimiento.ideMovi} no es una salida de venta válida.`,
+              );
+            }
 
-              return total + Math.abs(cantidad);
-            },
-            0,
-          );
+            return total + Math.abs(cantidad);
+          }, 0);
 
           if (cantidadMovida !== Number(detalle.cantidadProd)) {
             throw new BadRequestException(

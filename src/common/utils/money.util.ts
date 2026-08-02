@@ -33,11 +33,11 @@ export class MoneyUtil {
   static normalizeRate(value: string | number | null | undefined): number {
     const rate = this.toNumber(value);
 
-    if (rate > 1) {
-      return rate / 100;
+    if (!Number.isFinite(rate) || rate < 0) {
+      return 0;
     }
 
-    return rate;
+    return rate / 100;
   }
 
   static multiply(

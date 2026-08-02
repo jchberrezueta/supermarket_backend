@@ -40,8 +40,14 @@ export class MovimientosInventarioRepository {
       return `$${parametros.length}`;
     };
 
-    if (filtros.ideProd !== undefined) {
-      condiciones.push(`mi.ide_prod = ${addParam(filtros.ideProd)}`);
+    if (filtros.ideMovi !== undefined) {
+      condiciones.push(`mi.ide_movi = ${addParam(filtros.ideMovi)}`);
+    }
+
+    if (filtros.producto !== undefined) {
+      condiciones.push(
+        `LOWER(p.nombre_prod) LIKE LOWER(${addParam(`%${filtros.producto}%`)})`,
+      );
     }
 
     if (filtros.ideLote !== undefined) {
@@ -53,7 +59,9 @@ export class MovimientosInventarioRepository {
     }
 
     if (filtros.fechaDesde) {
-      condiciones.push(`mi.fecha_ingre >= ${addParam(filtros.fechaDesde)}::date`);
+      condiciones.push(
+        `mi.fecha_ingre >= ${addParam(filtros.fechaDesde)}::date`,
+      );
     }
 
     if (filtros.fechaHasta) {
@@ -121,9 +129,7 @@ export class MovimientosInventarioRepository {
     return this.dataSource.query(query, parametros);
   }
 
-  async listarProductos(): Promise<
-    Array<{ value: number; label: string }>
-  > {
+  async listarProductos(): Promise<Array<{ value: number; label: string }>> {
     const rows = await this.dataSource.query(`
       SELECT
         ide_prod AS value,

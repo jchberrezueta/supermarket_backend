@@ -1,5 +1,6 @@
-import { ApiResponseFactory } from '@common/index';
-import { Injectable } from '@nestjs/common';
+import { ApiResponseFactory, IdUtil } from '@common/index';
+
+import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   FilterMovimientoInventarioDTO,
   TIPOS_MOVIMIENTO_INVENTARIO,
@@ -19,6 +20,27 @@ export class MovimientosInventarioService {
     return ApiResponseFactory.legacyRead(
       MovimientosInventarioMapper.toRows(movimientos),
       'Movimientos de inventario obtenidos correctamente.',
+    );
+  }
+
+  async buscar(id: number) {
+    const ideMovi = IdUtil.requireId(id, 'El ID del movimiento no es válido.');
+
+    const movimientos = await this.movimientosRepository.listar({
+      ideMovi,
+    });
+
+    const movimiento = movimientos[0];
+
+    if (!movimiento) {
+      throw new NotFoundException(
+        'No se encontró el movimiento de inventario indicado.',
+      );
+    }
+
+    return ApiResponseFactory.legacyRead(
+      MovimientosInventarioMapper.toRows([movimiento]),
+      'Movimiento de inventario encontrado correctamente.',
     );
   }
 

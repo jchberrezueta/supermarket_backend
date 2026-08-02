@@ -1,4 +1,11 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import {
   PermissionGuard,
@@ -20,6 +27,15 @@ export class MovimientosInventarioController {
   @Get()
   async listar() {
     return this.movimientosService.listar();
+  }
+
+  @RequirePermission(RUTA_MOVIMIENTOS, 'listar')
+  @Get('buscar/:id')
+  async buscar(
+    @Param('id', ParseIntPipe)
+    id: number,
+  ) {
+    return this.movimientosService.buscar(id);
   }
 
   @RequirePermission(RUTA_MOVIMIENTOS, 'listar')

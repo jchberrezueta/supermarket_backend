@@ -52,7 +52,13 @@ export class FilterMovimientoInventarioDTO {
   @Transform(({ value }) => optionalInt(value))
   @IsInt()
   @Min(1)
-  ideProd?: number;
+  ideMovi?: number;
+
+  @IsOptional()
+  @Transform(({ value }) => optionalString(value))
+  @Length(1, 150)
+  @IsString()
+  producto?: number;
 
   @IsOptional()
   @Transform(({ value }) => optionalInt(value))
