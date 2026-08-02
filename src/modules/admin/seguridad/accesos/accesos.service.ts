@@ -39,6 +39,21 @@ export class AccesosUsuariosService {
     );
   }
 
+  async listarUltimosExitososPorCuenta(idCuenta: number, limite = 2) {
+    const ideCuen = IdUtil.requireId(
+      idCuenta,
+      'El ID de la cuenta no es válido.',
+    );
+
+    return this.dataSource.transaction((manager) =>
+      this.accesosRepository.listarUltimosExitososPorCuenta(
+        ideCuen,
+        limite,
+        manager,
+      ),
+    );
+  }
+
   async filtrar(queryParams: FilterAccesoUsuarioDto) {
     const accesos = await this.dataSource.transaction((manager) =>
       this.accesosRepository.filtrar(queryParams, manager),

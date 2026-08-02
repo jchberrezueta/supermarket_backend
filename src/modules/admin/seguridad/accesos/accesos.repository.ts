@@ -53,6 +53,26 @@ export class AccesosRepository {
     });
   }
 
+  async listarUltimosExitososPorCuenta(
+    ideCuen: number,
+    limite = 2,
+    manager?: EntityManager,
+  ): Promise<AccesoUsuarioEntity[]> {
+    const limiteSeguro = Math.max(1, Math.min(Number(limite) || 2, 10));
+
+    return this.getAccesoRepository(manager).find({
+      where: {
+        ideCuen,
+        resultadoAcce: 'exitoso',
+      },
+      order: {
+        fechaAcce: 'DESC',
+        ideAcce: 'DESC',
+      },
+      take: limiteSeguro,
+    });
+  }
+
   async filtrar(
     filtros: FilterAccesoUsuarioDto,
     manager?: EntityManager,

@@ -311,7 +311,7 @@ export class CuentasRepository {
         activoOpci: 'si',
       })
       .orderBy('opcion.nivelOpci', 'ASC')
-      .addOrderBy('opcion.ideOpci', 'ASC')
+      .addOrderBy('opcion.ideOpci', 'DESC')
       .getRawMany<SidebarOptionRaw>();
 
     return rows.map((row) => ({

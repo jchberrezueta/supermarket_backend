@@ -362,6 +362,80 @@ export class AuthService {
     };
   }
 
+  async obtenerInicio(idCuenta: number) {
+    const cuenta = await this.cuentasService.buscarCuentaInterna(idCuenta);
+
+    if (!cuenta) {
+      throw new UnauthorizedException('No se encontró la cuenta autenticada.');
+    }
+
+    const accesos = await this.accesosService.listarUltimosExitososPorCuenta(
+      idCuenta,
+      2,
+    );
+
+    const accesoActual = accesos[0] ?? null;
+    const accesoAnterior = accesos[1] ?? null;
+
+    const nombreEmpleado = cuenta.empleado
+      ? [
+          cuenta.empleado.primerNombreEmpl,
+          cuenta.empleado.segundoNombreEmpl,
+          cuenta.empleado.apellidoPaternoEmpl,
+          cuenta.empleado.apellidoMaternoEmpl,
+        ]
+          .filter(
+            (value): value is string =>
+              typeof value === 'string' && value.trim().length > 0,
+          )
+          .map((value) => value.trim())
+          .join(' ')
+      : cuenta.usuarioCuen;
+
+    return {
+      usuario: {
+        ideCuen: cuenta.ideCuen,
+        ideEmpl: cuenta.ideEmpl,
+        usuario: cuenta.usuarioCuen,
+        nombreEmpleado,
+        perfil: cuenta.perfil?.nombrePerf ?? 'Perfil no identificado',
+        estado: cuenta.estadoCuen,
+      },
+
+      accesoActual: accesoActual
+        ? {
+            ideAcce: accesoActual.ideAcce,
+            fecha: accesoActual.fechaAcce,
+            navegador: accesoActual.navegadorAcce || 'No identificado',
+            ip: accesoActual.ipAcce ?? null,
+            latitud: accesoActual.latitudAcce
+              ? Number(accesoActual.latitudAcce)
+              : null,
+            longitud: accesoActual.longitudAcce
+              ? Number(accesoActual.longitudAcce)
+              : null,
+          }
+        : null,
+
+      accesoAnterior: accesoAnterior
+        ? {
+            ideAcce: accesoAnterior.ideAcce,
+            fecha: accesoAnterior.fechaAcce,
+            navegador: accesoAnterior.navegadorAcce || 'No identificado',
+            ip: accesoAnterior.ipAcce ?? null,
+            latitud: accesoAnterior.latitudAcce
+              ? Number(accesoAnterior.latitudAcce)
+              : null,
+            longitud: accesoAnterior.longitudAcce
+              ? Number(accesoAnterior.longitudAcce)
+              : null,
+          }
+        : null,
+
+      primerIngreso: accesoAnterior === null,
+    };
+  }
+
   private generarTokenMfaLogin(ideCuen: number, usuario: string): string {
     return this.jwtService.sign(
       {

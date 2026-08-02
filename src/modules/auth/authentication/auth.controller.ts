@@ -84,6 +84,12 @@ export class AuthController {
   }
 
   @UseGuards(AuthGuard('jwt'))
+  @Get('inicio')
+  async obtenerInicio(@Req() req: any) {
+    return this.authService.obtenerInicio(Number(req.user.sub));
+  }
+
+  @UseGuards(AuthGuard('jwt'))
   @Post('cambiar-clave')
   async cambiarClave(@Req() req: any, @Body() body: ChangePasswordDto) {
     return this.authService.cambiarClave(
